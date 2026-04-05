@@ -10425,7 +10425,7 @@ function printValues(obj,sort=false) { // see: printViewStats
 						}
 					}
 					else if (key == 'version') {
-						stat = "RTBS Version";
+						stat = "LawTamil WebRTC Version";
 					}
 					else if (key == 'platform') {
 						stat = "Platform (OS)";

@@ -64,7 +64,7 @@ var translation = false;
 var miscTranslations = { // i can replace this list from time to time from the generated one in blank.json using translate.js
 	"start": "START",
     "new-display-name": "Enter a new Display Name for this stream",
-    "submit-error-report": "Press OK to submit any error logs to RTCS.Live. Error logs may contain private information.",
+    "submit-error-report": "Press OK to submit any error logs to RTBS Error logs may contain private information.",
     "director-redirect-1": "The director wishes to redirect you to the URL: ",
     "director-redirect-2": "\n\nPress OK to be redirected.",
     "add-a-label": "Add a label",
@@ -10425,7 +10425,7 @@ function printValues(obj,sort=false) { // see: printViewStats
 						}
 					}
 					else if (key == 'version') {
-						stat = "RTCS.Live Version";
+						stat = "RTBS Version";
 					}
 					else if (key == 'platform') {
 						stat = "Platform (OS)";

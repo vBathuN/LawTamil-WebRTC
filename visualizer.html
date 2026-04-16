@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Smart Visualizer V2.1</title>
+    <title>LawTamil Master Visualizer</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -42,7 +42,7 @@
         <div id="visualizer"></div>
     </div>
     
-    <iframe id="vdo-engine" allow="autoplay"></iframe>
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
@@ -66,7 +66,6 @@
             vContainer.appendChild(b); vBars.push(b);
         }
 
-        // மாற்றப்பட்ட தர்க்கம்: Stream-க்கு பதிலாக Track-ஐ நினைவில் வைத்தல்
         const connectedTracks = new Set(); 
 
         function bootVisualizer() {
@@ -80,33 +79,56 @@
 
             const iframe = document.getElementById('vdo-engine');
 
+            // 100ms-க்கு ஒருமுறை மிக வேகமாகச் செயல்படும் மூளை
             setInterval(() => {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 try {
-                    const iframeDoc = iframe.contentWindow.document;
-                    if (!iframeDoc) return;
+                    const iframeWin = iframe.contentWindow;
+                    if (!iframeWin || !iframeWin.HTMLMediaElement) return;
 
-                    const mediaElements = iframeDoc.querySelectorAll('video, audio');
+                    // மாஸ்டர் லாஜிக்: மெமரியில் மறைந்திருக்கும் ஆடியோவைப் பிடிக்கும் பொறி
+                    if (!iframeWin.__lawtamil_hooked) {
+                        const originalSet = Object.getOwnPropertyDescriptor(iframeWin.HTMLMediaElement.prototype, 'srcObject').set;
+                        
+                        Object.defineProperty(iframeWin.HTMLMediaElement.prototype, 'srcObject', {
+                            set: function(stream) {
+                                if (stream) {
+                                    stream.getAudioTracks().forEach(track => {
+                                        if (!connectedTracks.has(track.id)) {
+                                            connectedTracks.add(track.id);
+                                            try {
+                                                const cleanStream = new MediaStream([track]);
+                                                const source = audioCtx.createMediaStreamSource(cleanStream);
+                                                source.connect(analyser); 
+                                            } catch(e) {}
+                                        }
+                                    });
+                                }
+                                return originalSet.call(this, stream);
+                            }
+                        });
+                        iframeWin.__lawtamil_hooked = true;
+                    }
+
+                    // பழைய லாஜிக் (Fallback): ஒருவேளை HTML-ல் இருந்தால் அதையும் விடக்கூடாது
+                    const mediaElements = iframeWin.document.querySelectorAll('video, audio');
                     mediaElements.forEach(el => {
                         const stream = el.srcObject;
                         if (stream) {
-                            // ஆடியோ ட்ராக்குகளை மட்டும் சல்லடை போட்டு எடுத்தல்
                             stream.getAudioTracks().forEach(track => {
-                                // ட்ராக் உயிருடன் உள்ளதா மற்றும் புதிதா எனச் சரிபார்த்தல்
                                 if (track.readyState === 'live' && !connectedTracks.has(track.id)) {
                                     connectedTracks.add(track.id);
                                     try {
-                                        // பழைய குப்பைகள் இணையாமல் இருக்க, புதிய ட்ராக்கை மட்டும் ஒரு சுத்தமான Stream-ல் போட்டு இணைப்பது
                                         const cleanStream = new MediaStream([track]);
                                         const source = audioCtx.createMediaStreamSource(cleanStream);
                                         source.connect(analyser); 
-                                    } catch (e) {}
+                                    } catch(e) {}
                                 }
                             });
                         }
                     });
                 } catch (e) {} 
-            }, 1000);
+            }, 100);
 
             renderVisualizer();
         }

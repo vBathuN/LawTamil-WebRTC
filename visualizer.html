@@ -2,26 +2,24 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Smart Visualizer</title>
+    <title>LawTamil Smart Visualizer V2</title>
     <style>
-        /* Transparent Background for Iframe */
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
             height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
         }
         
-        /* Pure Visualizer Container */
         .anim-section { 
             width: 100%; height: 100%; 
             position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
         }
+        
         #justice-glow {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(255, 215, 0, 0.9) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.6) 10%, rgba(255, 215, 0, 0) 80%);
-            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.05s ease-out; 
+            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-out; 
         }
         
-        /* ஆரம்பத்தில் வளையத்தை முழுமையாக மறைத்து வைக்கும் தர்க்கம் */
         #visualizer { 
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
             opacity: 0; 
@@ -34,7 +32,6 @@
             will-change: transform;
         }
 
-        /* VDO.Ninja Engine */
         #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
     </style>
 </head>
@@ -55,6 +52,7 @@
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
+        let lastActiveTime = Date.now(); // கடைசியாக ஆடியோ வந்த நேரத்தைக் கணக்கிட
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -90,14 +88,10 @@
                     const mediaElements = iframeDoc.querySelectorAll('video, audio');
                     mediaElements.forEach(el => {
                         const stream = el.srcObject;
-                        // ஆடியோ ஸ்ட்ரீம் வெற்றிகரமாகச் சிக்கியவுடன்...
                         if (stream && stream.getAudioTracks().length > 0 && !connectedStreams.has(stream.id)) {
                             connectedStreams.add(stream.id);
                             const source = audioCtx.createMediaStreamSource(stream);
                             source.connect(analyser); 
-                            
-                            // வளையத்தைத் திரையில் ஒளிரச் செய்தல் (Make it visible)
-                            vContainer.style.opacity = "1";
                         }
                     });
                 } catch (e) {} 
@@ -123,7 +117,20 @@
             });
             
             const avgVol = totalVolume / vBars.length;
-            if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
+
+            // --- 'Smart Hide' தர்க்கம் ---
+            if (avgVol > 2) { 
+                // சத்தம் இருந்தால் வளையத்தைக் காட்டு
+                lastActiveTime = Date.now(); 
+                vContainer.style.opacity = "1";
+                if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
+            } else {
+                // சத்தம் நின்று 2 விநாடிகள் ஆகிவிட்டால் வளையத்தை மறை
+                if (Date.now() - lastActiveTime > 2000) {
+                    vContainer.style.opacity = "0";
+                    if (glowDiv) glowDiv.style.opacity = "0";
+                }
+            }
         };
 
         window.addEventListener('load', bootVisualizer);

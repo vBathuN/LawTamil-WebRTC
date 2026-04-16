@@ -75,7 +75,7 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 128; 
-                analyser.smoothingTimeConstant = 0.75; 
+                analyser.smoothingTimeConstant = 0.3; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();

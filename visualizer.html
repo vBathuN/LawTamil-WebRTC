@@ -136,16 +136,19 @@
                 let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
                 if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
                 
-                const val = dataArray[dIdx] || 0;
+                let val = dataArray[dIdx] || 0;
                 
-                // --- உயரம் குறைக்கப்பட்ட கணக்கீடு (10-க்கு பதிலாக 25) ---
+                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
+                val = Math.max(0, val - 12); 
+                
                 bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 25)})`;
                 totalVolume += val; 
             });
             
             const avgVol = totalVolume / vBars.length;
 
-            if (avgVol > 1) { 
+            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
+            if (avgVol > 6) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);

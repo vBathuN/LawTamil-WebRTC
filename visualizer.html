@@ -2,149 +2,134 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Justice Glow Visualizer</title>
+    <title>LawTamil Auto-Visualizer</title>
     <style>
-        /* 1. 100% சுத்தமான விசுவலைசர் UI (எந்த குப்பைகளும் இல்லை) */
-        body {
-            background-color: transparent !important; /* OBS-ல் இணையும் போது பின்னணி தெரியாமல் இருக்க */
-            margin: 0;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        /* உங்களின் அசல் Justice Glow வடிவமைப்பு */
-        #justice-glow {
-            position: absolute; width: 60px; height: 60px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.9) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.6) 10%, rgba(255, 215, 0, 0) 80%);
-            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
-            opacity: 0; transition: opacity 0.05s ease-out, transform 0.05s ease-out;
-        }
-
-        #visualizer-ring { position: absolute; width: 150px; height: 150px; }
+        body { background-color: transparent !important; margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
         
-        .v-bar {
-            position: absolute; bottom: 50%; left: 50%; width: 4px; height: 6px;
-            background: #ffbc59; border-radius: 2px 2px 0 0; margin-left: -2px;
-            transform-origin: bottom center; box-shadow: 0px 0px 8px rgba(255, 188, 89, 0.9);
-            will-change: height;
-        }
-
-        /* 2. WebRTC எஞ்சினை மறைத்து வைக்கும் குகை */
-        #vdo-engine {
-            position: absolute; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1;
-        }
+        /* Chrome பிரவுசர் தடையை உடைக்கும் பட்டன் */
+        #start-btn { position: absolute; z-index: 99999; padding: 15px 30px; font-size: 20px; background-color: #ec7063; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(236, 112, 99, 0.8); font-weight: bold; }
+        
+        #justice-glow { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(circle, rgba(255, 215, 0, 0.9) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.6) 10%, rgba(255, 215, 0, 0) 80%); clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); opacity: 0; transition: opacity 0.05s ease-out, transform 0.05s ease-out; }
+        #visualizer-ring { position: absolute; width: 150px; height: 150px; }
+        .v-bar { position: absolute; bottom: 50%; left: 50%; width: 4px; height: 6px; background: #ffbc59; border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; box-shadow: 0px 0px 8px rgba(255, 188, 89, 0.9); will-change: height; }
+        
+        /* VDO.Ninja எஞ்சினை மறைக்கும் குகை */
+        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
     </style>
 </head>
 <body>
-    
+
+    <button id="start-btn">▶ CLICK TO START VISUALIZER</button>
+
     <div id="justice-glow"></div>
     <div id="visualizer-ring"></div>
-
+    
     <iframe id="vdo-engine" allow="autoplay; microphone; camera"></iframe>
 
-   <script>
-    // 1. URL-ல் இருந்து Room பெயரைக் கண்டுபிடித்தல்
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+    <script>
+        // URL-ல் இருந்து Room பெயரைக் கண்டுபிடித்தல் (இல்லையென்றால் JurisprudenceTamil)
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
-    // 2. VDO.Ninja-வை எஞ்சினாக இயக்குதல்
-    const iframe = document.getElementById('vdo-engine');
-    iframe.src = `./index.html?room=${roomName}&autostart`; 
+        // இதுதான் சரியான URL. &scene மற்றும் &autostart கட்டாயம் தேவை!
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
-    // 3. விசுவலைசர் DOM செட்டப்
-    const NUM_BARS = 36;
-    const bars = [];
-    const visualizerRing = document.getElementById('visualizer-ring');
-    const justiceGlow = document.getElementById('justice-glow');
+        const NUM_BARS = 36;
+        const bars = [];
+        const visualizerRing = document.getElementById('visualizer-ring');
+        const justiceGlow = document.getElementById('justice-glow');
+        const startBtn = document.getElementById('start-btn');
 
-    for (let i = 0; i < NUM_BARS; i++) {
-        const bar = document.createElement('div');
-        bar.className = 'v-bar';
-        bar.style.transform = `rotate(${i * (360 / NUM_BARS)}deg) translateY(-45px)`;
-        visualizerRing.appendChild(bar);
-        bars.push(bar);
-    }
-
-    let audioCtx = null;
-    let analyser = null;
-    let isAnimating = false;
-    const connectedStreams = new Set();
-
-    function initAudio() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 128;
+        // கட்டங்களை உருவாக்குதல்
+        for (let i = 0; i < NUM_BARS; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'v-bar';
+            bar.style.transform = `rotate(${i * (360 / NUM_BARS)}deg) translateY(-45px)`;
+            visualizerRing.appendChild(bar);
+            bars.push(bar);
         }
-        if(audioCtx.state === 'suspended') audioCtx.resume();
-    }
 
-    // 4. புதிய தர்க்கம்: Iframe-க்குள் நடக்கும் தொடர் தேடுதல் (Polling Logic)
-    // ஒவ்வொரு 1 விநாடிக்கும் Iframe-க்குள் ஆடியோ வந்துவிட்டதா எனத் தேடிக்கொண்டே இருக்கும்
-    setInterval(() => {
-        try {
-            const iframeDoc = iframe.contentWindow.document;
-            if (!iframeDoc) return;
+        let audioCtx, analyser;
+        const connectedStreams = new Set();
 
-            // VDO.Ninja உருவாக்கும் <video> அல்லது <audio> டேக்குகளைக் கண்டுபிடித்தல்
-            const mediaElements = iframeDoc.querySelectorAll('video, audio');
+        // விசுவலைசரைத் தொடங்கும் முதன்மை ஃபங்ஷன்
+        function bootVisualizer() {
+            startBtn.style.display = 'none'; // பட்டனை மறைத்துவிடு
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 128;
+            }
             
-            mediaElements.forEach(el => {
-                const stream = el.srcObject;
-                // ஸ்ட்ரீம் கிடைத்து, அது புதியதாக இருந்தால் விசுவலைசருக்குள் இழுப்பது
-                if (stream && stream.getAudioTracks().length > 0 && !connectedStreams.has(stream.id)) {
-                    connectedStreams.add(stream.id);
-                    console.log("LawTamil Bypass: Stream Snatch Successful! ->", stream.id);
+            // பிரவுசரின் ஆடியோ தடையை உடைத்தல்
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const iframe = document.getElementById('vdo-engine');
+
+            // Iframe-க்குள் ஆடியோ வந்துவிட்டதா எனத் தேடும் லாஜிக் (Polling)
+            setInterval(() => {
+                try {
+                    const iframeDoc = iframe.contentWindow.document;
+                    if (!iframeDoc) return;
+
+                    // Scene மோடில் உருவாகும் வீடியோ/ஆடியோ டேக்குகளைக் குறிவைத்தல்
+                    const mediaElements = iframeDoc.querySelectorAll('video, audio');
                     
-                    initAudio();
-                    const source = audioCtx.createMediaStreamSource(stream);
-                    source.connect(analyser); 
-                    
-                    if (!isAnimating) {
-                        isAnimating = true;
-                        startAnimation();
-                    }
+                    mediaElements.forEach(el => {
+                        const stream = el.srcObject;
+                        if (stream && stream.getAudioTracks().length > 0 && !connectedStreams.has(stream.id)) {
+                            connectedStreams.add(stream.id);
+                            console.log("LawTamil Engine: Stream Hooked ->", stream.id);
+                            
+                            const source = audioCtx.createMediaStreamSource(stream);
+                            source.connect(analyser); 
+                        }
+                    });
+                } catch (e) {} // CORS பிழைகளைப் புறக்கணிக்க
+            }, 1000);
+
+            startAnimation();
+        }
+
+        // ஒலியின் அதிர்வுக்கு ஏற்ப வரையும் லாஜிக்
+        function startAnimation() {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            
+            function render() {
+                requestAnimationFrame(render);
+                if(audioCtx.state === 'suspended') return;
+
+                analyser.getByteFrequencyData(dataArray);
+                let totalVolume = 0;
+
+                for (let i = 0; i < NUM_BARS; i++) {
+                    const value = dataArray[i];
+                    totalVolume += value;
+                    bars[i].style.height = Math.max(6, value * 0.4) + 'px';
                 }
-            });
-        } catch (e) {
-            // Iframe லோட் ஆகும் வரை ஏற்படும் CORS பிழைகளைத் தவிர்ப்பதற்காக
-        }
-    }, 1000); // 1000ms = 1 விநாடிக்கு ஒருமுறை செக்கிங்
 
-    // 5. ஒலியின் அதிர்வுக்கு ஏற்ப ஆடும் தர்க்கம்
-    function startAnimation() {
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        
-        function render() {
-            requestAnimationFrame(render);
-            if(!audioCtx || audioCtx.state === 'suspended') return;
-
-            analyser.getByteFrequencyData(dataArray);
-            let totalVolume = 0;
-
-            for (let i = 0; i < NUM_BARS; i++) {
-                const value = dataArray[i];
-                totalVolume += value;
-                bars[i].style.height = Math.max(6, value * 0.4) + 'px';
+                const avgVolume = totalVolume / NUM_BARS;
+                if (avgVolume > 5) {
+                    justiceGlow.style.opacity = Math.min(1, (avgVolume / 100) + 0.3);
+                    justiceGlow.style.transform = `translate(-50%, -50%) scale(${1 + (avgVolume / 300)})`;
+                } else {
+                    justiceGlow.style.opacity = 0;
+                    justiceGlow.style.transform = `translate(-50%, -50%) scale(1)`;
+                }
             }
-
-            const avgVolume = totalVolume / NUM_BARS;
-            if (avgVolume > 5) {
-                justiceGlow.style.opacity = Math.min(1, (avgVolume / 100) + 0.3);
-                justiceGlow.style.transform = `translate(-50%, -50%) scale(${1 + (avgVolume / 300)})`;
-            } else {
-                justiceGlow.style.opacity = 0;
-                justiceGlow.style.transform = `translate(-50%, -50%) scale(1)`;
-            }
+            render();
         }
-        render();
-    }
 
-    // ஆடியோ தடையை உடைக்க ஒரு க்ளிக் ஈவென்ட்
-    document.addEventListener('click', initAudio);
-</script>
+        // 1. குரோமில் டெஸ்ட் செய்ய பட்டன் கிளிக் தேவை
+        startBtn.addEventListener('click', bootVisualizer);
+
+        // 2. OBS-க்குள் சென்றால் பட்டன் தேவையில்லை, தானாகவே தொடங்கும்
+        if (window.obsstudio !== undefined) {
+            bootVisualizer();
+        }
+    </script>
 </body>
 </html>

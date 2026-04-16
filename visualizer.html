@@ -2596,102 +2596,119 @@
 		<script type="text/javascript" crossorigin="anonymous" id="main-js" src="./main.js?ver=785"></script>
 
    <style>
-    /* 1. VDO.Ninja-வின் தேவையற்ற அசல் UI-ஐ இருட்டடிப்பு செய்தல் */
+    /* 1. VDO.Ninja அசல் UI-ஐ மறைத்தல் */
     #main, #videos, #shared_video, .videocontainer, #header { 
-        opacity: 0 !important; 
-        visibility: hidden !important; 
-        pointer-events: none !important; 
+        opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; 
     }
-    
-    /* 2. LawTamil Night Mode பின்னணி */
-    body { 
-        background-color: #000000 !important; 
-        margin: 0; 
-        overflow: hidden; 
-    }
+    body { background-color: transparent !important; margin: 0; overflow: hidden; }
 
-    /* 3. முழுத் திரையை ஆக்கிரமிக்கும் விசுவலைசர் Canvas */
-    #lawtamil-visualizer {
-        position: absolute;
-        top: 0; 
-        left: 0; 
-        width: 100vw; 
-        height: 100vh;
-        z-index: 9999; /* எல்லாவற்றுக்கும் மேலாகத் தெரிய */
+    /* 2. உங்களின் அசல் CSS */
+    #justice-glow {
+        position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.9) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.6) 10%, rgba(255, 215, 0, 0) 80%);
+        clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.05s ease-out, transform 0.05s ease-out; 
+    }
+    #visualizer { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; }
+    .v-bar {
+        position: absolute; bottom: 50%; left: 50%; width: 4px; height: 6px; background: #ffbc59; 
+        border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; box-shadow: 0px 0px 8px rgba(255, 188, 89, 0.9); 
+        will-change: height; /* GPU முடுக்கத்திற்காக */
     }
 </style>
 
-<canvas id="lawtamil-visualizer"></canvas>
+<div class="anim-section">
+    <div id="justice-glow"></div> 
+    <div id="visualizer"></div>
+</div>
 
 <script>
-    // 4. சிக்னலை இடைமறிக்கும் வலை (The Monkey Patch)
     const originalSrcObject = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'srcObject');
-    let isLawTamilVisualizerRunning = false;
+    
+    let audioCtx = null;
+    let analyser = null;
+    let isVisualizerRunning = false;
+    const connectedStreams = new Set();
+    
+    // விசுவலைசருக்கான DOM செட்டப்
+    const visualizerDiv = document.getElementById('visualizer');
+    const justiceGlow = document.getElementById('justice-glow');
+    const NUM_BARS = 36; // வட்டத்தை நிரப்பும் கட்டங்களின் எண்ணிக்கை (360 கோணத்தில்)
+    const bars = [];
 
+    // கட்டங்களை (Bars) உருவாக்குதல்
+    for (let i = 0; i < NUM_BARS; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'v-bar';
+        // வட்ட வடிவில் சுழற்றி, மையத்திலிருந்து 45px தள்ளி நிறுத்துதல்
+        bar.style.transform = `rotate(${i * (360 / NUM_BARS)}deg) translateY(-45px)`;
+        visualizerDiv.appendChild(bar);
+        bars.push(bar);
+    }
+
+    function initAudioSetup() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 128; // DOM-க்கு இதுவே போதுமானது
+            console.log("LawTamil Room Mixer: AudioContext Ready!");
+        }
+    }
+
+    // 4. Room-ல் உள்ள அனைவரின் ஆடியோவையும் பிடிக்கும் பொறி
     Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
         set: function(stream) {
-            // VDO.Ninja ஸ்ட்ரீமை இணைக்கும் அந்த ஒரு மில்லி செகண்டில் ஸ்ட்ரீமைத் திருடுவது
-            if (stream && stream.getAudioTracks().length > 0 && !isLawTamilVisualizerRunning) {
-                isLawTamilVisualizerRunning = true; // ஒரு முறை மட்டுமே இயங்க
-                console.log("LawTamil Interceptor: Raw Audio Stream Captured!");
+            if (stream && stream.getAudioTracks().length > 0 && !connectedStreams.has(stream.id)) {
+                connectedStreams.add(stream.id);
+                console.log("LawTamil Room: Guest Stream Added ->", stream.id);
                 
-                // திருடிய ஸ்ட்ரீமை விசுவலைசருக்குள் அனுப்புதல்
-                startLawTamilVisualizer(stream);
+                initAudioSetup();
+                const source = audioCtx.createMediaStreamSource(stream);
+                source.connect(analyser); 
+                
+                if (!isVisualizerRunning) {
+                    isVisualizerRunning = true;
+                    startDOMLoop();
+                }
             }
-            
-            // அசல் VDO.Ninja-வின் வேலை தடைபடாமல் இருக்க மீண்டும் அதனிடமே திருப்பிக் கொடுப்பது
             return originalSrcObject.set.call(this, stream);
         }
     });
 
-    // 5. அசல் LawTamil விசுவலைசர் லாஜிக்
-    function startLawTamilVisualizer(stream) {
-        const canvas = document.getElementById('lawtamil-visualizer');
-        const canvasCtx = canvas.getContext('2d');
-        
-        // திரையின் அளவை Canvas-க்கு அமைத்தல்
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // AudioContext-ஐ உருவாக்குதல்
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaStreamSource(stream);
-        const analyser = audioCtx.createAnalyser();
-
-        analyser.fftSize = 256;
-        
-        // ஸ்ட்ரீமை Analyser-க்குள் மட்டும் செலுத்துதல் (ஸ்பீக்கருக்கு அல்ல, எனவே Echo வராது)
-        source.connect(analyser);
-
+    // 5. ஒலியின் அதிர்வுக்கு ஏற்ப DOM-ஐ இயக்கும் தர்க்கம்
+    function startDOMLoop() {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
-        // வரையும் லாஜிக் (Animation Loop)
-        function draw() {
-            requestAnimationFrame(draw);
+        function render() {
+            requestAnimationFrame(render);
             analyser.getByteFrequencyData(dataArray);
 
-            // கறுப்புப் பின்னணியை அழித்து மீண்டும் வரைதல்
-            canvasCtx.fillStyle = '#121212'; 
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            let totalVolume = 0;
 
-            const barWidth = (canvas.width / bufferLength) * 2.5;
-            let barHeight;
-            let x = 0;
-
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i] * 2; 
-
-                // LawTamil Theme: நீலம் (#5dade2) மற்றும் சிவப்பு (#ec7063) நிற மாற்றம்
-                canvasCtx.fillStyle = i % 2 === 0 ? '#5dade2' : '#ec7063';
+            for (let i = 0; i < NUM_BARS; i++) {
+                // முதல் 36 அலைவரிசைகளை மட்டும் எடுத்து கட்டங்களின் உயரத்தை மாற்றுதல்
+                const value = dataArray[i];
+                totalVolume += value;
                 
-                // கீழிருந்து மேலாக அலைகளை வரைதல்
-                canvasCtx.fillRect(x, canvas.height - barHeight / 2, barWidth, barHeight / 2);
-                x += barWidth + 1;
+                // குறைந்தபட்ச உயரம் 6px, அதிகபட்சம் ஒலியின் அளவைப் பொறுத்து
+                const newHeight = Math.max(6, value * 0.4); 
+                bars[i].style.height = `${newHeight}px`;
+            }
+
+            // 'Justice Glow'-க்கான தர்க்கம் (சராசரி ஒலியை வைத்து ஒளிர்வது)
+            const avgVolume = totalVolume / NUM_BARS;
+            if (avgVolume > 10) {
+                // சத்தம் இருந்தால் மைய ஒளி ஒளிரும் மற்றும் லேசாகத் துடிக்கும்
+                justiceGlow.style.opacity = Math.min(1, (avgVolume / 100) + 0.3);
+                justiceGlow.style.transform = `translate(-50%, -50%) scale(${1 + (avgVolume / 300)})`;
+            } else {
+                // அமைதியாக இருக்கும்போது ஒளி அணைந்துவிடும்
+                justiceGlow.style.opacity = 0;
+                justiceGlow.style.transform = `translate(-50%, -50%) scale(1)`;
             }
         }
-        draw();
+        render();
     }
-</script>         
+</script>        
 	</body>
 </html>

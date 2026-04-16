@@ -1,5 +1,11 @@
 <html lang='en'>
 	<head>
+		<script>
+    // LawTamil URL Masking Logic (To hide the long link from guests)
+    if (window.location.search.includes('room=JurisprudenceTamil')) {
+        window.history.replaceState(null, '', '/live-connect');
+    }
+</script>
 		<script type="text/javascript">
 			//  MS Internet Explorer must not be given a chance to fail before I can give the user an error message.
 			try {

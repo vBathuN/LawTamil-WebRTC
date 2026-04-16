@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Optimized Visualizer</title>
+    <title>LawTamil Smart Visualizer V2</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -42,19 +42,17 @@
         <div id="visualizer"></div>
     </div>
     
-    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
+    <iframe id="vdo-engine" allow="autoplay"></iframe>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
-        
-        // உங்களின் புதிய URL தர்க்கத்தின்படி எஞ்சின் லிங்க் அமைக்கப்பட்டுள்ளது
-        document.getElementById('vdo-engine').src = `./index.html?room=${roomName}&push=&miconly&quality=0&audiobitrate=256&buffer=0&as&hh&ee&label=&mobile&hidetranslate`;
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&as&quality=0&audiobitrate=256&buffer=0`;
 
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
-        let lastActiveTime = Date.now(); 
+        let lastActiveTime = Date.now(); // கடைசியாக ஆடியோ வந்த நேரத்தைக் கணக்கிட
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -120,11 +118,14 @@
             
             const avgVol = totalVolume / vBars.length;
 
+            // --- 'Smart Hide' தர்க்கம் ---
             if (avgVol > 2) { 
+                // சத்தம் இருந்தால் வளையத்தைக் காட்டு
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
             } else {
+                // சத்தம் நின்று 2 விநாடிகள் ஆகிவிட்டால் வளையத்தை மறை
                 if (Date.now() - lastActiveTime > 2000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";

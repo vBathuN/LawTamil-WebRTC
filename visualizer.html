@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Smart Visualizer V2</title>
+    <title>LawTamil Optimized Visualizer</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -42,17 +42,19 @@
         <div id="visualizer"></div>
     </div>
     
-    <iframe id="vdo-engine" allow="autoplay"></iframe>
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
-        // இதுBroadcaster மற்றும் Receiver என இரண்டிற்கும் வேலை செய்யும்
-document.getElementById('vdo-engine').src = `./index.html?room=${roomName}&scene&autostart&video=0&audiobitrate=128&buffer=0`;
+        
+        // உங்களின் புதிய URL தர்க்கத்தின்படி எஞ்சின் லிங்க் அமைக்கப்பட்டுள்ளது
+        document.getElementById('vdo-engine').src = `./index.html?room=${roomName}&push=&miconly&quality=0&audiobitrate=256&buffer=0&as&hh&ee&label=&mobile&hidetranslate`;
+
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
-        let lastActiveTime = Date.now(); // கடைசியாக ஆடியோ வந்த நேரத்தைக் கணக்கிட
+        let lastActiveTime = Date.now(); 
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -118,14 +120,11 @@ document.getElementById('vdo-engine').src = `./index.html?room=${roomName}&scene
             
             const avgVol = totalVolume / vBars.length;
 
-            // --- 'Smart Hide' தர்க்கம் ---
             if (avgVol > 2) { 
-                // சத்தம் இருந்தால் வளையத்தைக் காட்டு
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
             } else {
-                // சத்தம் நின்று 2 விநாடிகள் ஆகிவிட்டால் வளையத்தை மறை
                 if (Date.now() - lastActiveTime > 2000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";

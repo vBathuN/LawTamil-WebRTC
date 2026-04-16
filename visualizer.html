@@ -47,7 +47,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
-        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&as&quality=0&audiobitrate=256&buffer=0`;
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&as`;
 
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 

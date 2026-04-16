@@ -34,8 +34,34 @@
     <iframe id="preview-frame" 
             src="/?room=JurisprudenceTamil&push=&miconly&as&hh&ee&label=&mobile&hidetranslate" 
             name="preview-frame" 
-            allow="autoplay; microphone; fullscreen;">
+            allow="autoplay; microphone; fullscreen; screen-wake-lock;">
     </iframe>
 
+    <script>
+        // மொபைல் ஸ்கிரீன் தானாக ஆஃப் ஆவதைத் தடுக்கும் மாஸ்டர் தர்க்கம் (Wake Lock API)
+        let wakeLock = null;
+
+        const requestWakeLock = async () => {
+            try {
+                // பிரவுசரில் WakeLock வசதி உள்ளதா எனச் சரிபார்த்தல்
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('LawTamil Wake Lock Active: விருந்தினரின் திரை அணையாது.');
+                    
+                    // விருந்தினர் வேறு ஆப்களுக்குச் சென்றுவிட்டுத் திரும்பினால் மீண்டும் லாக் செய்தல்
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error(`Wake Lock Error: ${err.name}, ${err.message}`);
+            }
+        };
+
+        // பக்கம் முழுமையாக லோட் ஆனதும் Wake Lock-ஐத் தொடங்குதல்
+        window.addEventListener('load', requestWakeLock);
+    </script>
 </body>
 </html>

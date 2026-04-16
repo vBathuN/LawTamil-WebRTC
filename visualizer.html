@@ -47,8 +47,8 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
-        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&quality=0&audiobitrate=256&buffer=0&video=0`;
-
+        // இதுBroadcaster மற்றும் Receiver என இரண்டிற்கும் வேலை செய்யும்
+document.getElementById('vdo-engine').src = `./index.html?room=${roomName}&scene&autostart&video=0&audiobitrate=128&buffer=0`;
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 

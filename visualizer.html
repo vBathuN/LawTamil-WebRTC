@@ -2,19 +2,18 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Ninja Standalone Visualizer</title>
+    <title>LawTamil Pure Visualizer</title>
     <style>
-        /* 1. Iframe-க்காக Transparent பின்னணி */
+        /* Transparent Background for Iframe */
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
             height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
         }
         
-        /* 2. அசல் OBS Visualizer CSS (ஒரு புள்ளி கூட மாறாமல்) */
+        /* Pure Visualizer Container (No Background Image) */
         .anim-section { 
             width: 100%; height: 100%; 
-            background: url('https://assets.jurisprudencetamil.com/gif/justice.gif') no-repeat center bottom -45px; 
-            background-size: contain; position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
         }
         #justice-glow {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
@@ -27,7 +26,7 @@
             border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; box-shadow: 0px 0px 8px rgba(255, 188, 89, 0.9); 
         }
 
-        /* 3. VDO.Ninja எஞ்சினை மறைக்கும் குகை */
+        /* VDO.Ninja Engine */
         #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
     </style>
 </head>
@@ -41,12 +40,10 @@
     <iframe id="vdo-engine" allow="autoplay"></iframe>
 
     <script>
-        // URL Room தர்க்கம்
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
         document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
-        // அசல் Visualizer JS Variables (ஒரு புள்ளி மாறாமல்)
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
@@ -54,7 +51,6 @@
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
         
-        // அசல் 50 கட்டங்கள், அரைவட்ட கோணங்கள்
         const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
         
         for (let i = 0; i < numBars; i++) {
@@ -66,7 +62,6 @@
 
         const connectedStreams = new Set();
 
-        // பட்டன் இன்றி தானாகத் தொடங்கும் தர்க்கம்
         function bootVisualizer() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -78,7 +73,6 @@
 
             const iframe = document.getElementById('vdo-engine');
 
-            // Iframe-ல் இருந்து ஆடியோவை உறிஞ்சும் Polling
             setInterval(() => {
                 if (audioCtx.state === 'suspended') audioCtx.resume();
                 try {
@@ -100,7 +94,6 @@
             renderVisualizer();
         }
 
-        // அசல் Visualizer Render Logic (ஒரு புள்ளி மாறாமல்)
         const renderVisualizer = () => {
             if (!analyser) return; 
             requestAnimationFrame(renderVisualizer);
@@ -121,9 +114,8 @@
             if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
         };
 
-        // Window Load ஆனதும் எந்தக் கிளிக்கும் இன்றி தானாக ஆடியோ விழித்துக்கொள்ளும்
         window.addEventListener('load', () => {
-            setTimeout(bootVisualizer, 500); // பிரவுசர் தயாராக 500ms தாமதம்
+            setTimeout(bootVisualizer, 500); 
         });
     </script>
 </body>

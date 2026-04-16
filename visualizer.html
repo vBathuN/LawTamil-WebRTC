@@ -75,7 +75,6 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 128; 
-                // மாஸ்டர் ஸ்ட்ரோக் 1: அனிமேஷனை அதிவேகமாக இல்லாமல், தண்ணீர் போல மென்மையாக ஆடவைக்கும் தர்க்கம்
                 analyser.smoothingTimeConstant = 0.75; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
@@ -130,7 +129,6 @@
             
             const half = Math.floor(vBars.length / 2); let totalVolume = 0;
             
-            // மாஸ்டர் ஸ்ட்ரோக் 2: மனிதக் குரலின் அதிர்வெண்களை (முதல் 16 Bins) மட்டும் எடுத்து வளையம் முழுவதும் பரப்புதல்
             const activeVoiceBins = 16; 
             const mappingRatio = activeVoiceBins / half; 
             
@@ -140,8 +138,8 @@
                 
                 const val = dataArray[dIdx] || 0;
                 
-                // மாஸ்டர் ஸ்ட்ரோக் 3: சிக்னல் வலிமையை (Sensitivity) 3 மடங்கு அதிகரித்துள்ளோம் (30-ல் இருந்து 10 ஆக)
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 10)})`;
+                // --- உயரம் குறைக்கப்பட்ட கணக்கீடு (10-க்கு பதிலாக 25) ---
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 25)})`;
                 totalVolume += val; 
             });
             
@@ -150,7 +148,6 @@
             if (avgVol > 1) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
-                // Glow-ன் பிரகாசத்தையும் சற்று கூட்டியுள்ளோம்
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
                 if (Date.now() - lastActiveTime > 2000) {

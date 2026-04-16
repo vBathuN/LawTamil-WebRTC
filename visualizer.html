@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Smart Visualizer V2</title>
+    <title>LawTamil Smart Visualizer V2.1</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -52,7 +52,7 @@
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
-        let lastActiveTime = Date.now(); // கடைசியாக ஆடியோ வந்த நேரத்தைக் கணக்கிட
+        let lastActiveTime = Date.now(); 
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -66,7 +66,8 @@
             vContainer.appendChild(b); vBars.push(b);
         }
 
-        const connectedStreams = new Set();
+        // மாற்றப்பட்ட தர்க்கம்: Stream-க்கு பதிலாக Track-ஐ நினைவில் வைத்தல்
+        const connectedTracks = new Set(); 
 
         function bootVisualizer() {
             if (!audioCtx) {
@@ -88,10 +89,20 @@
                     const mediaElements = iframeDoc.querySelectorAll('video, audio');
                     mediaElements.forEach(el => {
                         const stream = el.srcObject;
-                        if (stream && stream.getAudioTracks().length > 0 && !connectedStreams.has(stream.id)) {
-                            connectedStreams.add(stream.id);
-                            const source = audioCtx.createMediaStreamSource(stream);
-                            source.connect(analyser); 
+                        if (stream) {
+                            // ஆடியோ ட்ராக்குகளை மட்டும் சல்லடை போட்டு எடுத்தல்
+                            stream.getAudioTracks().forEach(track => {
+                                // ட்ராக் உயிருடன் உள்ளதா மற்றும் புதிதா எனச் சரிபார்த்தல்
+                                if (track.readyState === 'live' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        // பழைய குப்பைகள் இணையாமல் இருக்க, புதிய ட்ராக்கை மட்டும் ஒரு சுத்தமான Stream-ல் போட்டு இணைப்பது
+                                        const cleanStream = new MediaStream([track]);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source.connect(analyser); 
+                                    } catch (e) {}
+                                }
+                            });
                         }
                     });
                 } catch (e) {} 
@@ -118,14 +129,11 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            // --- 'Smart Hide' தர்க்கம் ---
             if (avgVol > 2) { 
-                // சத்தம் இருந்தால் வளையத்தைக் காட்டு
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
             } else {
-                // சத்தம் நின்று 2 விநாடிகள் ஆகிவிட்டால் வளையத்தை மறை
                 if (Date.now() - lastActiveTime > 2000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";

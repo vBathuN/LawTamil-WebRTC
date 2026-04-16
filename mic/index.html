@@ -2,12 +2,40 @@
 <html lang="ta">
 <head>
     <meta charset="utf-8">
-    <title>LawTamil Guest Mic</title>
-    <script>
-        // நேரடி திசைதிருப்பல் (Direct Redirect)
-        window.location.replace("/?room=JurisprudenceTamil&push=&miconly&as&hh&ee&label=&mobile&hidetranslate");
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LawTamil Live Studio</title>
+    
+    <style>
+        /* விருந்தினரின் திரையில் பட்டன்கள் கச்சிதமாகத் தெரிய Flexbox தர்க்கம் */
+        html, body {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #preview-frame {
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
+            border: none;
+            background-color: #000;
+            display: block;
+        }
+    </style>
 </head>
-<body style="background-color: #000;">
+
+<body>
+    
+    <iframe id="preview-frame" 
+            src="/?room=JurisprudenceTamil&push=&miconly&as&hh&ee&label=&mobile&hidetranslate" 
+            name="preview-frame" 
+            allow="autoplay; microphone; fullscreen;">
+    </iframe>
+
 </body>
 </html>

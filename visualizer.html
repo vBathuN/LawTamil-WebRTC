@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Deep Core Visualizer</title>
+    <title>LawTamil Master Visualizer Pro</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -16,19 +16,20 @@
         
         #justice-glow {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.9) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.6) 10%, rgba(255, 215, 0, 0) 80%);
-            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-out; 
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
+            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
         
         #visualizer { 
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
             opacity: 0; 
-            transition: opacity 0.5s ease-in-out; 
+            transition: opacity 0.4s ease-in-out; 
         }
         
         .v-bar {
-            position: absolute; bottom: 50%; left: 50%; width: 4px; height: 6px; background: #ffbc59; 
-            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; box-shadow: 0px 0px 8px rgba(255, 188, 89, 0.9); 
+            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ffca70; 
+            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
+            box-shadow: 0px 0px 12px rgba(255, 202, 112, 1); 
             will-change: transform;
         }
 
@@ -48,7 +49,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
         
-        // Receiver Link
         document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
         const ARC_RADIUS = 30; 
@@ -74,14 +74,15 @@
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.4;
+                analyser.fftSize = 128; 
+                // மாஸ்டர் ஸ்ட்ரோக் 1: அனிமேஷனை அதிவேகமாக இல்லாமல், தண்ணீர் போல மென்மையாக ஆடவைக்கும் தர்க்கம்
+                analyser.smoothingTimeConstant = 0.75; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             const iframe = document.getElementById('vdo-engine');
 
-            // மாஸ்டர் ஸ்ட்ரோக்: WebRTC Core Engine-ஐ நேரடியாக ஹேக் செய்யும் பொறி (10ms வேகத்தில் இயங்கும்)
             setInterval(() => {
                 try {
                     const iframeWin = iframe.contentWindow;
@@ -92,7 +93,6 @@
                         iframeWin.RTCPeerConnection = function(...args) {
                             const pc = new OrigPeerConnection(...args);
                             
-                            // இன்டர்நெட்டிலிருந்து வரும் சிக்னலை HTML-க்கு செல்லும் முன்பே நேரடியாகப் பிடிப்பது
                             pc.addEventListener('track', (event) => {
                                 const track = event.track;
                                 if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
@@ -109,14 +109,13 @@
                         };
                         
                         iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
-                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); // Static methods
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
                         
                         iframeWin.__lawtamil_rtc_hooked = true;
                     }
                 } catch (e) {} 
             }, 10);
 
-            // AudioContext உறங்குவதைத் தடுக்கும் தொடர் எழுப்புதல்
             setInterval(() => {
                 if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             }, 1000);
@@ -130,22 +129,29 @@
             analyser.getByteFrequencyData(dataArray);
             
             const half = Math.floor(vBars.length / 2); let totalVolume = 0;
-            const mappingRatio = Math.floor(analyser.frequencyBinCount / 2) / half; 
+            
+            // மாஸ்டர் ஸ்ட்ரோக் 2: மனிதக் குரலின் அதிர்வெண்களை (முதல் 16 Bins) மட்டும் எடுத்து வளையம் முழுவதும் பரப்புதல்
+            const activeVoiceBins = 16; 
+            const mappingRatio = activeVoiceBins / half; 
             
             vBars.forEach((bar, index) => {
                 let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
                 if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
+                
                 const val = dataArray[dIdx] || 0;
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 30)})`;
+                
+                // மாஸ்டர் ஸ்ட்ரோக் 3: சிக்னல் வலிமையை (Sensitivity) 3 மடங்கு அதிகரித்துள்ளோம் (30-ல் இருந்து 10 ஆக)
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 10)})`;
                 totalVolume += val; 
             });
             
             const avgVol = totalVolume / vBars.length;
 
-            if (avgVol > 2) { 
+            if (avgVol > 1) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
-                if (glowDiv) glowDiv.style.opacity = Math.min(0.9, avgVol / 120);
+                // Glow-ன் பிரகாசத்தையும் சற்று கூட்டியுள்ளோம்
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
                 if (Date.now() - lastActiveTime > 2000) {
                     vContainer.style.opacity = "0";

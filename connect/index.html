@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LawTamil Live Studio</title>
+    
+    <style>
+        html, body { width: 100%; height: 100%; padding: 0; margin: 0; overflow: hidden; background-color: #000; display: flex; flex-direction: column; }
+        #preview-frame { width: 100%; height: 100%; flex-grow: 1; border: none; background-color: #000; display: block; }
+    </style>
+</head>
+<body>
+    
+    <iframe id="preview-frame" allow="autoplay; microphone; fullscreen; screen-wake-lock;"></iframe>
+
+    <script>
+        // ரகசிய குறியீடு (Encoded URL)
+        const secretDoor = "Lz9yb29tPUp1cmlzcHJ1ZGVuY2VUYW1pbCZwdXNoPSZtaWNvbmx5JmFzJmhoJmVlJmxhYmVsPSZtb2JpbGUmaGlkZXRyYW5zbGF0ZQ==";
+        
+        // Iframe-க்குள் குறியீட்டை அவிழ்த்து (Decode செய்து) செலுத்துதல்
+        document.getElementById('preview-frame').src = atob(secretDoor);
+
+        // Wake Lock API
+        let wakeLock = null;
+        const requestWakeLock = async () => {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    document.addEventListener('visibilitychange', async () => {
+                        if (wakeLock !== null && document.visibilityState === 'visible') {
+                            wakeLock = await navigator.wakeLock.request('screen');
+                        }
+                    });
+                }
+            } catch (err) {}
+        };
+        window.addEventListener('load', requestWakeLock);
+    </script>
+</body>
+</html>

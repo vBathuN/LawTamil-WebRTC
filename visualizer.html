@@ -139,7 +139,7 @@
                 let val = dataArray[dIdx] || 0;
                 
                 // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
-                val = Math.max(0, val - 32); 
+                val = Math.max(0, val - 52); 
                 
                 bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 25)})`;
                 totalVolume += val; 

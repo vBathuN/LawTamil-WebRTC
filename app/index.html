@@ -1,114 +1,215 @@
 <html lang='en'>
-	<head>
-		
-		<style>
-			html {
-				background-color: #0000;
-				transition: opacity .1s linear;
-			}
-		</style>
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-		<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-		<meta content="utf-8" http-equiv="encoding" />
-		
-		
-		<title>RTCS.Live</title>
-		<meta id="metaTitle" name="title" content="RTCS.Live" />
-		<meta name="description" content="Bring live video from your smartphone, computer, or friends directly into your Studio." />
-		<meta name="author" content="Bathu" />
-		<!-- Open Graph / Facebook -->
-		<meta property="og:image:width" content="1200" />
-		<meta property="og:image:height" content="630" />
-		<!-- Twitter -->
-		<meta name="msapplication-TileColor" content="#da532c" />
-		<meta name="theme-color" content="#0f131d" />
-		<link rel="stylesheet" href="https://webrtc.lawtamil.in/webview.css?ver=375" />
-		<style id="lightbox-animations" type="text/css"></style>
-		
-		
-		<!-- <link rel="manifest" href="manifest.json" /> -->
-			<!-- ios support 
-			<link rel="apple-touch-icon" href="images/icons/icon-72x72.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-96x96.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-128x128.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-144x144.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-152x152.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-192x192.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-384x384.png" />
-			<link rel="apple-touch-icon" href="images/icons/icon-512x512.png" />
-			<meta name="apple-mobile-web-app-status-bar" content="#db4938" />
-		-->
-	</head>
-	<body id="main" class="main darktheme" onload="main()">
-<style>
-.header {
-  padding: 10px 80px;
-}
+<head>
+    <style>
+        html {
+            background-color: #0000;
+            transition: opacity .1s linear;
+        }
+        .header { padding: 10px 80px; }
+        .header-right { float: right; margin-top: -55px; }
+        @media screen and (max-width: 500px) {
+            .header a { float: none; display: block; text-align: left; }
+            .header-right { float: none; }
+        }
 
-.header-right {
-  float: right;
-  margin-top: -55px;
-}
+        /* === LAWTAMIL APP UI (MOBILE ONLY - 100% NATIVE SVG) === */
+        .lawtamil-app-ui { display: none; } 
 
-@media screen and (max-width: 500px) {
-  .header a {
-    float: none;
-    display: block;
-    text-align: left;
-  }
-  
-  .header-right {
-    float: none;
-  }
-}
-</style>
-		
-		<div id="mainmenu" class="row" style="opacity: 1;">
-			
-			<div id="container-8" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&push=&miconly&as&hh&ee&label=&mobile&hidetranslate';">
-				<h2><span data-translate="add-your-microphone">Mic Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-microphone"></i>
-			</div>
-			
-			<div id="container-3" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&push=&wc&as&hh&ee&effect&label=&mobile&hidetranslate';">
-				<h2><span data-translate="voice-comms-app">Camera Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las broadcast-tower"></i>
-			</div>
+        @media (max-width: 768px) {
+            .lawtamil-app-ui { display: block; }
+            
+            /* WebRTC கன்டென்ட் மெனுக்களுக்கு அடியில் சிக்காமல் இருக்க */
+            body { padding-top: 50px !important; padding-bottom: 70px !important; }
 
-			<div id="container-3" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&bc&push=&wc&as&ee&hh&effect&mobile&hidetranslate&consent&controlobs&remote';">
-				<h2><span data-translate="voice-comms-app">Broadcast Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las broadcast-tower"></i>
-			</div>
-			
-			<div id="container-5" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https:/webrtc.lawtamil.in/?fileshare&room=JurisprudenceTamil&push=&mobile';">
-				<h2><span data-translate="share-local-video-file">Media Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-file"></i>
-			</div>
-			
-			<div id="container-6" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?website&room=JurisprudenceTamil&push=';">
-				<h2><span data-translate="share-website-iframe">URL Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-broadcast-tower"></i>
-			</div>
+            /* === VARIABLES === */
+            :root {
+                --brand-color: #0275D8; --bg-color: #fafafa; --bar-bg: #ffffff;
+                --text-color: #56688a; --menu-bg: #f0f0f0; --indicator-bg: #e6f2ff;
+            }
+            .dark-mode, [data-theme="dark"], .darktheme {
+                --bg-color: #121212; --bar-bg: #1e1e1e; --text-color: #e0e0e0;
+                --menu-bg: #2d2d2d; --indicator-bg: #1a3a5a;
+            }
 
-			<div id="container-10" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&audiodevice=0&videodevice=0&chatbutton&cleanoutput&label&as&ee&mobile';">
-				<h2><span data-translate="voice-comms-app">Chat Live</span></h2>
-				<i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-comments"></i>
-		    </div>
-			
-			</br></br>
-			<img class="logo" src="https://host.rtbs.in/rtcs/rtcslive.png">	
-			</br>
-			<p><b></b>The Real Time Broadcasting Technology</p>
-			</br></br>
-			
-			<a href="https://www.rtbs.in/privacy" aria-hidden="true">Privacy Policy</a>  |  <a href="https://www.rtbs.in/disclaimer" aria-hidden="true">Disclaimer</a>  |  <a href="https://contact.rtbs.in" aria-hidden="true">Contact Us</a>
-			</br></br>
-			
-			<div id="credit" class="credit" aria-hidden="true">Version - 3.0.2 &#169; 
-			<a href="https://www.rtbs.in">RTBS</a> &nbsp; Developed by <i class="fas fa-heart" style="color: red;"></i> <a href="https://www.rtbs.in/developer">Eakanthan</a>
-			</div> 
-			</div>
-		</div>
-		
+            /* TOP BAR */
+            .app-top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 50px; z-index: 99999; background: var(--bar-bg); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+            .app-menu-item { height: 100%; overflow-x: auto; white-space: nowrap; display: flex; align-items: center; padding: 0 40px; scrollbar-width: none; }
+            .app-menu-item::-webkit-scrollbar { display: none; }
+            .app-menu-item a { display: inline-block; padding: 6px 16px; margin: 0 4px; color: var(--text-color); text-decoration: none; font-size: 14px; font-weight: 500; border-radius: 20px; background: var(--menu-bg); transition: 0.3s; }
+            .app-menu-item a.active { color: #ffffff; background: var(--brand-color); }
+            .app-top-bar .pointer { height: 50px; width: 40px; display: flex; align-items: center; justify-content: center; position: absolute; top: 0; background: var(--bar-bg); z-index: 10; font-weight: bold; color: var(--text-color); cursor: pointer; }
+            .left-pointer { left: 0; box-shadow: 5px 0 10px -5px rgba(0,0,0,0.1); }
+            .right-pointer { right: 0; box-shadow: -5px 0 10px -5px rgba(0,0,0,0.1); }
+
+            /* BOTTOM BAR */
+            .app-bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; height: 56px; z-index: 99999; background: var(--bar-bg); filter: drop-shadow(0px -2px 6px rgba(0, 0, 0, 0.05)); display: flex; justify-content: center; }
+            .app-bottom-list { flex-basis: 100%; max-width: 500px; display: flex; position: relative; list-style: none; padding: 0; margin: 0; }
+            .app-indicator { width: 20%; position: absolute; display: flex; justify-content: center; transform: translate(0, -0.5rem); pointer-events: none; transition: transform 0.3s cubic-bezier(0.645, 0.045, 0.355, 1); z-index: 1; }
+            .app-indicator::before { content: ""; display: block; width: 2.5rem; height: 2.5rem; background: var(--indicator-bg); border-radius: 1.5rem; border: 4px solid var(--bar-bg); }
+            
+            .app-link { flex: 1; font-size: 11px; font-weight: 500; color: var(--text-color); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2; text-decoration: none; }
+            .app-link.selected { color: var(--brand-color); }
+            
+            /* SVG ICON SETTINGS */
+            .app-link svg { width: 24px; height: 24px; transition: transform 0.3s; fill: currentColor; margin-bottom: 2px; }
+            .app-link.selected svg { transform: translateY(-4px); }
+        }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta content="utf-8" http-equiv="encoding" />
+    
+    <title>RTCS.Live</title>
+    <meta id="metaTitle" name="title" content="RTCS.Live" />
+    <meta name="description" content="Bring live video from your smartphone, computer, or friends directly into your Studio." />
+    <meta name="author" content="Bathu" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="theme-color" content="#0f131d" />
+    <link rel="stylesheet" href="https://webrtc.lawtamil.in/webview.css?ver=375" />
+    <style id="lightbox-animations" type="text/css"></style>
+</head>
+
+<body id="main" class="main darktheme" onload="if(typeof main === 'function') main()">
+    
+    <div id="mainmenu" class="row" style="opacity: 1;">
+        
+        <div id="container-8" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&push=&miconly&as&hh&ee&label=&mobile&hidetranslate';">
+            <h2><span data-translate="add-your-microphone">Mic Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-microphone"></i>
+        </div>
+        
+        <div id="container-3" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&push=&wc&as&hh&ee&effect&label=&mobile&hidetranslate';">
+            <h2><span data-translate="voice-comms-app">Camera Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las broadcast-tower"></i>
+        </div>
+
+        <div id="container-3" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&bc&push=&wc&as&ee&hh&effect&mobile&hidetranslate&consent&controlobs&remote';">
+            <h2><span data-translate="voice-comms-app">Broadcast Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las broadcast-tower"></i>
+        </div>
+        
+        <div id="container-5" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https:/webrtc.lawtamil.in/?fileshare&room=JurisprudenceTamil&push=&mobile';">
+            <h2><span data-translate="share-local-video-file">Media Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-file"></i>
+        </div>
+        
+        <div id="container-6" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?website&room=JurisprudenceTamil&push=';">
+            <h2><span data-translate="share-website-iframe">URL Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-broadcast-tower"></i>
+        </div>
+
+        <div id="container-10" class="column columnfade pointer rounded card" style="overflow: hidden;" onclick="window.location = 'https://webrtc.lawtamil.in/?room=JurisprudenceTamil&audiodevice=0&videodevice=0&chatbutton&cleanoutput&label&as&ee&mobile';">
+            <h2><span data-translate="voice-comms-app">Chat Live</span></h2>
+            <i style="margin-top:30px;font-size:600%;overflow:hidden;" class="largeDarkIcon las la-comments"></i>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 30px;">
+            <img class="logo" src="https://host.rtbs.in/rtcs/rtcslive.png" style="max-width: 180px;">    
+            <p style="font-size: 13px; opacity: 0.7; margin-top: 10px;">The Real Time Broadcasting Technology<br>© RTBS</p>
+        </div>
+    </div>
+
+    <div class="lawtamil-app-ui">
+        <div class="app-top-bar">
+            <span class="pointer left-pointer" id="lt-left">❮</span>
+            <div class="app-menu-item" id="lt-top-slider">
+                <a href="https://ai.lawtamil.in/">சட்டவியல் AI</a>
+                <a href="https://www.lawtamil.in/search/label/கட்டுரைகள்">கட்டுரைகள்</a>
+                <a href="https://www.lawtamil.in/search/label/காணொளிகள்">காணொளிகள்</a>
+                <a href="https://www.lawtamil.in/search/label/மாதிரி%20மனுக்கள்">மாதிரி மனுக்கள்</a>
+                <a href="https://www.lawtamil.in/search/label/உரிமையியல்">உரிமையியல்</a>
+                <a href="https://www.lawtamil.in/search/label/குற்றவியல்">குற்றவியல்</a>
+                <a href="https://www.lawtamil.in/search/label/அரசியலமைப்பு">அரசியலமைப்பு</a>
+                <a href="https://www.lawtamil.in/p/legal-forms-for-advocates.html">படிவங்கள்</a>
+                <a href="https://lawtamil.in/faq">கேள்வி-பதில்</a>
+            </div> 
+            <span class="pointer right-pointer" id="lt-right">❯</span>
+        </div>
+
+        <nav class="app-bottom-bar" id="lt-bottom-bar">
+            <ul class="app-bottom-list" id="lt-bottom-list">
+                <div class="app-indicator" id="lt-indicator"></div>
+                
+                <a href="https://www.lawtamil.in/" class="app-link">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    Home
+                </a>
+                
+                <a href="https://story.lawtamil.in/" class="app-link">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                    Story
+                </a>
+                
+                <a href="https://www.lawtamil.in/p/tools-index.html" class="app-link">
+                    <svg viewBox="0 0 24 24"><path d="M21.67 18.17l-5.3-5.3h-.99l-2.54 2.54v.99l5.3 5.3c.39.39 1.02.39 1.41 0l2.12-2.12c.39-.38.39-1.02 0-1.41zM17.34 10.19l1.41-1.41 2.12 2.12c.39.39 1.02.39 1.41 0l2.12-2.12c.39-.39.39-1.02 0-1.41L18.9 1.88c-.39-.39-1.02-.39-1.41 0l-2.12 2.12c-.39.39-.39 1.02 0 1.41l2.12 2.12-1.41 1.41-6.36-6.36c-1.56-1.56-4.09-1.56-5.65 0L1.88 5.41c-.39.39-.39 1.02 0 1.41l5.65 5.65c1.56 1.56 4.09 1.56 5.65 0l4.16-4.16zM4.71 14.83l-2.83 2.83c-.39.39-.39 1.02 0 1.41l2.12 2.12c.39.39 1.02.39 1.41 0l2.83-2.83-3.53-3.53z"/></svg>
+                    Tools
+                </a>
+                
+                <a href="https://www.lawtamil.in/search/label/books" class="app-link">
+                    <svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.09C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
+                    Books
+                </a>
+                
+                <a href="https://webrtc.lawtamil.in/app" class="app-link">
+                    <svg viewBox="0 0 24 24"><path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .89-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.11-.9-2-2-2zm0 14H3V8h18v12zM9 10v8l7-4z"/></svg>
+                    WebRTC
+                </a>
+            </ul>
+        </nav>
+    </div>
+
+    <script>
+    //<![CDATA[
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.innerWidth > 768) return; 
+
+        const currentUrl = window.location.href;
+        
+        // --- 1. TOP MENU LOGIC ---
+        const topLinks = document.querySelectorAll('#lt-top-slider a');
+        topLinks.forEach(link => {
+            if (currentUrl.includes(link.getAttribute('href'))) {
+                link.classList.add('active');
+                setTimeout(() => { link.scrollIntoView({ inline: 'center', behavior: 'smooth' }); }, 500);
+            }
+        });
+
+        const slider = document.getElementById('lt-top-slider');
+        document.getElementById('lt-left').onclick = () => slider.scrollBy({ left: -150, behavior: 'smooth' });
+        document.getElementById('lt-right').onclick = () => slider.scrollBy({ left: 150, behavior: 'smooth' });
+
+        // --- 2. BOTTOM MENU LOGIC ---
+        const bottomLinks = document.querySelectorAll('#lt-bottom-list .app-link');
+        const indicator = document.getElementById('lt-indicator');
+        let activeIndex = 4; // WebRTC பக்கம் என்பதால் Default ஆக 4-வது பட்டன் (WebRTC) Highlight ஆகி இருக்கும்.
+
+        bottomLinks.forEach((link, index) => {
+            const linkHref = link.getAttribute('href');
+            if (currentUrl === linkHref || currentUrl.startsWith(linkHref + '?') || currentUrl.startsWith(linkHref + '/')) {
+                activeIndex = index;
+            }
+        });
+
+        bottomLinks.forEach(l => l.classList.remove('selected'));
+        if(bottomLinks[activeIndex]) {
+            bottomLinks[activeIndex].classList.add('selected');
+            indicator.style.transform = `translate(${activeIndex * 100}%, -0.5rem)`;
+        }
+
+        // --- 3. KEYBOARD LOGIC (Bottom Bar Hide) ---
+        const bottomBar = document.getElementById('lt-bottom-bar');
+        const initialHeight = window.innerHeight;
+        window.addEventListener('resize', () => {
+            if (window.innerHeight < initialHeight - 100) {
+                bottomBar.style.display = 'none'; 
+            } else {
+                bottomBar.style.display = 'flex'; 
+            }
+        });
+    });
+    //]]>
+    </script>
 </body>
 </html>

@@ -74,13 +74,12 @@
 <body>
 	
 	<div id="interm" class="output">
-		<font style='font-size:30%;line-height: 1.4em;'>
-			<span>உங்களின் முதல் வரி இங்கே...</span><br /><br />
-			<span>உங்களின் இரண்டாவது வரி இங்கே...</span>
-		</font>
-	</div>
-	
-	<a id="shareLink" style="display:none;"></a>
+	<font style='font-size:60%;line-height: 1.4em;' ><span ></span></font><font style='font-size:30%;line-height: 1.4em;' ><span ><br /><br />
+	உங்களின் முதல் வரி இங்கே... <a id="shareLink" href="overlay.html" target='_blank' style="display:none;"></a>
+	<br /><br />
+	உங்களின் இரண்டாவது வரி இங்கே...
+	<br /><br />
+	<br /></span></font></div>
 	
 	<div id="output" class="output"></div>
 	
@@ -169,7 +168,7 @@
 				} else {
 					href.searchParams.set(para[0].toLowerCase(), para[1]);
 				}
-				console.log(href.toString());
+				log(href.toString());
 				window.history.pushState({path:href.toString()},'',href.toString());
 			}
 		}
@@ -227,6 +226,7 @@
 	
 	if (urlParams.has("label")){
 		label = urlParams.get("label");
+		//label = sanitize(label);
 	} 
 	
 	var myLang = "en-US";
@@ -299,6 +299,7 @@
 	socket.onopen = function (){
 		socket.send(JSON.stringify({"join":roomID}));
 	}
+	
 	
 	
 	var ends = 0;
@@ -443,5 +444,5 @@
 		}
 	}
 	</script>
-</body>
+	</body>
 </html>

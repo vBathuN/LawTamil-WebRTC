@@ -2,34 +2,42 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Master Visualizer Pro</title>
+    <title>Vaagai Live WebRTC Visualizer</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
-            height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; 
         }
         
         .anim-section { 
             width: 100%; height: 100%; 
-            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+            position: relative; display: flex; justify-content: center; align-items: center; box-sizing: border-box;
         }
         
         #justice-glow {
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
-            background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
-            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
+            position: absolute; 
+            top: 50%; left: 50%; 
+            width: 60px; height: 110px;
+            border-radius: 0 100% 0 100%;
+            transform: translate(-50%, -50%) rotate(15deg);
+            background: radial-gradient(ellipse, rgba(255, 215, 0, 0.9) 0%, rgba(255, 172, 51, 0.5) 60%, transparent 80%);
+            filter: blur(8px); 
+            z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.03s ease-out; 
         }
         
         #visualizer { 
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 160px; height: 160px; z-index: 6; pointer-events: none; 
             opacity: 0; 
             transition: opacity 0.4s ease-in-out; 
         }
         
         .v-bar {
-            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ffca70; 
-            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
-            box-shadow: 0px 0px 12px rgba(255, 202, 112, 1); 
+            position: absolute; bottom: 50%; left: 50%; width: 4px; height: 15px; 
+            background: linear-gradient(0deg, #fff 0%, #ffc16f 100%); 
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%); 
+            margin-left: -2px; transform-origin: bottom center; 
+            filter: drop-shadow(0 0 5px rgba(255, 172, 51, 0.8));
             will-change: transform;
         }
 
@@ -51,7 +59,7 @@
         
         document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
-        const ARC_RADIUS = 30; 
+        const ARC_RADIUS = 20; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
         let lastActiveTime = Date.now(); 
@@ -59,7 +67,7 @@
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
         
-        const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
+        const numBars = 60; const startAngle = -172.5; const endAngle = 172.5; const step = (endAngle - startAngle) / (numBars - 1);
         
         for (let i = 0; i < numBars; i++) {
             const b = document.createElement('div'); b.className = 'v-bar';
@@ -138,7 +146,6 @@
                 
                 let val = dataArray[dIdx] || 0;
                 
-                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
                 val = Math.max(0, val - 82); 
                 
                 bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
@@ -147,7 +154,6 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
             if (avgVol > 16) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>LawTamil Master Visualizer Pro</title>
+    <style>
+        body { 
+            background-color: transparent !important; margin: 0; overflow: hidden; 
+            height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
+        }
+        
+        .anim-section { 
+            width: 100%; height: 100%; 
+            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+        }
+        
+        #justice-glow {
+            position: absolute; top: 39.3%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
+            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
+        }
+        
+        #visualizer { 
+            position: absolute; top: 39.3%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.4s ease-in-out; 
+        }
+        
+        .v-bar {
+            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ffca70; 
+            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
+            box-shadow: 0px 0px 12px rgba(255, 202, 112, 1); 
+            will-change: transform;
+        }
+
+        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    </style>
+</head>
+<body>
+
+    <div class="anim-section">
+        <div id="justice-glow"></div> 
+        <div id="visualizer"></div>
+    </div>
+    
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
+
+        const ARC_RADIUS = 30; 
+        let analyser, dataArray, vBars = []; 
+        let audioCtx; 
+        let lastActiveTime = Date.now(); 
+        
+        const vContainer = document.getElementById('visualizer'); 
+        const glowDiv = document.getElementById('justice-glow');
+        
+        const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
+        
+        for (let i = 0; i < numBars; i++) {
+            const b = document.createElement('div'); b.className = 'v-bar';
+            const angle = startAngle + (i * step); b.dataset.angle = angle;
+            b.style.transform = `rotate(${angle}deg) translateY(-${ARC_RADIUS}px) scaleY(1)`;
+            vContainer.appendChild(b); vBars.push(b);
+        }
+
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 128; 
+                analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const iframe = document.getElementById('vdo-engine');
+
+            setInterval(() => {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            
+                            pc.addEventListener('track', (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source.connect(analyser); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 10);
+
+            setInterval(() => {
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            }, 1000);
+
+            renderVisualizer();
+        }
+
+        const renderVisualizer = () => {
+            if (!analyser) return; 
+            requestAnimationFrame(renderVisualizer);
+            analyser.getByteFrequencyData(dataArray);
+            
+            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
+            
+            const activeVoiceBins = 16; 
+            const mappingRatio = activeVoiceBins / half; 
+            
+            vBars.forEach((bar, index) => {
+                let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
+                if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
+                
+                let val = dataArray[dIdx] || 0;
+                
+                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
+                val = Math.max(0, val - 82); 
+                
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
+                totalVolume += val; 
+            });
+            
+            const avgVol = totalVolume / vBars.length;
+
+            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
+            if (avgVol > 16) { 
+                lastActiveTime = Date.now(); 
+                vContainer.style.opacity = "1";
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
+            } else {
+                if (Date.now() - lastActiveTime > 2000) {
+                    vContainer.style.opacity = "0";
+                    if (glowDiv) glowDiv.style.opacity = "0";
+                }
+            }
+        };
+
+        window.addEventListener('load', bootVisualizer);
+    </script>
+</body>
+</html>

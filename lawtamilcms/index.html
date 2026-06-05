@@ -13,17 +13,17 @@
             height: 100vh;
             background-color: #0f172a;
             display: flex;
+            flex-direction: column; /* லோகோ மற்றும் டெக்ஸ்டை வரிசைப்படுத்த */
             justify-content: center;
             align-items: center;
             overflow: hidden;
         }
 
-        /* டெக்ஸ்ட் மற்றும் பட்டன்களை முழுமையாக மறைக்க */
         .output, button { 
             display: none !important; 
         }
 
-        /* லோகோ மற்றும் அனிமேஷன் வளையம் */
+        /* லோகோ பட்டன் (Clickable) */
         .mic-status-container {
             width: 180px;
             height: 180px;
@@ -34,18 +34,26 @@
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
+            cursor: pointer; /* கிளிக் செய்யும் உணர்வைத் தர */
         }
 
         .lawtamil-logo {
             width: 120px;
             height: auto;
             border-radius: 12px;
+            transition: all 0.3s ease;
         }
 
-        /* மைக் ஆன் ஆகும்போது ஒளிரும் அனிமேஷன் (Glowing Pulse) */
+        /* மைக் ஆன் அனிமேஷன் */
         .is-listening {
             animation: pulse-glow 1.5s infinite;
             background-color: #1e3a8a;
+        }
+
+        /* மைக் ஆஃப் ஆகும் போது மங்கலாக்க (Dim) */
+        .is-muted {
+            opacity: 0.4;
+            filter: grayscale(50%);
         }
 
         @keyframes pulse-glow {
@@ -53,13 +61,26 @@
             70% { box-shadow: 0 0 0 25px rgba(59, 130, 246, 0); }
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
+
+        /* ஸ்டேட்டஸ் டெக்ஸ்ட் */
+        #status-text {
+            margin-top: 30px;
+            font-family: sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #3b82f6;
+            transition: color 0.3s ease;
+        }
 	</style>
 </head>
 <body>
 	
-    <div id="mic-indicator" class="mic-status-container">
-        <img src="https://ul.lawtamil.in/logo.webp" alt="LawTamil Mic" class="lawtamil-logo">
+    <div id="mic-indicator" class="mic-status-container" onclick="toggleMic()">
+        <img src="https://ul.lawtamil.in/logo.webp" alt="LawTamil Mic" class="lawtamil-logo" id="logo-img">
     </div>
+
+    <div id="status-text">மைக் ஆன் (நிறுத்தத் தொடவும்)</div>
 
     <div style="display: none !important;">
         <a id="shareLink" href="#"></a>
@@ -193,19 +214,50 @@
 	socket.onclose = function (){ setTimeout(function(){window.location.reload(true);},100); };
 	socket.onopen = function (){ socket.send(JSON.stringify({"join":roomID})); }
 	
+	// On/Off கட்டுப்பாட்டிற்கான புதிய லாஜிக்
+	var isMicActive = true; 
+	var recognition = null; // உலகளாவிய மாறி (Global variable)
+
+	function toggleMic() {
+	    isMicActive = !isMicActive;
+	    var indicator = document.getElementById('mic-indicator');
+	    var logoImg = document.getElementById('logo-img');
+	    var statusText = document.getElementById('status-text');
+
+	    if (isMicActive) {
+	        // மைக் ஆன்
+	        logoImg.classList.remove('is-muted');
+	        statusText.innerText = "மைக் ஆன் (நிறுத்தத் தொடவும்)";
+	        statusText.style.color = "#3b82f6";
+	        setup();
+	    } else {
+	        // மைக் ஆஃப்
+	        logoImg.classList.add('is-muted');
+	        indicator.classList.remove('is-listening');
+	        statusText.innerText = "மைக் ஆஃப் (தொடங்கத் தொடவும்)";
+	        statusText.style.color = "#ef4444";
+	        if (recognition) {
+	            recognition.stop();
+	        }
+	    }
+	}
+
 	var ends = 0, final_transcript = '', interim_transcript = "", idle = null;
 	setup();
 	
 	function setup(){
+	    if (!isMicActive) return; // பயனர் ஆஃப் செய்திருந்தால் தொடங்காது
+
 		if ('webkitSpeechRecognition' in window){
-			var recognition = new webkitSpeechRecognition();
+			recognition = new webkitSpeechRecognition();
 			if (myLang) recognition.lang = myLang;
 			recognition.continuous = true;
 			recognition.interimResults = true;
 			
 			recognition.onstart = function(){
-				// UI Animation Starts Here
-				document.getElementById('mic-indicator').classList.add('is-listening');
+			    if (isMicActive) {
+				    document.getElementById('mic-indicator').classList.add('is-listening');
+				}
 				setTimeout(function(){ ends = 0; }, 2000);
 			};
 			
@@ -214,11 +266,14 @@
 			};
 			
 			recognition.onend = function(e){
-				// UI Animation Stops Here
 				document.getElementById('mic-indicator').classList.remove('is-listening');
 				if (event.type === "end") ends +=1;
-				if (ends > 3) alert("WARNING: Transcription service failed.");
-				setup();
+				if (ends > 3 && isMicActive) alert("WARNING: Transcription service failed.");
+				
+				// பயனர் மேனுவலாக ஆஃப் செய்யாத வரை, ஆட்டோ-ரீஸ்டார்ட் செய்யும்
+				if (isMicActive) {
+				    setup();
+				}
 			};
 			
 			recognition.onresult = function(event){

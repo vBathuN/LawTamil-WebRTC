@@ -12,80 +12,63 @@
 	<meta name="author" content="Steve Seguin" />
 	
 	<style>
-		@font-face {
-		  font-family: 'Cousine';
-		  src: url('fonts/Cousine-Bold.ttf') format('truetype');
-		}
-	
-		button {
-			max-width: 600px;
-		}
-		body {
-			margin:0;
-			padding:0 10px;
-			height:100%;
-			border: 0;
-			display: flex;
-			flex-direction: column-reverse;
-			position:absolute;
-			bottom:0;
-			overflow:hidden;
-		}
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        background-color: #0f172a; /* இருண்ட பின்னணி (Dark Theme) */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
 
-		.output {
-			margin:0;
-			background-color: #0000;
-			color: white;
-			font-family: Cousine, monospace;
-			font-size: 3.2em;
-			line-height: 1.1em;
-			letter-spacing: 0.0em;
-			
-			padding: 0em;
-			text-shadow: 0.05em 0.05em 0px rgba(0,0,0,1);
-		}
-		
-		.output span { 
-			background-color: black; 
-			padding: 8px 8px 0px 8px;
-			margin:0;
-		}
-		
-		a {
-			color:white;
-			font-size:1.2em;
-			text-transform: none;
-		}
-		
-		.github {
-			background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAd5JREFUOE+d1MurjlEUBvDfIZQZShEGmMhQiZGZlAlyK4eEAZHcyiVRyq1cUq5FwsD1MJGJiT/AzEzRcR8xMnGOW89pv9q9fScfe/J977o8e61nP2v16HzGYBWWYA4mlbBPeI5HuI9v7fSeDnircRqTh7msMX/ALtyr42rAEbiAzX8BaruTsx0/46gBL/0HWAMe0G01YNq8Xbz5PYuN2ISvCHc5oWEsruA69mJF8a0Mr6kwD/C64mw3zpSgCfjc6nE8vhRbAE+U/+8xI4DrcKNKOol9XfJ4CimgOb0BfIilxfIds/GyS8BZeIGRJf5BAN9gWjE8xcIuwZqwZ1hQPvoDOIBRxRCiN/wj4C30lpyBNmAmYNk/Aj7G4pIz2G75I6Y2Iu0CONwlZ2Ldcl+rqmjvWhdgCdmCi1Xs0KOsxc3C5WDhcw8uI9+dzugyVZFNw3/i1jTCfoVIJmo/VDiJeJ9gPX4U1CRHs4swrnXTO8xsZjlAd9GP+WU1zcPxckGde7WMZbvy5eirl8N5bMUxHMSvYdo9igMt3znsiK29vuLI1ojYU+2dwmWdnwv3V4YskozfUAGdFmzaz4KdgiM43KomNGTW32JnGd0/IZ0A48wrhpPMdFZ+feZievjqpILf7lRg3csIRqAAAAAASUVORK5CYII=");
-			background-color: #FFF !important;
-			width: 4px;
-			height: 12px;
-			background-repeat: no-repeat;
-			display: inline-block;
-			top: 2px;
-			position: relative;
-			left: 2px;
-			filter: invert(100%);
-			-webkit-filter: invert(100%);
-		}
-	</style>
+    /* டெக்ஸ்ட் மற்றும் பட்டன்களை முழுமையாக மறைக்க */
+    .output, button { 
+        display: none !important; 
+    }
+
+    /* லோகோ மற்றும் அனிமேஷன் வளையம் */
+    .mic-status-container {
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background-color: #1e293b;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    }
+
+    .lawtamil-logo {
+        width: 120px;
+        height: auto;
+        border-radius: 12px;
+    }
+
+    /* மைக் ஆன் ஆகும்போது ஒளிரும் அனிமேஷன் (Glowing Pulse) */
+    .is-listening {
+        animation: pulse-glow 1.5s infinite;
+        background-color: #1e3a8a; /* லேசான நீல நிறம் */
+    }
+
+    @keyframes pulse-glow {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { box-shadow: 0 0 0 25px rgba(59, 130, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
+</style>
 </head>
 <body>
-	
-	<div id="interm" class="output">
-	<font style='font-size:60%;line-height: 1.4em;' ><span ></span></font><font style='font-size:30%;line-height: 1.4em;' ><span ><br /><br />
-	The output of this app is mirrored here: <a id="shareLink" href="overlay.html" target='_blank'>*ERROR GENERATING LINK*</a>. Add it to OBS as a browser source overlay if wishing to use it for a live stream.
-	<br /><br />
-	If you wish to translate to another language, you can try the <a href='./translate'>experimental translation version here</a> or add &translate={bg,cs,nl,en,et,de,fr,is,it,nb,nn,fa,pl,pt,ru,es,uk} to the overlay page.
-	<br /><br />
-	Update URL to change the <a href="https://cloud.google.com/speech-to-text/docs/languages" target="_blank">Language; Codes here</a><br /><br />
-	<br /></div>
-	
-	<div id="output" class="output"></div>
-	
-	<script>
+    <div id="mic-indicator" class="mic-status-container">
+        <img src="https://ul.lawtamil.in/logo.webp" alt="LawTamil Mic" class="lawtamil-logo">
+    </div>
+
+    <div id="interm" class="output"></div>
+    <div id="output" class="output"></div>
+
+    <script>
 	
 	function download(filename, text) {
 	  var element = document.createElement('a');
@@ -324,6 +307,7 @@
 			
 			recognition.onstart = function(){
 				console.log("started transcription");
+				document.getElementById('mic-indicator').classList.add('is-listening');
 				setTimeout(function(){
 					ends = 0;
 				}, 2000);
@@ -335,6 +319,7 @@
 			recognition.onend = function(e){
 				console.log(e);
 				console.log("Stopped transcription");
+				document.getElementById('mic-indicator').classList.remove('is-listening');
 				if (event.type === "end"){
 					ends +=1;
 				}

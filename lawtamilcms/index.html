@@ -13,17 +13,18 @@
             height: 100vh;
             background-color: #0f172a;
             display: flex;
-            flex-direction: column; /* லோகோ மற்றும் டெக்ஸ்டை வரிசைப்படுத்த */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            font-family: sans-serif;
         }
 
         .output, button { 
             display: none !important; 
         }
 
-        /* லோகோ பட்டன் (Clickable) */
+        /* லோகோ பகுதி */
         .mic-status-container {
             width: 180px;
             height: 180px;
@@ -34,7 +35,7 @@
             align-items: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
-            cursor: pointer; /* கிளிக் செய்யும் உணர்வைத் தர */
+            margin-bottom: 30px;
         }
 
         .lawtamil-logo {
@@ -50,7 +51,7 @@
             background-color: #1e3a8a;
         }
 
-        /* மைக் ஆஃப் ஆகும் போது மங்கலாக்க (Dim) */
+        /* மைக் ஆஃப் ஆகும் போது லோகோவை மங்கலாக்க */
         .is-muted {
             opacity: 0.4;
             filter: grayscale(50%);
@@ -62,13 +63,60 @@
             100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
         }
 
+        /* --- புதிய ஸ்விட்ச் (Toggle) வடிவமைப்பு --- */
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ef4444; /* ஆஃப் நிறம் - சிவப்பு */
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #3b82f6; /* ஆன் நிறம் - நீலம் */
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
         /* ஸ்டேட்டஸ் டெக்ஸ்ட் */
         #status-text {
-            margin-top: 30px;
-            font-family: sans-serif;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            letter-spacing: 1px;
             color: #3b82f6;
             transition: color 0.3s ease;
         }
@@ -76,11 +124,17 @@
 </head>
 <body>
 	
-    <div id="mic-indicator" class="mic-status-container" onclick="toggleMic()">
+    <div id="mic-indicator" class="mic-status-container is-listening">
         <img src="https://ul.lawtamil.in/logo.webp" alt="LawTamil Mic" class="lawtamil-logo" id="logo-img">
     </div>
 
-    <div id="status-text">மைக் ஆன் (நிறுத்தத் தொடவும்)</div>
+    <div class="switch-container">
+        <label class="switch">
+            <input type="checkbox" id="micToggleSwitch" checked onchange="toggleMic()">
+            <span class="slider"></span>
+        </label>
+        <div id="status-text">மைக் ஆன்</div>
+    </div>
 
     <div style="display: none !important;">
         <a id="shareLink" href="#"></a>
@@ -89,41 +143,6 @@
     </div>
 	
 	<script>
-	function download(filename, text) {
-	  var element = document.createElement('a');
-	  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-	  element.setAttribute('download', filename);
-	  element.style.display = 'none';
-	  document.body.appendChild(element);
-	  element.click();
-	  document.body.removeChild(element);
-	}
-	
-	function getOldStorage() {
-		var values = [], keys = Object.keys(localStorage), i = keys.length;
-		while ( i-- ) { values.push( localStorage.getItem(keys[i]) ); }
-		return values;
-	}
-	
-	function removeStorage(cname){
-		localStorage.removeItem(cname);
-	}
-
-	function setStorage(cname, cvalue, exdays=999){ 
-		var now = new Date();
-		var item = { value: cvalue, expiry: now.getTime() + (exdays * 24 * 60 * 60 * 1000) };
-		try{ localStorage.setItem(cname, JSON.stringify(item)); }catch(e){console.error(e);}
-	}
-
-	function getStorage(cname) {
-		try { var itemStr = localStorage.getItem(cname); } catch(e){ return; }
-		if (!itemStr) return "";
-		var item = JSON.parse(itemStr);
-		var now = new Date();
-		if (now.getTime() > item.expiry) { localStorage.removeItem(cname); return ""; }
-		return item.value;
-	}
-	
 	function updateURL(param, force=false) {
 		var para = param.split('='); 
 		if (!(urlParams.has(para[0].toLowerCase()))){
@@ -131,13 +150,6 @@
 				var arr = window.location.href.split('?');
 				var newurl = (arr.length > 1 && arr[1] !== '') ? window.location.href + '&' +param : window.location.href + '?' +param;
 				window.history.pushState({path:newurl},'',newurl);
-			}
-		} else if (force){
-			if (history.pushState){
-				var href = new URL(window.location.href);
-				if (para.length==1) href.searchParams.set(para[0].toLowerCase(), "");
-				else href.searchParams.set(para[0].toLowerCase(), para[1]);
-				window.history.pushState({path:href.toString()},'',href.toString());
 			}
 		}
 	}
@@ -174,52 +186,25 @@
 	else { roomID = generateStreamID(); updateURL("room="+roomID); }
 	
 	var label = urlParams.has("label") ? urlParams.get("label") : false;
-	var myLang = urlParams.has("lang") ? urlParams.get("lang") : "en-US";
+	var myLang = urlParams.has("lang") ? urlParams.get("lang") : "ta-IN"; // Defaulting to Tamil
 	if (!urlParams.has("lang")) updateURL("lang="+myLang);
 	
-	var srtFile = "", timestamp_start = null, timestamp_stop = null, timestamp_intern = null, logcounter=0, counter=0;
 	var url = document.URL.substr(0,document.URL.lastIndexOf('/'));
-	
-	var oldSaves = Object.keys(localStorage);
-	if (oldSaves.length){
-		for (var i =0;i<oldSaves.length;i++){
-			if (oldSaves.length - 1== i){
-				if (oldSaves[i].startsWith("transcription_"+roomID+"_")){
-					try {
-						var button = document.createElement("button");
-						button.onclick = function(){
-							var srtFile = getStorage(this.dataset.key);
-							download(this.dataset.key+".srt", srtFile);
-							localStorage.removeItem(this.dataset.key);
-						};
-						button.dataset.key = oldSaves[i];
-						button.innerHTML = "Download previous saved transcription";
-						document.body.prepend(button);
-					}catch(e){}
-				}
-			} else if (oldSaves[i].startsWith("transcription_"+roomID+"_")) localStorage.removeItem(i);
-		}
-	}
-	
 	document.getElementById("shareLink").href= url+"/overlay?room="+roomID;
 	
-	var apiKey = false;
 	var socket = new WebSocket("wss://api.caption.ninja:443");
-	if (urlParams.has("pie")){
-		apiKey = urlParams.get("pie") || "0khtlN7R7ISHZzFiyfK49Q9zAm93Wti5xpbW9qjg";
-		socket = new WebSocket("wss://free3.piesocket.com/v3/"+roomID+"?api_key="+apiKey);
-		document.getElementById("shareLink").href= url+"/overlay?room="+roomID+"&pie="+apiKey;
-	} 
-		
 	socket.onclose = function (){ setTimeout(function(){window.location.reload(true);},100); };
 	socket.onopen = function (){ socket.send(JSON.stringify({"join":roomID})); }
 	
-	// On/Off கட்டுப்பாட்டிற்கான புதிய லாஜிக்
+	// ஸ்விட்ச் லாஜிக்
 	var isMicActive = true; 
-	var recognition = null; // உலகளாவிய மாறி (Global variable)
+	var recognition = null; 
+    var counter = 0;
 
 	function toggleMic() {
-	    isMicActive = !isMicActive;
+	    var toggleCheckbox = document.getElementById('micToggleSwitch');
+	    isMicActive = toggleCheckbox.checked;
+	    
 	    var indicator = document.getElementById('mic-indicator');
 	    var logoImg = document.getElementById('logo-img');
 	    var statusText = document.getElementById('status-text');
@@ -227,26 +212,26 @@
 	    if (isMicActive) {
 	        // மைக் ஆன்
 	        logoImg.classList.remove('is-muted');
-	        statusText.innerText = "மைக் ஆன் (நிறுத்தத் தொடவும்)";
-	        statusText.style.color = "#3b82f6";
+	        statusText.innerText = "மைக் ஆன்";
+	        statusText.style.color = "#3b82f6"; // Blue
 	        setup();
 	    } else {
 	        // மைக் ஆஃப்
 	        logoImg.classList.add('is-muted');
 	        indicator.classList.remove('is-listening');
-	        statusText.innerText = "மைக் ஆஃப் (தொடங்கத் தொடவும்)";
-	        statusText.style.color = "#ef4444";
+	        statusText.innerText = "மைக் ஆஃப்";
+	        statusText.style.color = "#ef4444"; // Red
 	        if (recognition) {
 	            recognition.stop();
 	        }
 	    }
 	}
 
-	var ends = 0, final_transcript = '', interim_transcript = "", idle = null;
+	var ends = 0, final_transcript = '', interim_transcript = "";
 	setup();
 	
 	function setup(){
-	    if (!isMicActive) return; // பயனர் ஆஃப் செய்திருந்தால் தொடங்காது
+	    if (!isMicActive) return; 
 
 		if ('webkitSpeechRecognition' in window){
 			recognition = new webkitSpeechRecognition();
@@ -261,16 +246,15 @@
 				setTimeout(function(){ ends = 0; }, 2000);
 			};
 			
-			recognition.onerror = function(event){ 
-			    console.log(event); 
+			recognition.onerror = function(e){ 
+			    console.log("Speech Error: ", e); 
 			};
 			
 			recognition.onend = function(e){
 				document.getElementById('mic-indicator').classList.remove('is-listening');
-				if (event.type === "end") ends +=1;
-				if (ends > 3 && isMicActive) alert("WARNING: Transcription service failed.");
+				if (e.type === "end") ends +=1; // WebView Error Fixed here
 				
-				// பயனர் மேனுவலாக ஆஃப் செய்யாத வரை, ஆட்டோ-ரீஸ்டார்ட் செய்யும்
+				// ஆட்டோ-ரீஸ்டார்ட் செய்யும் (பயனர் ஸ்விட்சை ஆஃப் செய்யாத வரை)
 				if (isMicActive) {
 				    setup();
 				}
@@ -287,16 +271,12 @@
 				}
 				
 				if (final_transcript){
-					document.getElementById("output").innerHTML+="<span id='final_"+counter+"'>"+final_transcript+"</span><br />";
-					document.getElementById("interm").innerHTML="";
-					
 					try {
 						if (label) socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "label":label, "ln": myLang}));
 						else socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "ln": myLang}));
 						final_transcript=""; interim_transcript="";
 					} catch(e){}
 				} else {
-					document.getElementById("interm").innerHTML="<span>"+interim_transcript+"</span><br />";
 					try {
 						if (label) socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "label":label, "ln": myLang}));
 						else socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "ln": myLang}));

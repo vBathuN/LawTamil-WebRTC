@@ -1,66 +1,62 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
 	<meta content="utf-8" http-equiv="encoding" />
-	<meta name="copyright" content="&copy; 2020 Steve Seguin" />
-	<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
-	<!-- Primary Meta Tags -->
-	<title>CAPTION.rtcs.live</title>
-	<meta name="title" content="CAPTION.rtcs.live" />
-	<meta name="description" content="This is a captioning tool for OBS. Speech-to-text is done using Machine Learning" />
-	<meta name="author" content="Steve Seguin" />
+	<title>LawTamil Voice Studio</title>
 	
 	<style>
-    body {
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-        background-color: #0f172a; /* இருண்ட பின்னணி (Dark Theme) */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-    }
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
 
-    /* டெக்ஸ்ட் மற்றும் பட்டன்களை முழுமையாக மறைக்க */
-    .output, button { 
-        display: none !important; 
-    }
+        /* டெக்ஸ்ட் மற்றும் பட்டன்களை முழுமையாக மறைக்க */
+        .output, button { 
+            display: none !important; 
+        }
 
-    /* லோகோ மற்றும் அனிமேஷன் வளையம் */
-    .mic-status-container {
-        width: 180px;
-        height: 180px;
-        border-radius: 50%;
-        background-color: #1e293b;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        transition: all 0.3s ease;
-    }
+        /* லோகோ மற்றும் அனிமேஷன் வளையம் */
+        .mic-status-container {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background-color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
 
-    .lawtamil-logo {
-        width: 120px;
-        height: auto;
-        border-radius: 12px;
-    }
+        .lawtamil-logo {
+            width: 120px;
+            height: auto;
+            border-radius: 12px;
+        }
 
-    /* மைக் ஆன் ஆகும்போது ஒளிரும் அனிமேஷன் (Glowing Pulse) */
-    .is-listening {
-        animation: pulse-glow 1.5s infinite;
-        background-color: #1e3a8a; /* லேசான நீல நிறம் */
-    }
+        /* மைக் ஆன் ஆகும்போது ஒளிரும் அனிமேஷன் (Glowing Pulse) */
+        .is-listening {
+            animation: pulse-glow 1.5s infinite;
+            background-color: #1e3a8a;
+        }
 
-    @keyframes pulse-glow {
-        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-        70% { box-shadow: 0 0 0 25px rgba(59, 130, 246, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-    }
-</style>
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 25px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+	</style>
 </head>
 <body>
+	
     <div id="mic-indicator" class="mic-status-container">
         <img src="https://ul.lawtamil.in/logo.webp" alt="LawTamil Mic" class="lawtamil-logo">
     </div>
@@ -70,32 +66,21 @@
         <div id="interm" class="output"></div>
         <div id="output" class="output"></div>
     </div>
-
-    <script>
 	
+	<script>
 	function download(filename, text) {
 	  var element = document.createElement('a');
 	  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
 	  element.setAttribute('download', filename);
-
 	  element.style.display = 'none';
 	  document.body.appendChild(element);
-
 	  element.click();
-
 	  document.body.removeChild(element);
 	}
 	
 	function getOldStorage() {
-
-		var values = [],
-			keys = Object.keys(localStorage),
-			i = keys.length;
-
-		while ( i-- ) {
-			values.push( localStorage.getItem(keys[i]) );
-		}
-
+		var values = [], keys = Object.keys(localStorage), i = keys.length;
+		while ( i-- ) { values.push( localStorage.getItem(keys[i]) ); }
 		return values;
 	}
 	
@@ -103,33 +88,18 @@
 		localStorage.removeItem(cname);
 	}
 
-	function setStorage(cname, cvalue, exdays=999){ // not actually a cookie
+	function setStorage(cname, cvalue, exdays=999){ 
 		var now = new Date();
-		var item = {
-			value: cvalue,
-			expiry: now.getTime() + (exdays * 24 * 60 * 60 * 1000),
-		};
-		try{
-			localStorage.setItem(cname, JSON.stringify(item));
-		}catch(e){errorlog(e);}
+		var item = { value: cvalue, expiry: now.getTime() + (exdays * 24 * 60 * 60 * 1000) };
+		try{ localStorage.setItem(cname, JSON.stringify(item)); }catch(e){console.error(e);}
 	}
 
 	function getStorage(cname) {
-		try {
-			var itemStr = localStorage.getItem(cname);
-		} catch(e){
-			errorlog(e);
-			return;
-		}
-		if (!itemStr) {
-			return "";
-		}
+		try { var itemStr = localStorage.getItem(cname); } catch(e){ return; }
+		if (!itemStr) return "";
 		var item = JSON.parse(itemStr);
 		var now = new Date();
-		if (now.getTime() > item.expiry) {
-			localStorage.removeItem(cname);
-			return "";
-		}
+		if (now.getTime() > item.expiry) { localStorage.removeItem(cname); return ""; }
 		return item.value;
 	}
 	
@@ -137,105 +107,57 @@
 		var para = param.split('='); 
 		if (!(urlParams.has(para[0].toLowerCase()))){
 			if (history.pushState){
-				
 				var arr = window.location.href.split('?');
-				var newurl;
-				if (arr.length > 1 && arr[1] !== '') {
-					newurl = window.location.href + '&' +param;
-				} else {
-					newurl = window.location.href + '?' +param;
-				}
-				
+				var newurl = (arr.length > 1 && arr[1] !== '') ? window.location.href + '&' +param : window.location.href + '?' +param;
 				window.history.pushState({path:newurl},'',newurl);
 			}
 		} else if (force){
 			if (history.pushState){
 				var href = new URL(window.location.href);
-				if (para.length==1){
-					href.searchParams.set(para[0].toLowerCase(), "");
-				} else {
-					href.searchParams.set(para[0].toLowerCase(), para[1]);
-				}
-				log(href.toString());
+				if (para.length==1) href.searchParams.set(para[0].toLowerCase(), "");
+				else href.searchParams.set(para[0].toLowerCase(), para[1]);
 				window.history.pushState({path:href.toString()},'',href.toString());
 			}
 		}
 	}
 
-	
 	(function (w) {
 		w.URLSearchParams = w.URLSearchParams || function (searchString) {
 			var self = this;
 			self.searchString = searchString;
 			self.get = function (name) {
 				var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(self.searchString);
-				if (results == null) {
-					return null;
-				}
-				else {
-					return decodeURI(results[1]) || 0;
-				}
+				return results == null ? null : decodeURI(results[1]) || 0;
 			};
 		};
-
 	})(window);
-	var urlParams = new URLSearchParams(window.location.search);
 	
+	var urlParams = new URLSearchParams(window.location.search);
 	var sanitize = function(string) {
 		var temp = document.createElement('div');
 		temp.innerText = string;
 		temp.innerText = temp.innerHTML;
 		temp = temp.textContent || temp.innerText || "";
-		temp = temp.substring(0, Math.min(temp.length, 500));
-		return temp.trim();
+		return temp.substring(0, Math.min(temp.length, 500)).trim();
 	};
 	
 	function generateStreamID(){
-		var text = "";
-		var possible = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-		for (var i = 0; i < 7; i++){
-			text += possible.charAt(Math.floor(Math.random() * possible.length));
-		}
+		var text = "", possible = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+		for (var i = 0; i < 7; i++) text += possible.charAt(Math.floor(Math.random() * possible.length));
 		return text;
 	};
 	
 	var roomID = "test";
+	if (urlParams.has("room")) roomID = urlParams.get("room");
+	else if (urlParams.has("ROOM")) roomID = urlParams.get("ROOM");
+	else { roomID = generateStreamID(); updateURL("room="+roomID); }
 	
-	if (urlParams.has("room")){
-		roomID = urlParams.get("room");
-	} else if (urlParams.has("ROOM")){
-		roomID = urlParams.get("ROOM");
-	} else {
-		roomID = generateStreamID();
-		updateURL("room="+roomID);
-	}
+	var label = urlParams.has("label") ? urlParams.get("label") : false;
+	var myLang = urlParams.has("lang") ? urlParams.get("lang") : "en-US";
+	if (!urlParams.has("lang")) updateURL("lang="+myLang);
 	
-	var label = false;
-	
-	if (urlParams.has("label")){
-		label = urlParams.get("label");
-		//label = sanitize(label);
-	} 
-	
-	var myLang = "en-US";
-	if (urlParams.has("lang")){
-		myLang = urlParams.get("lang");
-	} else {
-		updateURL("lang="+myLang);
-	}
-	
-	console.log("Language: "+myLang);
-	
-	var srtFile = "";
-	var timestamp_start = null
-	var timestamp_stop = null
-	var timestamp_intern  = null;
-	var logcounter=0;
-				
-	var counter=0;
-	
+	var srtFile = "", timestamp_start = null, timestamp_stop = null, timestamp_intern = null, logcounter=0, counter=0;
 	var url = document.URL.substr(0,document.URL.lastIndexOf('/'));
-	
 	
 	var oldSaves = Object.keys(localStorage);
 	if (oldSaves.length){
@@ -248,205 +170,87 @@
 							var srtFile = getStorage(this.dataset.key);
 							download(this.dataset.key+".srt", srtFile);
 							localStorage.removeItem(this.dataset.key);
-							
 						};
 						button.dataset.key = oldSaves[i];
 						button.innerHTML = "Download previous saved transcription";
-						
 						document.body.prepend(button);
-					}catch(e){console.error(e);}
+					}catch(e){}
 				}
-			} else if (oldSaves[i].startsWith("transcription_"+roomID+"_")){
-				localStorage.removeItem(i);
-			}
+			} else if (oldSaves[i].startsWith("transcription_"+roomID+"_")) localStorage.removeItem(i);
 		}
 	}
 	
 	document.getElementById("shareLink").href= url+"/overlay?room="+roomID;
-	document.getElementById("shareLink").innerHTML = url+"/overlay?room="+roomID;
-
-	navigator.clipboard.writeText(url+"/overlay?room="+roomID).then(() => {
-      /* clipboard successfully set */
-    }, () => {
-      /* clipboard write failed */
-    });
-
+	
 	var apiKey = false;
 	var socket = new WebSocket("wss://api.caption.ninja:443");
 	if (urlParams.has("pie")){
-		
-		var apiKey = urlParams.get("pie") || "0khtlN7R7ISHZzFiyfK49Q9zAm93Wti5xpbW9qjg";  // get an API key from https://www.piesocket.com/ for a free API server of your own (pie no longer is free? sorry)
+		apiKey = urlParams.get("pie") || "0khtlN7R7ISHZzFiyfK49Q9zAm93Wti5xpbW9qjg";
 		socket = new WebSocket("wss://free3.piesocket.com/v3/"+roomID+"?api_key="+apiKey);
-		
 		document.getElementById("shareLink").href= url+"/overlay?room="+roomID+"&pie="+apiKey;
-		document.getElementById("shareLink").innerHTML = url+"/overlay?room="+roomID+"&pie="+apiKey;
 	} 
 		
-	socket.onclose = function (){
-		setTimeout(function(){window.location.reload(true);},100);
-	};
+	socket.onclose = function (){ setTimeout(function(){window.location.reload(true);},100); };
+	socket.onopen = function (){ socket.send(JSON.stringify({"join":roomID})); }
 	
-	socket.onopen = function (){
-		socket.send(JSON.stringify({"join":roomID}));
-	}
-	
-	
-	
-	var ends = 0;
-	var final_transcript = '';
-	var interim_transcript = "";
-	
-	var idle = null;
+	var ends = 0, final_transcript = '', interim_transcript = "", idle = null;
 	setup();
+	
 	function setup(){
 		if ('webkitSpeechRecognition' in window){
 			var recognition = new webkitSpeechRecognition();
-			if (myLang){
-				recognition.lang = myLang;
-			}
+			if (myLang) recognition.lang = myLang;
 			recognition.continuous = true;
 			recognition.interimResults = true;
 			
-			
 			recognition.onstart = function(){
-				console.log("started transcription");
+				// UI Animation Starts Here
 				document.getElementById('mic-indicator').classList.add('is-listening');
-				setTimeout(function(){
-					ends = 0;
-				}, 2000);
-				
+				setTimeout(function(){ ends = 0; }, 2000);
 			};
-			recognition.onerror = function(event){
-				console.log(event);
+			
+			recognition.onerror = function(event){ 
+			    console.log(event); 
 			};
+			
 			recognition.onend = function(e){
-				console.log(e);
-				console.log("Stopped transcription");
+				// UI Animation Stops Here
 				document.getElementById('mic-indicator').classList.remove('is-listening');
-				if (event.type === "end"){
-					ends +=1;
-				}
-				if (ends > 3){
-					alert("WARNING: Cannot enable transcription service\n\nThe service will fail completely if more than one transcription session is currently active on your computer.\n\nPlease close other Caption.Ninja tabs or other transcription services and then wait a few minutes before retrying.\n\nIt might also fail if your browser does not offer a transcription service; use the official Chrome browser instead if unsure.");
-				}
+				if (event.type === "end") ends +=1;
+				if (ends > 3) alert("WARNING: Transcription service failed.");
 				setup();
 			};
+			
 			recognition.onresult = function(event){
 				counter+=1;
 				var interim_transcript = '';
-				if(typeof(event.results) == 'undefined'){
-					//console.log("ended");
-					//recognition.onend = null;
-					//recognition.stop();
-					console.log(event);
-					return;
-				}
+				if(typeof(event.results) == 'undefined') return;
 				
 				for(var i = event.resultIndex; i < event.results.length; ++i){
-					if(event.results[i].isFinal){
-						final_transcript += sanitize(event.results[i][0].transcript);
-					} else {
-						interim_transcript += sanitize(event.results[i][0].transcript);
-					}
+					if(event.results[i].isFinal) final_transcript += sanitize(event.results[i][0].transcript);
+					else interim_transcript += sanitize(event.results[i][0].transcript);
 				}
 				
 				if (final_transcript){
-					console.log("FINAL:", final_transcript);
 					document.getElementById("output").innerHTML+="<span id='final_"+counter+"'>"+final_transcript+"</span><br />";
 					document.getElementById("interm").innerHTML="";
 					
 					try {
-						if (timestamp_start===null){
-							timestamp_start = Date.now();
-							timestamp_intern = Date.now();
-						}
-						timestamp_stop = Date.now();
-						timestamp_stop = Date.now() - timestamp_start;
-						
-						var date = new Date(0);
-						date.setSeconds(timestamp_stop/1000);
-						timestamp_stop = date.toISOString().replace(".",",").replace("1970-01-01T","");
-						timestamp_stop = timestamp_stop.substring(0, timestamp_stop.length - 1);
-						
-						timestamp_intern -= timestamp_start;
-						var date = new Date(0);
-						date.setSeconds(timestamp_intern/1000);
-						timestamp_intern = date.toISOString().replace(".",",").replace("1970-01-01T","");
-						timestamp_intern = timestamp_intern.substring(0, timestamp_intern.length - 1);
-					} catch(e){console.error(e);}
-					
-					try {
-						logcounter+=1;
-						srtFile += logcounter + "\n";
-						srtFile += timestamp_intern + " --\> " + timestamp_stop + "\n";
-						timestamp_intern=null;
-						srtFile += ">> " + final_transcript + "\n\n";
-						setStorage("transcription_"+roomID+"_"+timestamp_start, srtFile, 1);
-						
-						if (logcounter===1){
-							var button = document.createElement("button");
-							button.onclick = function(){
-								download("transcription_"+roomID+"_"+timestamp_start+".srt", srtFile);
-							};
-							button.innerHTML = "Download transcription";
-							button.style.position = "fixed";
-							button.style.top = "0";
-							button.style.left = "0";
-							
-							document.body.appendChild(button);
-						}
-						
-					} catch(e){console.error(e);}
-				
-					
-					try {
-						if (label){
-							socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "label":label, "ln": myLang}));
-						} else {
-							socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "ln": myLang}));
-						}
-						final_transcript="";
-						interim_transcript="";
-					} catch(e){
-						console.error(e);
-					}
-					
+						if (label) socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "label":label, "ln": myLang}));
+						else socket.send(JSON.stringify({"msg":true, "final":final_transcript, "id":counter, "ln": myLang}));
+						final_transcript=""; interim_transcript="";
+					} catch(e){}
 				} else {
-					if (timestamp_start===null){
-						timestamp_start = Date.now();
-					}
-					if (timestamp_intern===null){
-						timestamp_intern = Date.now();
-					}
-					console.log("INTERM:", interim_transcript);
 					document.getElementById("interm").innerHTML="<span>"+interim_transcript+"</span><br />";
-					
 					try {
-						if (label){
-							socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "label":label, "ln": myLang}));
-						} else {
-							socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "ln": myLang}));
-						}
-					} catch(e){
-						console.error(e);
-					    interim_transcript="";
-					}
+						if (label) socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "label":label, "ln": myLang}));
+						else socket.send(JSON.stringify({"msg":true, "interm":interim_transcript, "id":counter, "ln": myLang}));
+					} catch(e){ interim_transcript=""; }
 				}
-				
-				//if (idle){
-				//	clearInterval(idle);
-				//}
-				//idle = setTimeout(function(){
-				//	document.getElementById("output").innerHTML="";
-				//	document.getElementById("interm").innerHTML="";
-				//},10000);
-				
 			};
-			
-			//recognition.lang = 'en-US';
 			recognition.start();
 		}
 	}
 	</script>
-	</body>
+</body>
 </html>

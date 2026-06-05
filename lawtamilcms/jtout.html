@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/2.0.2/anime.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Tamil039';
+            src: url('https://www.rtbs.in/font/Tamil039.woff2') format('woff2');
+            font-weight: bold;
+        }
+        body { margin: 0; padding: 0; background: transparent; overflow: hidden; display: flex; align-items: flex-end; height: 100vh; }
+        
+        .ticker-container {
+            width: 1200px;
+            margin: 0 auto 40px auto;
+            background-color: #c60203; 
+            border: 4px solid #ffffff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+        }
+
+        .output {
+            font-family: 'Tamil039', sans-serif;
+            font-size: 32px;
+            color: white;
+            line-height: 1.5;
+            font-weight: bold;
+            text-align: left;
+            width: 100%;
+        }
+
+        .word { display: inline-block; transform-origin: 0 0; margin-right: 0.25em; opacity: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="ticker-container">
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        var urlParams = new URLSearchParams(window.location.search);
+        var roomID = urlParams.get("room") || "JurisprudenceTamil";
+        var outputDiv = document.getElementById("output");
+        var lastFinalText = "";
+
+        var socket = new WebSocket("wss://api.caption.ninja:443");
+
+        socket.onopen = function () {
+            socket.send(JSON.stringify({"join": roomID}));
+        }
+
+        socket.onmessage = function (event) {
+            if (event.data) {
+                var data = JSON.parse(event.data);
+                
+                // Final டெக்ஸ்ட் வரும்போது மட்டும் அனிமேஷன்
+                if (data.final && data.final !== lastFinalText) {
+                    lastFinalText = data.final;
+                    processWithAnimation(data.final);
+                }
+            }
+        };
+
+        function processWithAnimation(text) {
+            // பழையதை அழித்துவிட்டு புதியதை மட்டும் அனிமேட் செய்கிறது
+            // (இங்கே Timeout எதுவும் இல்லை, அதனால் அடுத்த டெக்ஸ்ட் வரும் வரை இது அப்படியே இருக்கும்)
+            outputDiv.innerHTML = text.split(' ').map(word => {
+                return `<span class='word'>${word}</span>`;
+            }).join(' ');
+
+            anime.timeline({loop: false})
+                .add({
+                    targets: '.word',
+                    rotateY: [-90, 0],
+                    opacity: [0, 1],
+                    duration: 800,
+                    easing: "easeOutExpo",
+                    delay: (el, i) => 40 * i
+                });
+        }
+
+        socket.onclose = function () {
+            setTimeout(function() { window.location.reload(true); }, 1000);
+        };
+    </script>
+</body>
+</html>

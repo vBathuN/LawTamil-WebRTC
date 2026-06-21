@@ -8795,7 +8795,7 @@ function setupReceiverTransform(receiver, UUID = false) {
   }
 }
 
-// --- CYBERPUNK NEON JOKER SILHOUETTE (2D Double-Pass Optical Bloom) ---
+// --- TRUE VECTOR JOKER MAKEUP (On 100% Pitch Black Canvas - Effect 6) ---
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
@@ -8823,7 +8823,7 @@ function mainMeshMask() {
 		const w = session.canvas.width;
 		const h = session.canvas.height;
 
-		// 1. PITCH BLACK VOID (அசல் வீடியோவை மறைத்து 100% கருப்புத் திரை ஆக்குதல்)
+		// 1. PITCH BLACK SCREEN (அசல் வீடியோவை மறைத்து 100% தூய கருப்புத் திரை ஆக்குதல்)
 		ctx.save();
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.fillStyle = "#000000";
@@ -8835,80 +8835,109 @@ function mainMeshMask() {
 
 			if (kp && kp.length > 152) {
 				const p = (i) => ({ x: kp[i][0], y: kp[i][1] });
-				const faceW = Math.abs(p(454).x - p(234).x); // முகத்தின் அகலம் (Dynamic scaling)
-				const baseW = Math.max(2, faceW * 0.015);    // கோடுகளின் அடிப்படைத் தடிமன்
+				const faceW = Math.abs(p(454).x - p(234).x); // முகத்தின் மாறும் அகலம்
 
-				// 2. ADDITIVE BLENDING (ஒளியைக் கூட்ட)
-				ctx.globalCompositeOperation = 'lighter';
-				ctx.lineCap = 'round';
-				ctx.lineJoin = 'round';
-
-				// --- மாஸ்டர் நியான் வரையும் உதவி ஃபங்ஷன் (Double-Pass Bloom) ---
-				const drawNeon = (drawFunc, glowColor, coreWidth) => {
+				// --- Double-Pass Optical Bloom Helper (வடிவங்களுக்கு) ---
+				const drawLayer = (pathFunc, glowColor, coreColor, blurSize) => {
+					// பாஸ் 1: காற்றில் பரவும் ஒளிவட்டம் (Aura)
 					ctx.save();
-					// பாஸ் 1: காற்றில் பரவும் வெளிப்புற ஒளி (The Glow Aura)
-					ctx.filter = 'blur(12px)';
-					ctx.strokeStyle = glowColor;
-					ctx.lineWidth = coreWidth * 4.5;
-					drawFunc();
-					ctx.stroke();
+					ctx.filter = `blur(${blurSize}px)`;
+					ctx.fillStyle = glowColor;
+					pathFunc();
+					ctx.fill();
+					ctx.restore();
 
-					// பாஸ் 2: அசல் ஒளிரும் மையக் கண்ணாடி டியூப் (The Hot White Core)
+					// பாஸ் 2: கூர்மையான அசல் சாயம் (Solid Paint)
+					ctx.save();
 					ctx.filter = 'none';
-					ctx.strokeStyle = '#ffffff';
-					ctx.lineWidth = coreWidth;
-					drawFunc();
-					ctx.stroke();
+					ctx.fillStyle = coreColor;
+					pathFunc();
+					ctx.fill();
 					ctx.restore();
 				};
 
-				// A. எலக்ட்ரிக் வயலட் தாடை மற்றும் கன்னம் (Ghost Jawline)
-				const drawJaw = () => {
-					ctx.beginPath();
-					ctx.moveTo(p(234).x, p(234).y);
-					ctx.quadraticCurveTo(p(152).x, p(152).y + (faceW * 0.06), p(454).x, p(454).y);
-				};
-				drawNeon(drawJaw, '#b026ff', baseW * 0.8);
+				// வண்ணங்களை ஒன்றோடொன்று கச்சிதமாகப் பிணையச் செய்யும் மோட்
+				ctx.globalCompositeOperation = 'lighter';
 
-				// B. நியான் சயான் கண் வைரங்கள் (Cyberpunk Eye Visor)
-				const drawEyes = () => {
-					// இடது கண்
-					const lT = p(105), lB = p(147), lI = p(133), lO = p(33);
+				// =========================================================================
+				// அடுக்கு 1: GHOST WHITE FACE FOUNDATION (இருட்டில் தெரியும் முகத்தின் சாயம்)
+				// =========================================================================
+				const drawFaceBase = () => {
 					ctx.beginPath();
-					ctx.moveTo(lT.x, lT.y - (faceW * 0.05)); ctx.lineTo(lI.x, lI.y);
-					ctx.lineTo(lB.x, lB.y + (faceW * 0.08)); ctx.lineTo(lO.x, lO.y);
-					ctx.closePath();
-					
-					// வலது கண்
-					const rT = p(334), rB = p(376), rI = p(362), rO = p(263);
-					ctx.moveTo(rT.x, rT.y - (faceW * 0.05)); ctx.lineTo(rI.x, rI.y);
-					ctx.lineTo(rB.x, rB.y + (faceW * 0.08)); ctx.lineTo(rO.x, rO.y);
+					ctx.moveTo(p(10).x, p(10).y); // நெற்றி
+					ctx.quadraticCurveTo(p(454).x, p(234).y, p(152).x, p(152).y); // வலது கன்னம் வழியே தாடை
+					ctx.quadraticCurveTo(p(234).x, p(234).y, p(10).x, p(10).y);   // இடது கன்னம் வழியே நெற்றி
 					ctx.closePath();
 				};
-				drawNeon(drawEyes, '#00ffff', baseW * 1.2);
+				// 22% மட்டுமே அடர்த்தியான வெள்ளை (அப்போதுதான் அமானுஷ்யமாக இருக்கும்)
+				drawLayer(drawFaceBase, 'rgba(180, 200, 255, 0.1)', 'rgba(230, 240, 255, 0.22)', 18);
 
-				// C. ஒளிரும் ஆரஞ்சு மூக்கு நுனி (Laser Nose Tip)
+				// =========================================================================
+				// அடுக்கு 2: ARTHUR FLECK BLUE EYE SOCKETS (கண்களின் மைப்பீச்சு)
+				// =========================================================================
+				const drawLeftEye = () => {
+					const top = p(105), bot = p(147), inr = p(133), out = p(33);
+					ctx.beginPath();
+					ctx.moveTo(top.x, top.y - (faceW * 0.07)); ctx.lineTo(inr.x, inr.y);
+					ctx.lineTo(bot.x, bot.y + (faceW * 0.1));  ctx.lineTo(out.x, out.y);
+					ctx.closePath();
+				};
+				const drawRightEye = () => {
+					const top = p(334), bot = p(376), inr = p(362), out = p(263);
+					ctx.beginPath();
+					ctx.moveTo(top.x, top.y - (faceW * 0.07)); ctx.lineTo(inr.x, inr.y);
+					ctx.lineTo(bot.x, bot.y + (faceW * 0.1));  ctx.lineTo(out.x, out.y);
+					ctx.closePath();
+				};
+				drawLayer(drawLeftEye, 'rgba(0, 120, 255, 0.6)', 'rgba(20, 180, 255, 0.85)', 12);
+				drawLayer(drawRightEye, 'rgba(0, 120, 255, 0.6)', 'rgba(20, 180, 255, 0.85)', 12);
+
+				// =========================================================================
+				// அடுக்கு 3: GLOWING CLOWN NOSE (சிவப்பு மூக்கு)
+				// =========================================================================
 				const drawNose = () => {
 					ctx.beginPath();
-					ctx.arc(p(1).x, p(1).y, faceW * 0.05, 0, Math.PI * 2);
+					ctx.arc(p(1).x, p(1).y, faceW * 0.065, 0, Math.PI * 2);
 				};
-				drawNeon(drawNose, '#ff6600', baseW);
+				drawLayer(drawNose, 'rgba(255, 0, 50, 0.8)', 'rgba(255, 30, 60, 0.95)', 10);
 
-				// D. தழும்புகளுடன் கூடிய அசையும் சிவந்த வாய் (Dynamic Glasgow Smile)
-				const drawSmile = () => {
-					const cL = p(61), cR = p(291), uL = p(0), bL = p(17);
+				// =========================================================================
+				// அடுக்கு 4: THE MASTERPIECE - 2-PART DYNAMIC LIPS (அசையும் உயிருள்ள வாய்)
+				// =========================================================================
+				const cL = p(61), cR = p(291); // வாயின் இடது, வலது ஓரங்கள்
 
+				// அ. மேல் உதட்டுத் தொகுதி (Upper Lip Solid shape)
+				const drawUpperLip = () => {
 					ctx.beginPath();
-					// மேல் உதடு
-					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(uL.x, uL.y - 4, cR.x, cR.y);
-					// கீழ் உதடு (பேசும்போது அசல் வேகத்தில் கீழே இறங்கும்)
-					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(bL.x, bL.y + 4, cR.x, cR.y);
-					// இடது கன்னத்துத் தழும்பு
-					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.08), cL.y - 4, cL.x - (faceW*0.16), cL.y - (faceW*0.1));
-					// வலது கன்னத்துத் தழும்பு
-					ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.08), cR.y - 4, cR.x + (faceW*0.16), cR.y - (faceW*0.1));
+					ctx.moveTo(cL.x, cL.y);
+					ctx.quadraticCurveTo(p(0).x, p(0).y - (faceW * 0.025), cR.x, cR.y); // வெளி விளிம்பு
+					ctx.quadraticCurveTo(p(13).x, p(13).y, cL.x, cL.y);                 // உள் விளிம்பு
+					ctx.closePath();
 				};
-				drawNeon(drawSmile, '#ff0033', baseW * 1.5);
+
+				// ஆ. கீழ் உதட்டுத் தொகுதி (Lower Lip Solid shape - தாடையோடு கீழே இறங்கும்)
+				const drawLowerLip = () => {
+					ctx.beginPath();
+					ctx.moveTo(cL.x, cL.y);
+					ctx.quadraticCurveTo(p(14).x, p(14).y, cR.x, cR.y);                 // உள் விளிம்பு
+					ctx.quadraticCurveTo(p(17).x, p(17).y + (faceW * 0.025), cL.x, cL.y); // வெளி விளிம்பு
+					ctx.closePath();
+				};
+
+				drawLayer(drawUpperLip, 'rgba(255, 0, 30, 0.8)', '#ff1133', 8);
+				drawLayer(drawLowerLip, 'rgba(255, 0, 30, 0.8)', '#ff1133', 8);
+
+				// இ. வாயிலிருந்து கன்னம் வரை நீளும் தழும்புகள் (Accent Scars)
+				ctx.save();
+				ctx.filter = 'none';
+				ctx.strokeStyle = '#ff1133';
+				ctx.lineWidth = faceW * 0.02;
+				ctx.lineCap = 'round';
+				ctx.beginPath();
+				ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.08), cL.y - 2, cL.x - (faceW*0.18), cL.y - (faceW*0.09));
+				ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.08), cR.y - 2, cR.x + (faceW*0.18), cR.y - (faceW*0.09));
+				ctx.stroke();
+				ctx.restore();
 			}
 
 			if (session.pushEffectsData){
@@ -8919,7 +8948,7 @@ function mainMeshMask() {
 			}
 		}
 
-		ctx.restore(); // கேன்வாஸ் நிலையை அசல் நிலைக்குத் திருப்புதல்
+		ctx.restore(); // கேன்வாஸை இயல்பு நிலைக்கு திருப்புதல்
 		
 		if (session.pushEffectsData && output.length > 0){
 			if (isIFrame){
@@ -8947,6 +8976,7 @@ function mainMeshMask() {
 	}
 	process();
 }
+
 // --- END DYNAMIC NEON SILHOUETTE EFFECT --- //
 
 var getFacesActive = false;

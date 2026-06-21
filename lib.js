@@ -8796,9 +8796,6 @@ function setupReceiverTransform(receiver, UUID = false) {
 }
 
 // --- JOKER MASK EFFECT (Effect 6) ---
-const jokerImg = new Image();
-jokerImg.src = './joker_mask.png';
-
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
@@ -8829,19 +8826,61 @@ function mainMeshMask() {
 			session.canvasCtx.drawImage(session.canvasSource, 0, 0, session.canvas.width, session.canvas.height);
 
 			if (keypoints && keypoints.length > 152) {
-				const [nx, ny] = keypoints[1];
-				const [fx, fy] = keypoints[10];
-				const [cx, cy] = keypoints[152];
+				const ctx = session.canvasCtx;
+				const p = (i) => ({ x: keypoints[i][0], y: keypoints[i][1] });
+				const faceW = Math.abs(p(454).x - p(234).x); // Dynamic Face Width
 
-				const maskHeight = Math.abs(cy - fy) * 1.35;
-				const maskWidth = maskHeight * (jokerImg.width / jokerImg.height);
-				const radians = Math.atan2(cx - fx, cy - fy);
+				ctx.save();
 
-				session.canvasCtx.save();
-				session.canvasCtx.translate(nx, ny);
-				session.canvasCtx.rotate(-radians);
-				session.canvasCtx.drawImage(jokerImg, -maskWidth / 2, -maskHeight / 2, maskWidth, maskHeight);
-				session.canvasCtx.restore();
+				// 1. WHITE WASH FOUNDATION (45% Alpha)
+				const fCenter = { x: (p(234).x + p(454).x)/2, y: (p(10).y + p(152).y)/2 };
+				ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+				ctx.beginPath();
+				ctx.ellipse(fCenter.x, fCenter.y, faceW * 0.52, Math.abs(p(152).y - p(10).y) * 0.55, 0, 0, Math.PI * 2);
+				ctx.fill();
+
+				// 2. ARTHUR FLECK BLUE EYE DIAMONDS
+				ctx.fillStyle = "rgba(15, 45, 85, 0.85)";
+				// Left Eye
+				const leT = p(105), leB = p(147), leI = p(133), leO = p(33);
+				ctx.beginPath();
+				ctx.moveTo(leT.x, leT.y - (faceW * 0.08));
+				ctx.lineTo(leI.x + (faceW * 0.03), leI.y);
+				ctx.lineTo(leB.x, leB.y + (faceW * 0.12));
+				ctx.lineTo(leO.x - (faceW * 0.04), leO.y);
+				ctx.fill();
+				// Right Eye
+				const reT = p(334), reB = p(376), reI = p(362), reO = p(263);
+				ctx.beginPath();
+				ctx.moveTo(reT.x, reT.y - (faceW * 0.08));
+				ctx.lineTo(reI.x - (faceW * 0.03), reI.y);
+				ctx.lineTo(reB.x, reB.y + (faceW * 0.12));
+				ctx.lineTo(reO.x + (faceW * 0.04), reO.y);
+				ctx.fill();
+
+				// 3. CLOWN NOSE TIP
+				ctx.fillStyle = "rgba(180, 20, 20, 0.9)";
+				ctx.beginPath();
+				ctx.arc(p(1).x, p(1).y, faceW * 0.075, 0, Math.PI * 2);
+				ctx.fill();
+
+				// 4. DYNAMIC GLASGOW SMILE (Lip Sync + Scars)
+				ctx.strokeStyle = "rgba(180, 20, 20, 0.9)";
+				ctx.lineWidth = faceW * 0.045;
+				ctx.lineCap = "round";
+
+				const cL = p(61), cR = p(291);
+
+				// Upper Lip
+				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(0).x, p(0).y, cR.x, cR.y); ctx.stroke();
+				// Lower Lip (Auto-stretches down when talking)
+				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(17).x, p(17).y, cR.x, cR.y); ctx.stroke();
+				// Left Cheek Scar
+				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.08), cL.y, cL.x - (faceW*0.18), cL.y - (faceW*0.1)); ctx.stroke();
+				// Right Cheek Scar
+				ctx.beginPath(); ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.08), cR.y, cR.x + (faceW*0.18), cR.y - (faceW*0.1)); ctx.stroke();
+
+				ctx.restore();
 			}
 
 			if (session.pushEffectsData){
@@ -9041,7 +9080,6 @@ function drawFace() {
 	faceAlignment = fde1();
 }
 ////////  END CANVAS EFFECTS  /////////////////
-
 var getFacesActive = false;
 async function getFaces(){
 	

@@ -8795,7 +8795,7 @@ function setupReceiverTransform(receiver, UUID = false) {
   }
 }
 
-// --- JOKER MASK EFFECT (Effect 6) ---
+// --- DYNAMIC NEON SILHOUETTE (Cyberpunk Joker - Effect 6) ---
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
@@ -8819,78 +8819,84 @@ function mainMeshMask() {
 			input: session.canvasSource
 		});
 		
+		const ctx = session.canvasCtx;
+		const w = session.canvas.width;
+		const h = session.canvas.height;
+
+		// 1. PITCH BLACK VOID (அசல் கேமரா வீடியோவை மறைத்து 100% கருப்புத் திரை ஆக்குதல்)
+		ctx.fillStyle = "#000000";
+		ctx.fillRect(0, 0, w, h);
+
 		var output = [];
 		if (predictions.length > 0) {
-			const keypoints = predictions[0].scaledMesh;
+			const kp = predictions[0].scaledMesh;
 
-			session.canvasCtx.drawImage(session.canvasSource, 0, 0, session.canvas.width, session.canvas.height);
-
-			if (keypoints && keypoints.length > 152) {
-				const ctx = session.canvasCtx;
-				const p = (i) => ({ x: keypoints[i][0], y: keypoints[i][1] });
-				const faceW = Math.abs(p(454).x - p(234).x); // Dynamic Face Width
+			if (kp && kp.length > 152) {
+				const p = (i) => ({ x: kp[i][0], y: kp[i][1] });
 
 				ctx.save();
-
-				// 1. WHITE WASH FOUNDATION (45% Alpha)
-				const fCenter = { x: (p(234).x + p(454).x)/2, y: (p(10).y + p(152).y)/2 };
-				ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
-				ctx.beginPath();
-				ctx.ellipse(fCenter.x, fCenter.y, faceW * 0.52, Math.abs(p(152).y - p(10).y) * 0.55, 0, 0, Math.PI * 2);
-				ctx.fill();
-
-				// 2. ARTHUR FLECK BLUE EYE DIAMONDS
-				ctx.fillStyle = "rgba(15, 45, 85, 0.85)";
-				// Left Eye
-				const leT = p(105), leB = p(147), leI = p(133), leO = p(33);
-				ctx.beginPath();
-				ctx.moveTo(leT.x, leT.y - (faceW * 0.08));
-				ctx.lineTo(leI.x + (faceW * 0.03), leI.y);
-				ctx.lineTo(leB.x, leB.y + (faceW * 0.12));
-				ctx.lineTo(leO.x - (faceW * 0.04), leO.y);
-				ctx.fill();
-				// Right Eye
-				const reT = p(334), reB = p(376), reI = p(362), reO = p(263);
-				ctx.beginPath();
-				ctx.moveTo(reT.x, reT.y - (faceW * 0.08));
-				ctx.lineTo(reI.x - (faceW * 0.03), reI.y);
-				ctx.lineTo(reB.x, reB.y + (faceW * 0.12));
-				ctx.lineTo(reO.x + (faceW * 0.04), reO.y);
-				ctx.fill();
-
-				// 3. CLOWN NOSE TIP
-				ctx.fillStyle = "rgba(180, 20, 20, 0.9)";
-				ctx.beginPath();
-				ctx.arc(p(1).x, p(1).y, faceW * 0.075, 0, Math.PI * 2);
-				ctx.fill();
-
-				// 4. DYNAMIC GLASGOW SMILE (Lip Sync + Scars)
-				ctx.strokeStyle = "rgba(180, 20, 20, 0.9)";
-				ctx.lineWidth = faceW * 0.045;
 				ctx.lineCap = "round";
+				ctx.lineJoin = "round";
+
+				// A. GHOST JAWLINE (முகத்தின் அசைவைக் காட்ட மங்கலான சிவப்பு அவுட்லைன்)
+				ctx.strokeStyle = "rgba(255, 15, 35, 0.22)";
+				ctx.shadowColor = "rgba(255, 15, 35, 0.2)";
+				ctx.shadowBlur = 10;
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(p(234).x, p(234).y); 
+				ctx.quadraticCurveTo(p(152).x, p(152).y + 8, p(454).x, p(454).y);
+				ctx.stroke();
+
+				// B. NEON CYAN EYE DIAMONDS (ஒளிரும் டிஜிட்டல் கண்கள்)
+				ctx.strokeStyle = "#00ffff";
+				ctx.shadowColor = "#00ffff";
+				ctx.shadowBlur = 15;
+				ctx.lineWidth = 3;
+
+				const le = { x: (p(159).x + p(145).x)/2, y: (p(159).y + p(145).y)/2 };
+				ctx.beginPath();
+				ctx.moveTo(le.x, le.y - 20); ctx.lineTo(le.x + 14, le.y);
+				ctx.lineTo(le.x, le.y + 24); ctx.lineTo(le.x - 14, le.y);
+				ctx.closePath(); ctx.stroke();
+
+				const re = { x: (p(386).x + p(374).x)/2, y: (p(386).y + p(374).y)/2 };
+				ctx.beginPath();
+				ctx.moveTo(re.x, re.y - 20); ctx.lineTo(re.x + 14, re.y);
+				ctx.lineTo(re.x, re.y + 24); ctx.lineTo(re.x - 14, re.y);
+				ctx.closePath(); ctx.stroke();
+
+				// C. DYNAMIC GLOWING RED MOUTH (பேசும்போது அசல் வேகத்தில் திறந்து மூடும் வாய்)
+				ctx.strokeStyle = "#ff0033";
+				ctx.shadowColor = "#ff0033";
+				ctx.shadowBlur = 20;
+				ctx.lineWidth = 5;
 
 				const cL = p(61), cR = p(291);
 
-				// Upper Lip
-				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(0).x, p(0).y, cR.x, cR.y); ctx.stroke();
-				// Lower Lip (Auto-stretches down when talking)
-				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(17).x, p(17).y, cR.x, cR.y); ctx.stroke();
-				// Left Cheek Scar
-				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.08), cL.y, cL.x - (faceW*0.18), cL.y - (faceW*0.1)); ctx.stroke();
-				// Right Cheek Scar
-				ctx.beginPath(); ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.08), cR.y, cR.x + (faceW*0.18), cR.y - (faceW*0.1)); ctx.stroke();
+				// Upper Lip wireframe
+				ctx.beginPath();
+				ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(0).x, p(0).y - 4, cR.x, cR.y);
+				ctx.stroke();
+
+				// Lower Lip wireframe (வாய் திறக்கும் போது இது மட்டும் கீழே இறங்கும்)
+				ctx.beginPath();
+				ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(17).x, p(17).y + 4, cR.x, cR.y);
+				ctx.stroke();
+
+				// Glasgow Scars (கன்னத்துத் தழும்புகள்)
+				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.lineTo(cL.x - 36, cL.y - 18); ctx.stroke();
+				ctx.beginPath(); ctx.moveTo(cR.x, cR.y); ctx.lineTo(cR.x + 36, cR.y - 18); ctx.stroke();
 
 				ctx.restore();
 			}
 
 			if (session.pushEffectsData){
-				for (let i = 0; i < keypoints.length; i++) {
-					output.push(parseInt(keypoints[i][0]));
-					output.push(parseInt(keypoints[i][1]));
+				for (let i = 0; i < kp.length; i++) {
+					output.push(parseInt(kp[i][0]));
+					output.push(parseInt(kp[i][1]));
 				}
 			}
-		} else {
-			session.canvasCtx.drawImage(session.canvasSource, 0, 0, session.canvas.width, session.canvas.height);
 		}
 		
 		if (session.pushEffectsData && output.length > 0){
@@ -8919,167 +8925,8 @@ function mainMeshMask() {
 	}
 	process();
 }
+// --- END DYNAMIC NEON SILHOUETTE EFFECT --- //
 
-var faceDetector = false;
-var faceAlignment=false;
-var activeDetection = false;
-
-function drawFace() {
-	if (session.effect !== "1"){return;}
-	if (faceAlignment){
-		faceAlignment();
-		return;
-	} else if (faceAlignment===null){
-		return;
-	}
-	faceAlignment = null;
-	
-	var timers = {};
-	timers.activelyProcessingDraw = false;
-
-	var ctx = session.canvasCtx;
-	
-	function fde1(){
-		
-		warnlog("LOADED drawFace()");
-		
-
-		var lastFace = {};
-		
-		lastFace.x = session.canvasSource.width / 2;
-		lastFace.y = session.canvasSource.height / 2;
-		lastFace.w = session.canvasSource.width;
-		lastFace.h = session.canvasSource.height;
-		
-		session.canvas.height = 2 * parseInt(session.canvasSource.height / 2);
-		session.canvas.width = 2 * parseInt(session.canvasSource.width / 2);
-
-		function detectFace(){
-			if (activeDetection){return;}
-			activeDetection=true;
-			if (session.effect !== "1"){return;}
-			try {
-				faceDetector.detect(session.canvasSource).then(faces => {
-					if (faces.length){
-						for (let face of faces) {
-							lastFace.x = face.boundingBox.x;
-							lastFace.y = face.boundingBox.y;
-							lastFace.w = face.boundingBox.width;
-							lastFace.h = face.boundingBox.height;
-							break;
-						}
-					}
-				}).catch((e) => {
-					errorlog("Boo, Face Detection failed: " + e);
-				});
-			} catch(e){}
-			setTimeout(function(){detectFace();},200);
-			activeDetection = false;
-		}
-		
-		var wh = null;
-		var xa = null;
-		var ya = null;
-		
-		
-		function draw() {
-			if (timers.activelyProcessingDraw){return;}
-			timers.activelyProcessingDraw = true;
-			
-			if (session.effect !== "1"){
-				timers.activelyProcessingDraw = false;
-				if (timers.timeoutDraw){
-					timers.timeoutDraw();
-					timers.timeoutDraw = null;
-				}
-				return;
-			}
-			
-			try {
-				if (!session.canvasSource.width){
-					timers.activelyProcessingDraw = false;
-					return
-				}
-				if (wh === null && session.canvasSource.width){
-					wh = Math.pow(session.canvasSource.width * session.canvasSource.width/36,0.5);
-					
-					xa = 0
-					ya = 0;
-				}
-				
-				session.canvas.height = 2 * parseInt(session.canvasSource.height / 2);
-				session.canvas.width = 2 * parseInt(session.canvasSource.width / 2);
-				
-				if (lastFace.w){
-					wh = wh * 0.999 + Math.pow(lastFace.w*lastFace.h,0.5)*0.001;
-					
-					var w = wh*6;
-					
-					if (w>session.canvasSource.width){
-						w = session.canvasSource.width;
-					}
-					if (session.canvasSource.height>session.canvasSource.width){
-						if (w>session.canvasSource.height && session.canvasSource.height>session.canvasSource.width){
-							w = session.canvasSource.height;
-						}
-					} else if (w>session.canvasSource.width){
-						w = session.canvasSource.width;
-					}
-					
-					var h = (w/session.canvasSource.width) * session.canvasSource.height;
-					
-					xa = xa*0.998 + 0.002*(lastFace.x + lastFace.w/2);
-					ya = ya*0.998 + 0.002*(lastFace.y + lastFace.h/2);
-					
-					var x = xa - w/2;
-					var y = ya - h/2;
-					
-					if (x<0){x=0;}
-					if (y<0){y=0;}
-					
-					if (x>session.canvasSource.width-w){x=session.canvasSource.width-w;}
-					if (y>session.canvasSource.height-h){y=session.canvasSource.height-h;}
-					
-					if (x<0){x=0;}
-					if (y<0){y=0;}
-					
-				}
-				ctx.drawImage(session.canvasSource, x, y, w, h, 0, 0, session.canvasSource.width, session.canvasSource.height);
-			} catch(e){}
-
-			if (!timers.timeoutDraw){
-				try {
-					timers.timeoutDraw = audioTimerLoop(draw, session.canvasSource.srcObject.getVideoTracks()[0].getSettings().frameRate || 30);
-				} catch(e){
-					timers.timeoutDraw = audioTimerLoop(draw,40); 
-				}
-			}
-			timers.activelyProcessingDraw = false;
-		}
-		
-		if (window.FaceDetector == undefined) {
-			if (!session.cleanOutput){
-				warnUser('Face Detection API not detected.\n\nYou may be able to enable it here: chrome://flags/#enable-experimental-web-platform-features');
-			}
-			faceDetector = false;
-		} else {
-			faceDetector = new FaceDetector();
-		}
-		
-		function fde2(){
-			if (!timers.activelyProcessingDraw){
-				draw();
-			}
-			if (!activeDetection){
-				detectFace();
-			}
-		};
-		fde2();
-		return fde2;
-	};
-	faceAlignment = fde1();
-}
-////////  END CANVAS EFFECTS  /////////////////
 var getFacesActive = false;
 async function getFaces(){
 	

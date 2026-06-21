@@ -8795,19 +8795,17 @@ function setupReceiverTransform(receiver, UUID = false) {
   }
 }
 
+// --- JOKER MASK EFFECT (Effect 6) ---
+const jokerImg = new Image();
+jokerImg.src = './joker_mask.png';
+
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
 		return;
 	}
-	function heatMapColorforValue(value){
-		var h = parseInt((1.0 - value) * 240);
-		if (h<0){h=0;}
-		if (h>240){h=240;}
-		return "hsl(" + h + ", 100%, 50%)";
-	}
+
 	async function process(){
-		
 		if (session.TFJSModel.activelyProcessing){return;}
 		session.TFJSModel.activelyProcessing = true;
 		
@@ -8820,36 +8818,43 @@ function mainMeshMask() {
 			return;
 		}
 		
-		
 		const predictions = await session.TFJSModel.estimateFaces({
 			input: session.canvasSource
 		});
 		
 		var output = [];
 		if (predictions.length > 0) {
-			for (let j = 0; j < predictions.length; j++) {
-			  const fp = predictions[j].annotations;
-			  session.canvasCtx.fillStyle = "#000000";
-			  session.canvasCtx.fillRect(0, 0, session.canvas.width, session.canvas.height);
-			  const keypoints = predictions[j].scaledMesh
-			  for (let i = 0; i < keypoints.length; i++) {
-				var [x,y,z] = keypoints[i];
-				x=parseInt(x);
-				y=parseInt(y);
-				z=parseInt(z);
-				if (session.pushEffectsData){
-					output.push(x);
-					output.push(y);
-				}
-				session.canvasCtx.fillStyle = heatMapColorforValue((z+40)/60);
-				session.canvasCtx.fillRect(x, y, 5, 5);
-			  }
+			const keypoints = predictions[0].scaledMesh;
+
+			session.canvasCtx.drawImage(session.canvasSource, 0, 0, session.canvas.width, session.canvas.height);
+
+			if (keypoints && keypoints.length > 152) {
+				const [nx, ny] = keypoints[1];
+				const [fx, fy] = keypoints[10];
+				const [cx, cy] = keypoints[152];
+
+				const maskHeight = Math.abs(cy - fy) * 1.35;
+				const maskWidth = maskHeight * (jokerImg.width / jokerImg.height);
+				const radians = Math.atan2(cx - fx, cy - fy);
+
+				session.canvasCtx.save();
+				session.canvasCtx.translate(nx, ny);
+				session.canvasCtx.rotate(-radians);
+				session.canvasCtx.drawImage(jokerImg, -maskWidth / 2, -maskHeight / 2, maskWidth, maskHeight);
+				session.canvasCtx.restore();
 			}
+
+			if (session.pushEffectsData){
+				for (let i = 0; i < keypoints.length; i++) {
+					output.push(parseInt(keypoints[i][0]));
+					output.push(parseInt(keypoints[i][1]));
+				}
+			}
+		} else {
+			session.canvasCtx.drawImage(session.canvasSource, 0, 0, session.canvas.width, session.canvas.height);
 		}
 		
-		if (session.pushEffectsData){
-			//output = FastIntegerCompression.compress(output);
-			//log(output);
+		if (session.pushEffectsData && output.length > 0){
 			if (isIFrame){
 				 parent.postMessage({
 					"effectsData": output,
@@ -8857,24 +8862,21 @@ function mainMeshMask() {
 				}, session.iframetarget);
 			} else {
 				for (var i in session.pcs){
-					if (!session.pcs[i].sendChannel.bufferedAmount){ // don't overload things.
-						session.sendMessage({"effectsData":  output, "eID":session.effect},i);
+					if (!session.pcs[i].sendChannel.bufferedAmount){ 
+						session.sendMessage({"effectsData": output, "eID":session.effect},i);
 					}
 				}
 			}
 		}
 	  
-	  
-	  
-	    if (!session.TFJSModel.timeoutDraw){
+		if (!session.TFJSModel.timeoutDraw){
 			try {
 				session.TFJSModel.timeoutDraw = audioTimerLoop(process, session.canvasSource.srcObject.getVideoTracks()[0].getSettings().frameRate || 30);
 			} catch(e){
-				session.TFJSModel.timeoutDraw = audioTimerLoop(process, 30); // setTimeout(function(){draw();},33);
+				session.TFJSModel.timeoutDraw = audioTimerLoop(process, 30); 
 			}
 		}
 		session.TFJSModel.activelyProcessing = false;
-		
 	}
 	process();
 }
@@ -8905,9 +8907,6 @@ function drawFace() {
 
 		var lastFace = {};
 		
-		//session.canvasSource.width = session.canvasSource.srcObject.getVideoTracks()[0].getSettings().width || 1280;
-		//session.canvasSource.height = session.canvasSource.srcObject.getVideoTracks()[0].getSettings().height || 720;
-		
 		lastFace.x = session.canvasSource.width / 2;
 		lastFace.y = session.canvasSource.height / 2;
 		lastFace.w = session.canvasSource.width;
@@ -8931,7 +8930,6 @@ function drawFace() {
 							break;
 						}
 					}
-					//setTimeout(function(){draw();},0);
 				}).catch((e) => {
 					errorlog("Boo, Face Detection failed: " + e);
 				});
@@ -8991,7 +8989,6 @@ function drawFace() {
 					
 					var h = (w/session.canvasSource.width) * session.canvasSource.height;
 					
-					
 					xa = xa*0.998 + 0.002*(lastFace.x + lastFace.w/2);
 					ya = ya*0.998 + 0.002*(lastFace.y + lastFace.h/2);
 					
@@ -9001,7 +8998,6 @@ function drawFace() {
 					if (x<0){x=0;}
 					if (y<0){y=0;}
 					
-					
 					if (x>session.canvasSource.width-w){x=session.canvasSource.width-w;}
 					if (y>session.canvasSource.height-h){y=session.canvasSource.height-h;}
 					
@@ -9009,18 +9005,14 @@ function drawFace() {
 					if (y<0){y=0;}
 					
 				}
-				//console.log(x, y, w, h, session.canvasSource.width, session.canvasSource.height);
 				ctx.drawImage(session.canvasSource, x, y, w, h, 0, 0, session.canvasSource.width, session.canvasSource.height);
-				//ctx.beginPath();
-				//ctx.rect(lastFace.x, lastFace.y, lastFace.w, lastFace.h);
-			//	ctx.stroke();
 			} catch(e){}
 
 			if (!timers.timeoutDraw){
 				try {
 					timers.timeoutDraw = audioTimerLoop(draw, session.canvasSource.srcObject.getVideoTracks()[0].getSettings().frameRate || 30);
 				} catch(e){
-					timers.timeoutDraw = audioTimerLoop(draw,40); // setTimeout(function(){draw();},33);
+					timers.timeoutDraw = audioTimerLoop(draw,40); 
 				}
 			}
 			timers.activelyProcessingDraw = false;
@@ -9048,7 +9040,7 @@ function drawFace() {
 	};
 	faceAlignment = fde1();
 }
-////////  END CANVAS EFFECTS  ///////////////////
+////////  END CANVAS EFFECTS  /////////////////
 
 var getFacesActive = false;
 async function getFaces(){

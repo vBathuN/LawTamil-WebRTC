@@ -8795,7 +8795,7 @@ function setupReceiverTransform(receiver, UUID = false) {
   }
 }
 
-// --- DYNAMIC NEON SILHOUETTE (Cyberpunk Joker - Effect 6) ---
+// --- CYBERPUNK NEON JOKER SILHOUETTE (2D Double-Pass Optical Bloom) ---
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
@@ -8823,7 +8823,9 @@ function mainMeshMask() {
 		const w = session.canvas.width;
 		const h = session.canvas.height;
 
-		// 1. PITCH BLACK VOID (அசல் கேமரா வீடியோவை மறைத்து 100% கருப்புத் திரை ஆக்குதல்)
+		// 1. PITCH BLACK VOID (அசல் வீடியோவை மறைத்து 100% கருப்புத் திரை ஆக்குதல்)
+		ctx.save();
+		ctx.globalCompositeOperation = 'source-over';
 		ctx.fillStyle = "#000000";
 		ctx.fillRect(0, 0, w, h);
 
@@ -8833,62 +8835,80 @@ function mainMeshMask() {
 
 			if (kp && kp.length > 152) {
 				const p = (i) => ({ x: kp[i][0], y: kp[i][1] });
+				const faceW = Math.abs(p(454).x - p(234).x); // முகத்தின் அகலம் (Dynamic scaling)
+				const baseW = Math.max(2, faceW * 0.015);    // கோடுகளின் அடிப்படைத் தடிமன்
 
-				ctx.save();
-				ctx.lineCap = "round";
-				ctx.lineJoin = "round";
+				// 2. ADDITIVE BLENDING (ஒளியைக் கூட்ட)
+				ctx.globalCompositeOperation = 'lighter';
+				ctx.lineCap = 'round';
+				ctx.lineJoin = 'round';
 
-				// A. GHOST JAWLINE (முகத்தின் அசைவைக் காட்ட மங்கலான சிவப்பு அவுட்லைன்)
-				ctx.strokeStyle = "rgba(255, 15, 35, 0.22)";
-				ctx.shadowColor = "rgba(255, 15, 35, 0.2)";
-				ctx.shadowBlur = 10;
-				ctx.lineWidth = 2;
-				ctx.beginPath();
-				ctx.moveTo(p(234).x, p(234).y); 
-				ctx.quadraticCurveTo(p(152).x, p(152).y + 8, p(454).x, p(454).y);
-				ctx.stroke();
+				// --- மாஸ்டர் நியான் வரையும் உதவி ஃபங்ஷன் (Double-Pass Bloom) ---
+				const drawNeon = (drawFunc, glowColor, coreWidth) => {
+					ctx.save();
+					// பாஸ் 1: காற்றில் பரவும் வெளிப்புற ஒளி (The Glow Aura)
+					ctx.filter = 'blur(12px)';
+					ctx.strokeStyle = glowColor;
+					ctx.lineWidth = coreWidth * 4.5;
+					drawFunc();
+					ctx.stroke();
 
-				// B. NEON CYAN EYE DIAMONDS (ஒளிரும் டிஜிட்டல் கண்கள்)
-				ctx.strokeStyle = "#00ffff";
-				ctx.shadowColor = "#00ffff";
-				ctx.shadowBlur = 15;
-				ctx.lineWidth = 3;
+					// பாஸ் 2: அசல் ஒளிரும் மையக் கண்ணாடி டியூப் (The Hot White Core)
+					ctx.filter = 'none';
+					ctx.strokeStyle = '#ffffff';
+					ctx.lineWidth = coreWidth;
+					drawFunc();
+					ctx.stroke();
+					ctx.restore();
+				};
 
-				const le = { x: (p(159).x + p(145).x)/2, y: (p(159).y + p(145).y)/2 };
-				ctx.beginPath();
-				ctx.moveTo(le.x, le.y - 20); ctx.lineTo(le.x + 14, le.y);
-				ctx.lineTo(le.x, le.y + 24); ctx.lineTo(le.x - 14, le.y);
-				ctx.closePath(); ctx.stroke();
+				// A. எலக்ட்ரிக் வயலட் தாடை மற்றும் கன்னம் (Ghost Jawline)
+				const drawJaw = () => {
+					ctx.beginPath();
+					ctx.moveTo(p(234).x, p(234).y);
+					ctx.quadraticCurveTo(p(152).x, p(152).y + (faceW * 0.06), p(454).x, p(454).y);
+				};
+				drawNeon(drawJaw, '#b026ff', baseW * 0.8);
 
-				const re = { x: (p(386).x + p(374).x)/2, y: (p(386).y + p(374).y)/2 };
-				ctx.beginPath();
-				ctx.moveTo(re.x, re.y - 20); ctx.lineTo(re.x + 14, re.y);
-				ctx.lineTo(re.x, re.y + 24); ctx.lineTo(re.x - 14, re.y);
-				ctx.closePath(); ctx.stroke();
+				// B. நியான் சயான் கண் வைரங்கள் (Cyberpunk Eye Visor)
+				const drawEyes = () => {
+					// இடது கண்
+					const lT = p(105), lB = p(147), lI = p(133), lO = p(33);
+					ctx.beginPath();
+					ctx.moveTo(lT.x, lT.y - (faceW * 0.05)); ctx.lineTo(lI.x, lI.y);
+					ctx.lineTo(lB.x, lB.y + (faceW * 0.08)); ctx.lineTo(lO.x, lO.y);
+					ctx.closePath();
+					
+					// வலது கண்
+					const rT = p(334), rB = p(376), rI = p(362), rO = p(263);
+					ctx.moveTo(rT.x, rT.y - (faceW * 0.05)); ctx.lineTo(rI.x, rI.y);
+					ctx.lineTo(rB.x, rB.y + (faceW * 0.08)); ctx.lineTo(rO.x, rO.y);
+					ctx.closePath();
+				};
+				drawNeon(drawEyes, '#00ffff', baseW * 1.2);
 
-				// C. DYNAMIC GLOWING RED MOUTH (பேசும்போது அசல் வேகத்தில் திறந்து மூடும் வாய்)
-				ctx.strokeStyle = "#ff0033";
-				ctx.shadowColor = "#ff0033";
-				ctx.shadowBlur = 20;
-				ctx.lineWidth = 5;
+				// C. ஒளிரும் ஆரஞ்சு மூக்கு நுனி (Laser Nose Tip)
+				const drawNose = () => {
+					ctx.beginPath();
+					ctx.arc(p(1).x, p(1).y, faceW * 0.05, 0, Math.PI * 2);
+				};
+				drawNeon(drawNose, '#ff6600', baseW);
 
-				const cL = p(61), cR = p(291);
+				// D. தழும்புகளுடன் கூடிய அசையும் சிவந்த வாய் (Dynamic Glasgow Smile)
+				const drawSmile = () => {
+					const cL = p(61), cR = p(291), uL = p(0), bL = p(17);
 
-				// Upper Lip wireframe
-				ctx.beginPath();
-				ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(0).x, p(0).y - 4, cR.x, cR.y);
-				ctx.stroke();
-
-				// Lower Lip wireframe (வாய் திறக்கும் போது இது மட்டும் கீழே இறங்கும்)
-				ctx.beginPath();
-				ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(p(17).x, p(17).y + 4, cR.x, cR.y);
-				ctx.stroke();
-
-				// Glasgow Scars (கன்னத்துத் தழும்புகள்)
-				ctx.beginPath(); ctx.moveTo(cL.x, cL.y); ctx.lineTo(cL.x - 36, cL.y - 18); ctx.stroke();
-				ctx.beginPath(); ctx.moveTo(cR.x, cR.y); ctx.lineTo(cR.x + 36, cR.y - 18); ctx.stroke();
-
-				ctx.restore();
+					ctx.beginPath();
+					// மேல் உதடு
+					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(uL.x, uL.y - 4, cR.x, cR.y);
+					// கீழ் உதடு (பேசும்போது அசல் வேகத்தில் கீழே இறங்கும்)
+					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(bL.x, bL.y + 4, cR.x, cR.y);
+					// இடது கன்னத்துத் தழும்பு
+					ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.08), cL.y - 4, cL.x - (faceW*0.16), cL.y - (faceW*0.1));
+					// வலது கன்னத்துத் தழும்பு
+					ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.08), cR.y - 4, cR.x + (faceW*0.16), cR.y - (faceW*0.1));
+				};
+				drawNeon(drawSmile, '#ff0033', baseW * 1.5);
 			}
 
 			if (session.pushEffectsData){
@@ -8898,6 +8918,8 @@ function mainMeshMask() {
 				}
 			}
 		}
+
+		ctx.restore(); // கேன்வாஸ் நிலையை அசல் நிலைக்குத் திருப்புதல்
 		
 		if (session.pushEffectsData && output.length > 0){
 			if (isIFrame){

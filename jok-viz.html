@@ -96,88 +96,78 @@
 
         // --- 2. THE HUMANIZER DSP KERNEL (±8% Jitter) ---
         const pitchWorkletCode = `
-        class CinematicBaritoneEngine extends AudioWorkletProcessor {
+        class NaturalVillainEngine extends AudioWorkletProcessor {
             constructor() {
                 super();
-                // 3840 = 80ms விண்டோ (12.5Hz Infrasonic வேகம் - புரொஜெக்டர் ரீல் சத்தம் உருவாக வாய்ப்பே இல்லை)
-                this.GRAIN = 3840; 
-                this.buffer = new Float32Array(this.GRAIN * 4);
+                // 1200 = 25ms (ஆண்களின் குரல்வளை அலைநீளத்தின் மிகச்சரியான கோல்டன் விண்டோ)
+                this.BASE_GRAIN = 1200; 
+                this.buffer = new Float32Array(this.BASE_GRAIN * 4);
                 this.wPtr = 0;
 
-                // 3-Phase Overlap (120-degree offset - சிக்னல் பவர் எங்கும் சரிந்து 'டப்' சத்தம் தராது)
-                this.heads = [
-                    { pos: 0, age: 0 },
-                    { pos: 0, age: Math.floor(this.GRAIN / 3) },
-                    { pos: 0, age: Math.floor((this.GRAIN * 2) / 3) }
-                ];
+                // இரு ஹெட்களுக்கும் 'life' என்ற தனித்தனி ஆயுள் வழங்கப்பட்டுள்ளது
+                this.headA = { pos: 0, age: 0, life: this.BASE_GRAIN };
+                this.headB = { pos: 0, age: this.BASE_GRAIN / 2, life: this.BASE_GRAIN }; 
 
-                this.pitch = 0.865; // அடக்கமான, கம்பீரமான ஹாலிவுட் வில்லன் சுருதி
-                this.gate = 0.0;
+                this.pitch = 0.817; 
             }
 
             getSample(ptr) {
-                let fl = Math.floor(ptr); 
-                let fr = ptr - fl;
+                let fl = Math.floor(ptr); let fr = ptr - fl;
                 let len = this.buffer.length;
                 let s0 = this.buffer[(fl + len) % len];
                 let s1 = this.buffer[(fl + 1 + len) % len];
-                return s0 + (s1 - s0) * fr; // வெண்ணெய் போன்ற Linear Interpolation
+                return s0 + (s1 - s0) * fr;
+            }
+
+            // --- THE HUMANIZER: ஆயுட்காலத்தை ±8% நடுங்க வைக்கும் அல்காரிதம் ---
+            getJitteredLife() {
+                let shiver = (Math.random() - 0.5) * 180; // -90 முதல் +90 சாம்பிள் வரை நடுக்கம்
+                return Math.floor(this.BASE_GRAIN + shiver);
             }
 
             process(inputs, outputs) {
-                const inChannel = inputs[0][0];
+                const input = inputs[0][0];
                 const outL = outputs[0][0]; const outR = outputs[0][1];
-                if (!inChannel || !outL) return true;
+                if (!input || !outL) return true;
 
                 const len = this.buffer.length;
-                const N = this.GRAIN;
 
-                for (let i = 0; i < inChannel.length; i++) {
-                    let inputSample = inChannel[i];
-
-                    // 1. Studio Soft Expander: அறையின் 'ஸ்ஸ்ஸ்...' இரைச்சலை உள்ளே வரும்போதே கொன்றுவிடும்
-                    let absSample = Math.abs(inputSample);
-                    if (absSample > 0.0015) {
-                        this.gate += (1.0 - this.gate) * 0.05; 
-                    } else {
-                        this.gate *= 0.996; // 50ms-ல் மென்மையான ஃபேட்-அவுட்
-                    }
-
-                    this.buffer[this.wPtr] = inputSample * this.gate;
+                for (let i = 0; i < input.length; i++) {
+                    this.buffer[this.wPtr] = input[i];
                     this.wPtr = (this.wPtr + 1) % len;
 
-                    let mixedOutput = 0;
+                    // 1. தற்போதைய ரண்டம் 'Life'-க்கு ஏற்ப சுருங்கி விரியும் Hanning Bell Curve
+                    let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / this.headA.life));
+                    let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / this.headB.life));
 
-                    // 2. Three-Head "Welch Windowing" (The Absolute Smoothness)
-                    for (let h of this.heads) {
-                        // Welch Window ஃபார்முலா: 1 - ((x - N/2) / (N/2))^2
-                        let normAge = (h.age - (N / 2)) / (N / 2);
-                        let windowWeight = 1.0 - (normAge * normAge);
+                    let sample = (this.getSample(this.headA.pos) * winA) + 
+                                 (this.getSample(this.headB.pos) * winB);
 
-                        if (windowWeight > 0) {
-                            mixedOutput += this.getSample(h.pos) * windowWeight;
-                        }
+                    outL[i] = sample;
+                    if (outR) outR[i] = sample;
 
-                        h.age++;
-                        h.pos = (h.pos + this.pitch) % len;
+                    this.headA.age++; this.headB.age++;
+                    this.headA.pos = (this.headA.pos + this.pitch) % len;
+                    this.headB.pos = (this.headB.pos + this.pitch) % len;
 
-                        if (h.age >= N) {
-                            h.age = 0;
-                            h.pos = (this.wPtr - N + len) % len;
-                        }
+                    // 2. Head A சாகும்போது, தனக்கான 'அடுத்த ஜென்மத்தின் ஆயுளை' ரண்டமாக நிர்ணயிக்கிறது!
+                    if (this.headA.age >= this.headA.life) {
+                        this.headA.life = this.getJitteredLife();
+                        this.headA.age = 0;
+                        this.headA.pos = (this.wPtr - this.headA.life + len) % len;
                     }
-
-                    mixedOutput *= 0.667; // 3 ஹெட்களின் கூட்டுத்தொகையைச் சமன் செய்கிறோம்
-
-                    outL[i] = mixedOutput;
-                    if (outR) outR[i] = mixedOutput;
+                    if (this.headB.age >= this.headB.life) {
+                        this.headB.life = this.getJitteredLife();
+                        this.headB.age = 0;
+                        this.headB.pos = (this.wPtr - this.headB.life + len) % len;
+                    }
                 }
                 return true;
             }
         }
-        registerProcessor('joker-voice-engine', CinematicBaritoneEngine);
+        registerProcessor('joker-voice-engine', NaturalVillainEngine);
         `;
-
+        
         const connectedTracks = new Set(); 
 
         function bootVisualizer() {

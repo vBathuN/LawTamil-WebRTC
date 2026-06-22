@@ -96,65 +96,86 @@
 
         // --- 2. THE HUMANIZER DSP KERNEL (±8% Jitter) ---
         const pitchWorkletCode = `
-        class NaturalVillainEngine extends AudioWorkletProcessor {
+        class CinematicBaritoneEngine extends AudioWorkletProcessor {
             constructor() {
                 super();
-                this.BASE_GRAIN = 1200; 
-                this.buffer = new Float32Array(this.BASE_GRAIN * 4);
+                // 3840 = 80ms விண்டோ (12.5Hz Infrasonic வேகம் - புரொஜெக்டர் ரீல் சத்தம் உருவாக வாய்ப்பே இல்லை)
+                this.GRAIN = 3840; 
+                this.buffer = new Float32Array(this.GRAIN * 4);
                 this.wPtr = 0;
-                this.headA = { pos: 0, age: 0, life: this.BASE_GRAIN };
-                this.headB = { pos: 0, age: this.BASE_GRAIN / 2, life: this.BASE_GRAIN }; 
-                this.pitch = 0.817; 
+
+                // 3-Phase Overlap (120-degree offset - சிக்னல் பவர் எங்கும் சரிந்து 'டப்' சத்தம் தராது)
+                this.heads = [
+                    { pos: 0, age: 0 },
+                    { pos: 0, age: Math.floor(this.GRAIN / 3) },
+                    { pos: 0, age: Math.floor((this.GRAIN * 2) / 3) }
+                ];
+
+                this.pitch = 0.865; // அடக்கமான, கம்பீரமான ஹாலிவுட் வில்லன் சுருதி
+                this.gate = 0.0;
             }
+
             getSample(ptr) {
-                let fl = Math.floor(ptr); let fr = ptr - fl;
+                let fl = Math.floor(ptr); 
+                let fr = ptr - fl;
                 let len = this.buffer.length;
                 let s0 = this.buffer[(fl + len) % len];
                 let s1 = this.buffer[(fl + 1 + len) % len];
-                return s0 + (s1 - s0) * fr;
+                return s0 + (s1 - s0) * fr; // வெண்ணெய் போன்ற Linear Interpolation
             }
-            getJitteredLife() {
-                let shiver = (Math.random() - 0.5) * 180; 
-                return Math.floor(this.BASE_GRAIN + shiver);
-            }
+
             process(inputs, outputs) {
-                const input = inputs[0][0];
+                const inChannel = inputs[0][0];
                 const outL = outputs[0][0]; const outR = outputs[0][1];
-                if (!input || !outL) return true;
+                if (!inChannel || !outL) return true;
 
                 const len = this.buffer.length;
+                const N = this.GRAIN;
 
-                for (let i = 0; i < input.length; i++) {
-                    this.buffer[this.wPtr] = input[i];
+                for (let i = 0; i < inChannel.length; i++) {
+                    let inputSample = inChannel[i];
+
+                    // 1. Studio Soft Expander: அறையின் 'ஸ்ஸ்ஸ்...' இரைச்சலை உள்ளே வரும்போதே கொன்றுவிடும்
+                    let absSample = Math.abs(inputSample);
+                    if (absSample > 0.0015) {
+                        this.gate += (1.0 - this.gate) * 0.05; 
+                    } else {
+                        this.gate *= 0.996; // 50ms-ல் மென்மையான ஃபேட்-அவுட்
+                    }
+
+                    this.buffer[this.wPtr] = inputSample * this.gate;
                     this.wPtr = (this.wPtr + 1) % len;
 
-                    let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / this.headA.life));
-                    let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / this.headB.life));
+                    let mixedOutput = 0;
 
-                    let sample = (this.getSample(this.headA.pos) * winA) + (this.getSample(this.headB.pos) * winB);
+                    // 2. Three-Head "Welch Windowing" (The Absolute Smoothness)
+                    for (let h of this.heads) {
+                        // Welch Window ஃபார்முலா: 1 - ((x - N/2) / (N/2))^2
+                        let normAge = (h.age - (N / 2)) / (N / 2);
+                        let windowWeight = 1.0 - (normAge * normAge);
 
-                    outL[i] = sample;
-                    if (outR) outR[i] = sample;
+                        if (windowWeight > 0) {
+                            mixedOutput += this.getSample(h.pos) * windowWeight;
+                        }
 
-                    this.headA.age++; this.headB.age++;
-                    this.headA.pos = (this.headA.pos + this.pitch) % len;
-                    this.headB.pos = (this.headB.pos + this.pitch) % len;
+                        h.age++;
+                        h.pos = (h.pos + this.pitch) % len;
 
-                    if (this.headA.age >= this.headA.life) {
-                        this.headA.life = this.getJitteredLife();
-                        this.headA.age = 0;
-                        this.headA.pos = (this.wPtr - this.headA.life + len) % len;
+                        if (h.age >= N) {
+                            h.age = 0;
+                            h.pos = (this.wPtr - N + len) % len;
+                        }
                     }
-                    if (this.headB.age >= this.headB.life) {
-                        this.headB.life = this.getJitteredLife();
-                        this.headB.age = 0;
-                        this.headB.pos = (this.wPtr - this.headB.life + len) % len;
-                    }
+
+                    mixedOutput *= 0.667; // 3 ஹெட்களின் கூட்டுத்தொகையைச் சமன் செய்கிறோம்
+
+                    outL[i] = mixedOutput;
+                    if (outR) outR[i] = mixedOutput;
                 }
                 return true;
             }
         }
-        registerProcessor('joker-voice-engine', NaturalVillainEngine);
+        registerProcessor('joker-voice-engine', CinematicBaritoneEngine);
         `;
 
         const connectedTracks = new Set(); 

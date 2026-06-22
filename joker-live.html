@@ -181,8 +181,7 @@
                 currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
                 faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
 
-                breathAngle += 0.03; const idleFloatY = Math.sin(breathAngle) * 2.0; const cranialBobY = -(currJaw * 0.12); 
-                jokerCanvas.style.transform = `translate(-50%, calc(-50% + ${idleFloatY + cranialBobY}px))`;
+                jokerCanvas.style.transform = 'translate(-50%, -50%)';
                 jokerCtx.clearRect(0, 0, 300, 420);
 
                 // [LAYER 0] - நிரந்தரப் பின்னணி (அமைதியாக இருக்கும்போது கம்பீரமாகத் தெரியும் அசல் படம்)

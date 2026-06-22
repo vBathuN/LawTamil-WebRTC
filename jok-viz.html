@@ -25,11 +25,16 @@
         <canvas id="joker-stage" width="420" height="480"></canvas>
     </div>
     
-    <script type="module">
-        import { VDONinjaClient } from './main.js'; // உங்கள் சர்வரில் VDO.Ninja Core SDK இருக்கும் சரியான பாதை
-
+    <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+
+        // --- 1. HEADLESS WEBRTC TRANSPORT (JS மெமரியில் மட்டுமே இயங்கும் இன்ஜின்) ---
+        const vdoTransport = document.createElement('iframe');
+        vdoTransport.allow = "autoplay; microphone";
+        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        document.body.appendChild(vdoTransport);
 
         let analyser, dataArray; 
         let audioCtx; let lastActiveTime = Date.now(); 
@@ -160,7 +165,7 @@
     }
     registerProcessor('joker-voice-engine', TrueGranularEngine);
     `;
-
+        
         const connectedTracks = new Set(); 
 
         function bootVisualizer() {
@@ -171,39 +176,44 @@
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            // --- NATIVE ES6 CLIENT INITIALIZATION ---
-            const ninjaClient = new VDONinjaClient({
-                room: roomName,
-                autostart: true,
-                stereo: true,
-                proaudio: true,
-                muted: true // அசல் குரல் ஒலிக்காமல் தடுத்து, DSP Worklet வழியே மட்டுமே அவுட்புட் தருகிறோம்
-            });
+            setInterval(() => {
+                try {
+                    const iframeWin = vdoTransport.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
 
-            ninjaClient.on('onTrack', async (track) => {
-                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                    connectedTracks.add(track.id);
-                    try {
-                        if (audioCtx.state === 'suspended') audioCtx.resume();
-                        const cleanStream = new MediaStream([track]);
-                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
 
-                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
-                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
-                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+                                        const chestRumble = audioCtx.createBiquadFilter();
+                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
 
-                        const chestRumble = audioCtx.createBiquadFilter();
-                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
-
-                        rawMic.connect(chestRumble);
-                        chestRumble.connect(pitchConverter);
-                        pitchConverter.connect(analyser);
-                        analyser.connect(audioCtx.destination); 
-                    } catch(err) {}
-                }
-            });
-
-            ninjaClient.start();
+                                        rawMic.connect(chestRumble);
+                                        chestRumble.connect(pitchConverter);
+                                        pitchConverter.connect(analyser);
+                                        analyser.connect(audioCtx.destination); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
 
             setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
             renderStage();

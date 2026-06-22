@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Live VTuber - Master Edition</title>
+    <title>LawTamil Live VTuber - Pure Original Edition</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -45,32 +45,26 @@
         const jokerCanvas = document.getElementById('joker-stage');
         const jokerCtx = jokerCanvas.getContext('2d');
 
-        // --- 1. SMART ASSET LOADER (CORS தடை வராது + Extension தானாக மாறும்) ---
+        // --- 1. SMART ASSET LOADER ---
         const bgImg = new Image();
         const fgImg = new Image();
 
         function loadWithFallback(imgObj, srcList) {
             let i = 0;
-            imgObj.onerror = () => {
-                i++;
-                if (i < srcList.length) imgObj.src = srcList[i];
-            };
+            imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
             imgObj.src = srcList[0];
         }
 
-        // சர்வரில் .png அல்லது .jpg என எது இருந்தாலும் இதுவே கண்டுபிடித்துக்கொள்ளும்
         loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
         loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
 
-        // --- 2. FAIL-SAFE VECTOR SCANNER ---
-        let contourNormals = [];
-        let contourScanned = false;
+        // --- 2. VECTOR CONTOUR SCANNER ---
+        let contourNormals = []; let contourScanned = false;
 
         function safeScanContour() {
             if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
             try {
-                const off = document.createElement('canvas');
-                off.width = 300; off.height = 340; 
+                const off = document.createElement('canvas'); off.width = 300; off.height = 340; 
                 const octx = off.getContext('2d', { willReadFrequently: true });
                 octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 0, 0, 300, 340);
                 const data = octx.getImageData(0, 0, 300, 340).data;
@@ -84,16 +78,13 @@
                         const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
                         if (px >= 0 && px < 300 && py >= 0 && py < 340) {
                             if (data[(py * 300 + px) * 4 + 3] > 40) { 
-                                contourNormals.push({ x: px, y: py, nx: nx, ny: ny });
-                                break;
+                                contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break;
                             }
                         }
                     }
                 }
                 contourScanned = true;
-            } catch (e) {
-                contourScanned = true; // ஸ்கேனிங் ஃபெயில் ஆனாலும் அனிமேஷன் நிற்காமல் தொடர இது அனுமதிக்கும்
-            }
+            } catch (e) { contourScanned = true; }
         }
 
         // --- 3. ONNX NEURAL ENGINE ---
@@ -115,19 +106,17 @@
         let breathAngle = 0; let isBlinking = false;
 
         function startAutonomousBlink() {
-            isBlinking = true;
-            setTimeout(() => { isBlinking = false; }, 120);
+            isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
             setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
         }
         startAutonomousBlink();
 
-        // --- 4. WEBRTC ENGINE HOOK ---
+        // --- 4. WEBRTC HOOK ---
         const connectedTracks = new Set(); 
         function bootVisualizer() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
+                analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -165,82 +154,55 @@
             renderStage();
         }
 
-        // --- 5. MASTER RENDER PIPELINE ---
+        // --- 5. MASTER RENDER STAGE (PURE ORIGINAL MATH) ---
         const renderStage = () => {
             requestAnimationFrame(renderStage);
-            
-            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) {
-                safeScanContour();
-            }
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
 
-            let avgVol = 0;
-            let blendshapes = { jawOpen: 0, mouthStretch: 0 };
+            let avgVol = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
 
             if (analyser && dataArray) {
                 analyser.getByteFrequencyData(dataArray);
-                let totalVolume = 0;
-                for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
-                avgVol = totalVolume / 25;
-                blendshapes = AudioBlendshapeNet.predict(dataArray);
+                let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
+                avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
             }
 
             if (avgVol > 8) { 
-                lastActiveTime = Date.now(); 
-                targetFaceAlpha = 1.0; 
+                lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
-
-                targetJaw = blendshapes.jawOpen * 36;        
-                targetSmile = blendshapes.mouthStretch * 18; 
+                targetJaw = blendshapes.jawOpen * 36; targetSmile = blendshapes.mouthStretch * 18; 
             } else {
                 targetJaw = 0; targetSmile = 0;
-                if (Date.now() - lastActiveTime > 1200) {
-                    targetFaceAlpha = 0.0; 
-                    if (glowDiv) glowDiv.style.opacity = "0";
-                }
+                if (Date.now() - lastActiveTime > 1200) { targetFaceAlpha = 0.0; if (glowDiv) glowDiv.style.opacity = "0"; }
             }
 
             if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
                 
-                currJaw += (targetJaw - currJaw) * 0.32;
-                currSmile += (targetSmile - currSmile) * 0.28;
+                currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
                 faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
 
-                breathAngle += 0.03;
-                const idleFloatY = Math.sin(breathAngle) * 2.0; 
-                const cranialBobY = -(currJaw * 0.12); 
-
+                breathAngle += 0.03; const idleFloatY = Math.sin(breathAngle) * 2.0; const cranialBobY = -(currJaw * 0.12); 
                 jokerCanvas.style.transform = `translate(-50%, calc(-50% + ${idleFloatY + cranialBobY}px))`;
                 jokerCtx.clearRect(0, 0, 300, 420);
 
-                const natW = fgImg.naturalWidth;
-                const natH = fgImg.naturalHeight;
-                const scale = 340 / natH; 
-
-                const splitY_nat = natH * 0.585;  
-                const splitY_draw = splitY_nat * scale; 
-
-                const stretchX = -(currSmile * 0.5);
-                const stretchW = 300 + currSmile;
-
-                // [LAYER 0]: நிரந்தர அசல் படம் (எப்போதும் 100% தெரியும்)
+                // [LAYER 0] - நிரந்தரப் பின்னணி (அமைதியாக இருக்கும்போது கம்பீரமாகத் தெரியும் அசல் படம்)
                 jokerCtx.globalAlpha = 1.0;
                 jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 0, 0, 300, 340);
 
-                // [LAYERS 1-4]: பேசும்போது மட்டும் மேலெழும் முகம்
+                // [LAYERS 1 & 2] - பேசும்போது மட்டும் மேலெழும் முகம்
                 if (faceAlpha > 0.005) {
                     jokerCtx.globalAlpha = faceAlpha;
 
-                    // Layer 1: Vector Wires
+                    // --- அசல் விஷுவலைசர் (முழுச் சிவப்பு மட்டும்) ---
                     if (contourNormals.length > 0 && avgVol > 1) {
                         jokerCtx.save();
-                        jokerCtx.lineWidth = 3.0; jokerCtx.lineCap = 'round';
-                        jokerCtx.shadowColor = '#ff0055'; jokerCtx.shadowBlur = 10;
-                        const stepBin = Math.floor((dataArray.length * 0.55) / contourNormals.length);
+                        jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
+                        jokerCtx.shadowColor = '#ff1a1a'; jokerCtx.shadowBlur = 12;
+                        const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
                         contourNormals.forEach((pt, i) => {
-                            const bin = i * stepBin;
-                            const pwr = Math.max(0, (dataArray[bin] || 0) - 82) * 0.26;
-                            if (pwr > 1.2) {
-                                jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff2a2a' : '#00d4ff';
+                            const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
+                            if (pwr > 1) {
+                                jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff1a1a' : '#ff4d4d'; // Pure Red!
                                 jokerCtx.beginPath();
                                 jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
                                 jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr));
@@ -250,41 +212,26 @@
                         jokerCtx.restore();
                     }
 
-                    // Layer 2: Throat Void + EQ
-                    if (currJaw > 0.5) {
-                        jokerCtx.save();
-                        jokerCtx.fillStyle = '#050505';
-                        jokerCtx.beginPath();
-                        jokerCtx.ellipse(150, splitY_draw + (currJaw * 0.35), 36 + (currSmile * 0.4), (currJaw * 0.52), 0, 0, Math.PI * 2);
-                        jokerCtx.fill();
+                    // --- அசல் 3-PART ACCORDION SEAM (உன் ஒரிஜினல் ரப்பர் லாஜிக் அப்படியே) ---
+                    const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
+                    const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
 
-                        if (avgVol > 3) {
-                            const eqY = splitY_draw + (currJaw * 0.35);
-                            const maxBarH = currJaw * 0.75; const barW = 3; const gap = 6;
-                            const freqs = [
-                                Math.min(maxBarH, Math.max(2, ((dataArray[3] || 0) - 85) * 0.15)),
-                                Math.min(maxBarH, Math.max(2, ((dataArray[7] || 0) - 85) * 0.20)),
-                                Math.min(maxBarH, Math.max(2, ((dataArray[12] || 0) - 85) * 0.15))
-                            ];
-                            freqs.forEach((h, idx) => {
-                                const bx = 150 + ((idx - 1) * gap);
-                                jokerCtx.fillStyle = (idx === 1) ? '#ff2a2a' : '#00d4ff';
-                                jokerCtx.fillRect(bx - (barW/2), eqY - (h/2), barW, h);
-                            });
-                        }
-                        jokerCtx.restore();
-                    }
+                    const dTopH = sTop * scale;
+                    const dRubberH = (sRubberH * scale) + currJaw; 
+                    const dBotY = dTopH + dRubberH;
+                    const dBotH = (natH - sBot) * scale;
 
-                    // Layer 3: Moving Jaw
-                    const botH_nat = natH - splitY_nat;
-                    const botH_draw = botH_nat * scale;
-                    jokerCtx.drawImage(fgImg, 0, splitY_nat, natW, botH_nat, stretchX, splitY_draw + currJaw, stretchW, botH_draw);
+                    const stretchX = -(currSmile * 0.5); const stretchW = 300 + currSmile;
 
-                    // Layer 4: Static Upper Skull
-                    jokerCtx.drawImage(fgImg, 0, 0, natW, splitY_nat, 0, 0, 300, splitY_draw);
+                    // 1. மேல் மண்டை
+                    jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  0, 0, 300, dTopH);
+                    // 2. நடுவாய் ரப்பர் (வெட்டப்படாமல் கீழ்நோக்கி இழுபடும் அசல் பகுதி)
+                    jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, dTopH, stretchW, dRubberH);
+                    // 3. கீழ் தாடை
+                    jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  stretchX * 0.5, dBotY, 300 + (currSmile*0.5), dBotH);
                 }
 
-                // [TOPMOST]: நிரந்தரக் கண் சிமிட்டல் (பேசினாலும், அமைதியாக இருந்தாலும் இயங்கும்)
+                // [TOPMOST] - நிரந்தரக் கண் சிமிட்டல்
                 jokerCtx.globalAlpha = 1.0; 
                 if (isBlinking) {
                     jokerCtx.fillStyle = "#cbd0d3"; 

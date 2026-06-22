@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Live VTuber - Perfectly Centered Pro</title>
+    <title>LawTamil Live VTuber - Pure Monolith Pro</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -17,8 +17,6 @@
             transform: translate(-50%, -50%);
             will-change: transform;
         }
-
-        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
     </style>
 </head>
 <body>
@@ -27,92 +25,87 @@
         <canvas id="joker-stage" width="420" height="480"></canvas>
     </div>
     
-    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
-
     <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
-    // அசல் குரல் ஐஃப்ரேமிற்குள் மியூட் ஆகிவிடும் (vol=0), DSP-ல் உருமாறிய குரல் மட்டுமே வெளியே கேட்கும்
-    document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        // --- 1. HEADLESS WEBRTC TRANSPORT (JS மெமரியில் மட்டுமே இயங்கும் இன்ஜின்) ---
+        const vdoTransport = document.createElement('iframe');
+        vdoTransport.allow = "autoplay; microphone";
+        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        document.body.appendChild(vdoTransport);
 
-    let analyser, dataArray; 
-    let audioCtx; let lastActiveTime = Date.now(); 
+        let analyser, dataArray; 
+        let audioCtx; let lastActiveTime = Date.now(); 
 
-    const jokerCanvas = document.getElementById('joker-stage');
-    const jokerCtx = jokerCanvas.getContext('2d');
+        const jokerCanvas = document.getElementById('joker-stage');
+        const jokerCtx = jokerCanvas.getContext('2d');
 
-    const bgImg = new Image(); const fgImg = new Image();
-    function loadWithFallback(imgObj, srcList) {
-        let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
-        imgObj.src = srcList[0];
-    }
-    loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
-    loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
+        const bgImg = new Image(); const fgImg = new Image();
+        function loadWithFallback(imgObj, srcList) {
+            let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
+            imgObj.src = srcList[0];
+        }
+        loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
+        loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
 
-    let contourNormals = []; let contourScanned = false;
-    function safeScanContour() {
-        if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
-        try {
-            const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
-            const octx = off.getContext('2d', { willReadFrequently: true });
-            octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
-            const data = octx.getImageData(0, 0, 420, 480).data;
-            const cx = 210, cy = 210; const rays = 75; contourNormals = [];
-            for (let i = 0; i < rays; i++) {
-                const angle = (i / rays) * (Math.PI * 2);
-                if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
-                const nx = Math.cos(angle); const ny = Math.sin(angle);
-                for (let r = 165; r > 15; r--) {
-                    const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
-                    if (px >= 0 && px < 420 && py >= 0 && py < 480) {
-                        if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+        let contourNormals = []; let contourScanned = false;
+        function safeScanContour() {
+            if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
+            try {
+                const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
+                const data = octx.getImageData(0, 0, 420, 480).data;
+                const cx = 210, cy = 210; const rays = 75; contourNormals = [];
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+                    const nx = Math.cos(angle); const ny = Math.sin(angle);
+                    for (let r = 165; r > 15; r--) {
+                        const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 420 && py >= 0 && py < 480) {
+                            if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+                        }
                     }
                 }
-            }
-            contourScanned = true;
-        } catch (e) { contourScanned = true; }
-    }
-
-    const AudioBlendshapeNet = {
-        predict: function(fft) {
-            let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
-            const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
-            const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
-            let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
-            let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
-            return { jawOpen, mouthStretch };
+                contourScanned = true;
+            } catch (e) { contourScanned = true; }
         }
-    };
 
-    let currJaw = 0, targetJaw = 0; let currSmile = 0, targetSmile = 0;
-    let faceAlpha = 0, targetFaceAlpha = 0; let isBlinking = false;
+        const AudioBlendshapeNet = {
+            predict: function(fft) {
+                let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
+                const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
+                const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
+                let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
+                let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
+                return { jawOpen, mouthStretch };
+            }
+        };
 
-    function startAutonomousBlink() {
-        isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
-        setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
-    }
-    startAutonomousBlink();
+        let currJaw = 0, targetJaw = 0; let currSmile = 0, targetSmile = 0;
+        let faceAlpha = 0, targetFaceAlpha = 0; let isBlinking = false;
 
-    // =========================================================================
-    // THE ULTIMATE KERNEL: 4096 Buffer + 0.817 Pitch + Smart Envelope Gate
-    // =========================================================================
-    const pitchWorkletCode = `
+        function startAutonomousBlink() {
+            isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
+            setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
+        }
+        startAutonomousBlink();
+
+        // --- 2. THE HUMANIZER DSP KERNEL (±8% Jitter) ---
+        const pitchWorkletCode = `
         class NaturalVillainEngine extends AudioWorkletProcessor {
             constructor() {
                 super();
-                // 1200 = 25ms (ஆண்களின் குரல்வளை அலைநீளத்தின் மிகச்சரியான கோல்டன் விண்டோ)
                 this.BASE_GRAIN = 1200; 
                 this.buffer = new Float32Array(this.BASE_GRAIN * 4);
                 this.wPtr = 0;
-
-                // இரு ஹெட்களுக்கும் 'life' என்ற தனித்தனி ஆயுள் வழங்கப்பட்டுள்ளது
                 this.headA = { pos: 0, age: 0, life: this.BASE_GRAIN };
                 this.headB = { pos: 0, age: this.BASE_GRAIN / 2, life: this.BASE_GRAIN }; 
-
                 this.pitch = 0.817; 
             }
-
             getSample(ptr) {
                 let fl = Math.floor(ptr); let fr = ptr - fl;
                 let len = this.buffer.length;
@@ -120,13 +113,10 @@
                 let s1 = this.buffer[(fl + 1 + len) % len];
                 return s0 + (s1 - s0) * fr;
             }
-
-            // --- THE HUMANIZER: ஆயுட்காலத்தை ±8% நடுங்க வைக்கும் அல்காரிதம் ---
             getJitteredLife() {
-                let shiver = (Math.random() - 0.5) * 180; // -90 முதல் +90 சாம்பிள் வரை நடுக்கம்
+                let shiver = (Math.random() - 0.5) * 180; 
                 return Math.floor(this.BASE_GRAIN + shiver);
             }
-
             process(inputs, outputs) {
                 const input = inputs[0][0];
                 const outL = outputs[0][0]; const outR = outputs[0][1];
@@ -138,12 +128,10 @@
                     this.buffer[this.wPtr] = input[i];
                     this.wPtr = (this.wPtr + 1) % len;
 
-                    // 1. தற்போதைய ரண்டம் 'Life'-க்கு ஏற்ப சுருங்கி விரியும் Hanning Bell Curve
                     let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / this.headA.life));
                     let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / this.headB.life));
 
-                    let sample = (this.getSample(this.headA.pos) * winA) + 
-                                 (this.getSample(this.headB.pos) * winB);
+                    let sample = (this.getSample(this.headA.pos) * winA) + (this.getSample(this.headB.pos) * winB);
 
                     outL[i] = sample;
                     if (outR) outR[i] = sample;
@@ -152,7 +140,6 @@
                     this.headA.pos = (this.headA.pos + this.pitch) % len;
                     this.headB.pos = (this.headB.pos + this.pitch) % len;
 
-                    // 2. Head A சாகும்போது, தனக்கான 'அடுத்த ஜென்மத்தின் ஆயுளை' ரண்டமாக நிர்ணயிக்கிறது!
                     if (this.headA.age >= this.headA.life) {
                         this.headA.life = this.getJitteredLife();
                         this.headA.age = 0;
@@ -169,126 +156,123 @@
         }
         registerProcessor('joker-voice-engine', NaturalVillainEngine);
         `;
-        
-    const connectedTracks = new Set(); 
 
-    function bootVisualizer() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            setInterval(() => {
+                try {
+                    const iframeWin = vdoTransport.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+
+                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+
+                                        const chestRumble = audioCtx.createBiquadFilter();
+                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+
+                                        rawMic.connect(chestRumble);
+                                        chestRumble.connect(pitchConverter);
+                                        pitchConverter.connect(analyser);
+                                        analyser.connect(audioCtx.destination); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
+
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
+            renderStage();
         }
-        if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        const iframe = document.getElementById('vdo-engine');
-        setInterval(() => {
-            try {
-                const iframeWin = iframe.contentWindow;
-                if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
-                    const OrigPeerConnection = iframeWin.RTCPeerConnection;
-                    iframeWin.RTCPeerConnection = function(...args) {
-                        const pc = new OrigPeerConnection(...args);
-                        
-                        pc.addEventListener('track', async (event) => {
-                            const track = event.track;
-                            if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                                connectedTracks.add(track.id);
-                                try {
-                                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                                    
-                                    const cleanStream = new MediaStream([track]);
-                                    const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+        const renderStage = () => {
+            requestAnimationFrame(renderStage);
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
 
-                                    const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
-                                    await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
-                                    const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+            let avgVol = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
+                avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
+            }
 
-                                    const chestRumble = audioCtx.createBiquadFilter();
-                                    chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+            if (avgVol > 8) { 
+                lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
+                targetJaw = blendshapes.jawOpen * 22; targetSmile = blendshapes.mouthStretch * 12; 
+            } else {
+                targetJaw = 0; targetSmile = 0;
+                if (Date.now() - lastActiveTime > 1200) targetFaceAlpha = 0.0; 
+            }
 
-                                    rawMic.connect(chestRumble);
-                                    chestRumble.connect(pitchConverter);
-                                    pitchConverter.connect(analyser);
-                                    analyser.connect(audioCtx.destination); 
-                                } catch(err) {}
+            if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
+                currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
+                faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
+                jokerCtx.clearRect(0, 0, 420, 480);
+
+                jokerCtx.globalAlpha = 1.0;
+                jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
+
+                if (faceAlpha > 0.005) {
+                    jokerCtx.globalAlpha = faceAlpha;
+                    if (contourNormals.length > 0 && avgVol > 1) {
+                        jokerCtx.save(); jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
+                        jokerCtx.shadowColor = '#ff1a1a'; jokerCtx.shadowBlur = 12;
+                        const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
+                        contourNormals.forEach((pt, i) => {
+                            const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
+                            if (pwr > 1) {
+                                jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff1a1a' : '#ff4d4d';
+                                jokerCtx.beginPath(); jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
+                                jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); jokerCtx.stroke();
                             }
                         });
-                        return pc;
-                    };
-                    iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
-                    Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
-                    iframeWin.__lawtamil_rtc_hooked = true;
+                        jokerCtx.restore();
+                    }
+                    const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
+                    const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
+                    const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + currJaw; 
+                    const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
+                    const stretchX = 60 - (currSmile * 0.5); const stretchW = 300 + currSmile;
+                    const botJawX = 60 - (currSmile * 0.25);
+
+                    jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
+                    jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
+                    jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (currSmile*0.5), dBotH);
                 }
-            } catch (e) {} 
-        }, 500);
-
-        setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
-        renderStage();
-    }
-
-    const renderStage = () => {
-        requestAnimationFrame(renderStage);
-        if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
-
-        let avgVol = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
-        if (analyser && dataArray) {
-            analyser.getByteFrequencyData(dataArray);
-            let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
-            avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
-        }
-
-        if (avgVol > 8) { 
-            lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
-            targetJaw = blendshapes.jawOpen * 22; targetSmile = blendshapes.mouthStretch * 12; 
-        } else {
-            targetJaw = 0; targetSmile = 0;
-            if (Date.now() - lastActiveTime > 1200) targetFaceAlpha = 0.0; 
-        }
-
-        if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
-            currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
-            faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
-            jokerCtx.clearRect(0, 0, 420, 480);
-
-            jokerCtx.globalAlpha = 1.0;
-            jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
-
-            if (faceAlpha > 0.005) {
-                jokerCtx.globalAlpha = faceAlpha;
-                if (contourNormals.length > 0 && avgVol > 1) {
-                    jokerCtx.save(); jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
-                    jokerCtx.shadowColor = '#ff1a1a'; jokerCtx.shadowBlur = 12;
-                    const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
-                    contourNormals.forEach((pt, i) => {
-                        const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
-                        if (pwr > 1) {
-                            jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff1a1a' : '#ff4d4d';
-                            jokerCtx.beginPath(); jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
-                            jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); jokerCtx.stroke();
-                        }
-                    });
-                    jokerCtx.restore();
+                jokerCtx.globalAlpha = 1.0; 
+                if (isBlinking) {
+                    jokerCtx.fillStyle = "#cbd0d3"; 
+                    jokerCtx.beginPath(); jokerCtx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
                 }
-                const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
-                const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
-                const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + currJaw; 
-                const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
-                const stretchX = 60 - (currSmile * 0.5); const stretchW = 300 + currSmile;
-                const botJawX = 60 - (currSmile * 0.25);
-
-                jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
-                jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
-                jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (currSmile*0.5), dBotH);
             }
-            jokerCtx.globalAlpha = 1.0; 
-            if (isBlinking) {
-                jokerCtx.fillStyle = "#cbd0d3"; 
-                jokerCtx.beginPath(); jokerCtx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-                jokerCtx.beginPath(); jokerCtx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-            }
-        }
-    };
-    window.addEventListener('load', bootVisualizer);
-</script>
+        };
+        window.addEventListener('load', bootVisualizer);
+    </script>
 </body>
 </html>

@@ -170,7 +170,7 @@
             if (avgVol > 8) { 
                 lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
-                targetJaw = blendshapes.jawOpen * 36; targetSmile = blendshapes.mouthStretch * 18; 
+                targetJaw = blendshapes.jawOpen * 24; targetSmile = blendshapes.mouthStretch * 18; 
             } else {
                 targetJaw = 0; targetSmile = 0;
                 if (Date.now() - lastActiveTime > 1200) { targetFaceAlpha = 0.0; if (glowDiv) glowDiv.style.opacity = "0"; }

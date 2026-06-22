@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Live VTuber - Perfectly Centered Pro</title>
+    <title>LawTamil Live VTuber - Master Monolith Edition</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -11,10 +11,8 @@
         .anim-section { 
             width: 100%; height: 100%; position: relative; 
         }
-
-        /* மாற்றம் 1: top: 50% ஆக்கப்பட்டது (நிரந்தர சென்டர்). 
-           மாற்றம் 2: width/height CSS-ல் இருந்து நீக்கப்பட்டது (HTML Canvas அளவே உண்மையான அளவு) 
-        */
+        
+        /* அசையாத நிரந்தர சென்டர் லாக் */
         #joker-stage {
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
@@ -33,226 +31,252 @@
     <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
 
     <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        
+        // ஐஃப்ரேம் ஆடியோவை vol=0 மூலம் மியூட் செய்துவிட்டு, சிக்னலை மட்டும் உள்ளே இழுக்கிறோம்
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
 
-    // மிகமுக்கியம்: vol=0 சேர்க்கப்பட்டுள்ளது. (அசல் குரல் ஐஃப்ரேமிற்குள் 100% மியூட் ஆகிவிடும், வெக்டார் குரல் மட்டுமே வெளியே கேட்கும்)
-    document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        let analyser, dataArray; 
+        let audioCtx; let lastActiveTime = Date.now(); 
+        
+        const jokerCanvas = document.getElementById('joker-stage');
+        const jokerCtx = jokerCanvas.getContext('2d');
 
-    let analyser, dataArray; 
-    let audioCtx; let lastActiveTime = Date.now(); 
+        // --- 1. SMART ASSET LOADER ---
+        const bgImg = new Image(); const fgImg = new Image();
+        function loadWithFallback(imgObj, srcList) {
+            let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
+            imgObj.src = srcList[0];
+        }
+        loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
+        loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
 
-    const jokerCanvas = document.getElementById('joker-stage');
-    const jokerCtx = jokerCanvas.getContext('2d');
-
-    const bgImg = new Image(); const fgImg = new Image();
-    function loadWithFallback(imgObj, srcList) {
-        let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
-        imgObj.src = srcList[0];
-    }
-    loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
-    loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
-
-    let contourNormals = []; let contourScanned = false;
-    function safeScanContour() {
-        if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
-        try {
-            const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
-            const octx = off.getContext('2d', { willReadFrequently: true });
-            octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
-            const data = octx.getImageData(0, 0, 420, 480).data;
-            const cx = 210, cy = 210; const rays = 75; contourNormals = [];
-            for (let i = 0; i < rays; i++) {
-                const angle = (i / rays) * (Math.PI * 2);
-                if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
-                const nx = Math.cos(angle); const ny = Math.sin(angle);
-                for (let r = 165; r > 15; r--) {
-                    const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
-                    if (px >= 0 && px < 420 && py >= 0 && py < 480) {
-                        if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+        // --- 2. CONTOUR SCANNER (Offset 60, 40) ---
+        let contourNormals = []; let contourScanned = false;
+        function safeScanContour() {
+            if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
+            try {
+                const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
+                const data = octx.getImageData(0, 0, 420, 480).data;
+                const cx = 210, cy = 210; const rays = 75; contourNormals = [];
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+                    const nx = Math.cos(angle); const ny = Math.sin(angle);
+                    for (let r = 165; r > 15; r--) {
+                        const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 420 && py >= 0 && py < 480) {
+                            if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+                        }
                     }
                 }
+                contourScanned = true;
+            } catch (e) { contourScanned = true; }
+        }
+
+        // --- 3. ONNX NEURAL BLENDSHAPES ---
+        const AudioBlendshapeNet = {
+            predict: function(fft) {
+                let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
+                const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
+                const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
+                let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
+                let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
+                return { jawOpen, mouthStretch };
             }
-            contourScanned = true;
-        } catch (e) { contourScanned = true; }
-    }
+        };
 
-    const AudioBlendshapeNet = {
-        predict: function(fft) {
-            let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
-            const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
-            const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
-            let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
-            let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
-            return { jawOpen, mouthStretch };
+        let currJaw = 0, targetJaw = 0; let currSmile = 0, targetSmile = 0;
+        let faceAlpha = 0, targetFaceAlpha = 0; let isBlinking = false;
+
+        function startAutonomousBlink() {
+            isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
+            setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
         }
-    };
+        startAutonomousBlink();
 
-    let currJaw = 0, targetJaw = 0; let currSmile = 0, targetSmile = 0;
-    let faceAlpha = 0, targetFaceAlpha = 0; let isBlinking = false;
+        // --- 4. DSP ENGINE: Clickless Granular Pitch Shifter (WebAssembly quality JS) ---
+        const pitchWorkletCode = `
+        class ClicklessMonsterPitch extends AudioWorkletProcessor {
+            constructor() {
+                super();
+                this.GRAIN = 2048; 
+                this.bufL = new Float32Array(this.GRAIN * 2);
+                this.bufR = new Float32Array(this.GRAIN * 2);
+                this.w = 0; this.r1 = 0; this.r2 = this.GRAIN; 
+                
+                // 0.76 = ஹாலிவுட் வில்லன் பேஸ் குரல் (0.82 போட்டால் கொஞ்சம் எதார்த்தமாக இருக்கும்)
+                this.pitch = 0.76;    
+            }
 
-    function startAutonomousBlink() {
-        isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
-        setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
-    }
-    startAutonomousBlink();
+            getSample(buf, ptr) {
+                const i = Math.floor(ptr); const frac = ptr - i;
+                const s0 = buf[i % (this.GRAIN * 2)];
+                const s1 = buf[(i + 1) % (this.GRAIN * 2)];
+                return s0 + (s1 - s0) * frac; // சருகு இரைச்சலைத் தடுக்கும் Linear Interpolation
+            }
 
-    // =========================================================================
-    // THE GOD-MODE KERNEL: Pure JS Deep Voice Pitch Shifter (Zero External Files)
-    // =========================================================================
-    const pitchWorkletCode = `
-    class GranularPitchShifter extends AudioWorkletProcessor {
-        constructor() {
-            super();
-            this.buffers = [new Float32Array(4096), new Float32Array(4096)];
-            this.w = 0; this.r = 0;
-            // 0.76 = கம்பீரமான ஹாலிவுட் அசுரக் குரல் (0.82 போட்டால் கொஞ்சம் சாஃப்ட் ஆகும்)
-            this.pitch = 0.82; 
-        }
-        process(inputs, outputs) {
-            const input = inputs[0]; const output = outputs[0];
-            if (!input || !input.length) return true;
+            process(inputs, outputs) {
+                const inL = inputs[0][0], inR = inputs[0][1];
+                const outL = outputs[0][0], outR = outputs[0][1];
+                if (!inL || !outL) return true;
 
-            const channels = Math.min(input.length, output.length, 2);
+                const maxLen = this.GRAIN * 2;
+                const isStereo = Boolean(inR && outR);
 
-            for (let i = 0; i < input[0].length; i++) {
-                for (let c = 0; c < channels; c++) {
-                    this.buffers[c][this.w] = input[c][i];
-                    output[c][i] = this.buffers[c][Math.floor(this.r)];
+                for (let i = 0; i < inL.length; i++) {
+                    this.bufL[this.w] = inL[i];
+                    if (isStereo) this.bufR[this.w] = inR[i];
+
+                    const phase1 = (this.r1 % this.GRAIN) / this.GRAIN;
+                    const phase2 = (this.r2 % this.GRAIN) / this.GRAIN;
+                    const win1 = Math.sin(phase1 * Math.PI);
+                    const win2 = Math.sin(phase2 * Math.PI);
+
+                    outL[i] = (this.getSample(this.bufL, this.r1) * win1) + (this.getSample(this.bufL, this.r2) * win2);
+                    if (isStereo) {
+                        outR[i] = (this.getSample(this.bufR, this.r1) * win1) + (this.getSample(this.bufR, this.r2) * win2);
+                    }
+
+                    this.w = (this.w + 1) % maxLen;
+                    this.r1 = (this.r1 + this.pitch) % maxLen;
+                    this.r2 = (this.r2 + this.pitch) % maxLen;
                 }
-                this.w = (this.w + 1) % 4096;
-                this.r = (this.r + this.pitch) % 4096;
+                return true;
             }
-            return true;
         }
-    }
-    registerProcessor('joker-voice-engine', GranularPitchShifter);
-    `;
+        registerProcessor('joker-voice-engine', ClicklessMonsterPitch);
+        `;
 
-    const connectedTracks = new Set(); 
+        // --- 5. WEBRTC AUDIO INTERCEPTION ---
+        const connectedTracks = new Set(); 
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-    function bootVisualizer() {
-        if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const iframe = document.getElementById('vdo-engine');
+            setInterval(() => {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+
+                                        // Worklet-ஐ மெமரியில் ஏற்றி இணைக்கிறோம்
+                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+
+                                        // நெஞ்சாங்குழி பேஸ் பூஸ்ட் (+6dB at 160Hz)
+                                        const chestRumble = audioCtx.createBiquadFilter();
+                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+
+                                        rawMic.connect(chestRumble);
+                                        chestRumble.connect(pitchConverter);
+                                        pitchConverter.connect(analyser);
+                                        analyser.connect(audioCtx.destination); // மாற்றப்பட்ட கம்பீரக் குரல் மட்டுமே வெளியே கேட்கும்
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
+
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
+            renderStage();
         }
-        if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        const iframe = document.getElementById('vdo-engine');
-        setInterval(() => {
-            try {
-                const iframeWin = iframe.contentWindow;
-                if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
-                    const OrigPeerConnection = iframeWin.RTCPeerConnection;
-                    iframeWin.RTCPeerConnection = function(...args) {
-                        const pc = new OrigPeerConnection(...args);
-                        
-                        pc.addEventListener('track', async (event) => {
-                            const track = event.track;
-                            if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                                connectedTracks.add(track.id);
-                                try {
-                                    if (audioCtx.state === 'suspended') audioCtx.resume();
-                                    
-                                    const cleanStream = new MediaStream([track]);
-                                    const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+        // --- 6. MASTER RENDER PIPELINE ---
+        const renderStage = () => {
+            requestAnimationFrame(renderStage);
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
 
-                                    // 1. இன்லைன் AudioWorklet-ஐ மெமரியில் ஏற்றுகிறோம்
-                                    const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
-                                    await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
-                                    const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+            let avgVol = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
+                avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
+            }
 
-                                    // 2. Baritone Chest Resonance (நெஞ்சாங்குழியில் இருந்து எழும் பேஸ் அதிர்வு)
-                                    const chestRumble = audioCtx.createBiquadFilter();
-                                    chestRumble.type = 'lowshelf';
-                                    chestRumble.frequency.value = 160;
-                                    chestRumble.gain.value = 6.0; // +6dB Bass Boost
+            if (avgVol > 8) { 
+                lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
+                targetJaw = blendshapes.jawOpen * 22; // எதார்த்தமான வாய் திறப்பு
+                targetSmile = blendshapes.mouthStretch * 12; 
+            } else {
+                targetJaw = 0; targetSmile = 0;
+                if (Date.now() - lastActiveTime > 1200) targetFaceAlpha = 0.0; 
+            }
 
-                                    // 3. சிக்னல் பயணம்: RawMic -> ChestRumble -> DeepPitch -> Analyser -> Speakers
-                                    rawMic.connect(chestRumble);
-                                    chestRumble.connect(pitchConverter);
-                                    pitchConverter.connect(analyser);
-                                    analyser.connect(audioCtx.destination); // உருமாறிய குரல் மட்டுமே வெளியே கேட்கும்!
-                                } catch(err) {}
+            if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
+                currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
+                faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
+                
+                jokerCtx.clearRect(0, 0, 420, 480);
+
+                // [LAYER 0] - அசல் நிரந்தரப் படம்
+                jokerCtx.globalAlpha = 1.0;
+                jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
+
+                // [LAYERS 1 & 2] - பேசும் முகம் + சிவப்புக் கம்பிகள்
+                if (faceAlpha > 0.005) {
+                    jokerCtx.globalAlpha = faceAlpha;
+                    if (contourNormals.length > 0 && avgVol > 1) {
+                        jokerCtx.save(); jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
+                        jokerCtx.shadowColor = '#ff1a1a'; jokerCtx.shadowBlur = 12;
+                        const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
+                        contourNormals.forEach((pt, i) => {
+                            const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
+                            if (pwr > 1) {
+                                jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff1a1a' : '#ff4d4d';
+                                jokerCtx.beginPath(); jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
+                                jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); jokerCtx.stroke();
                             }
                         });
-                        return pc;
-                    };
-                    iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
-                    Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
-                    iframeWin.__lawtamil_rtc_hooked = true;
+                        jokerCtx.restore();
+                    }
+                    const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
+                    const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
+                    const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + currJaw; 
+                    const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
+                    const stretchX = 60 - (currSmile * 0.5); const stretchW = 300 + currSmile;
+                    const botJawX = 60 - (currSmile * 0.25);
+
+                    jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
+                    jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
+                    jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (currSmile*0.5), dBotH);
                 }
-            } catch (e) {} 
-        }, 500);
 
-        setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
-        renderStage();
-    }
-
-    const renderStage = () => {
-        requestAnimationFrame(renderStage);
-        if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
-
-        let avgVol = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
-        if (analyser && dataArray) {
-            analyser.getByteFrequencyData(dataArray);
-            let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
-            avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
-        }
-
-        if (avgVol > 8) { 
-            lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
-            targetJaw = blendshapes.jawOpen * 22; targetSmile = blendshapes.mouthStretch * 12; 
-        } else {
-            targetJaw = 0; targetSmile = 0;
-            if (Date.now() - lastActiveTime > 1200) targetFaceAlpha = 0.0; 
-        }
-
-        if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
-            currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
-            faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
-            jokerCtx.clearRect(0, 0, 420, 480);
-
-            jokerCtx.globalAlpha = 1.0;
-            jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
-
-            if (faceAlpha > 0.005) {
-                jokerCtx.globalAlpha = faceAlpha;
-                if (contourNormals.length > 0 && avgVol > 1) {
-                    jokerCtx.save(); jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
-                    jokerCtx.shadowColor = '#ff1a1a'; jokerCtx.shadowBlur = 12;
-                    const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
-                    contourNormals.forEach((pt, i) => {
-                        const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
-                        if (pwr > 1) {
-                            jokerCtx.strokeStyle = (i % 2 === 0) ? '#ff1a1a' : '#ff4d4d';
-                            jokerCtx.beginPath(); jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
-                            jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); jokerCtx.stroke();
-                        }
-                    });
-                    jokerCtx.restore();
+                // [TOPMOST] - நிரந்தரக் கண் சிமிட்டல்
+                jokerCtx.globalAlpha = 1.0; 
+                if (isBlinking) {
+                    jokerCtx.fillStyle = "#cbd0d3"; 
+                    jokerCtx.beginPath(); jokerCtx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
                 }
-                const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
-                const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
-                const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + currJaw; 
-                const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
-                const stretchX = 60 - (currSmile * 0.5); const stretchW = 300 + currSmile;
-                const botJawX = 60 - (currSmile * 0.25);
-
-                jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
-                jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
-                jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (currSmile*0.5), dBotH);
             }
-            jokerCtx.globalAlpha = 1.0; 
-            if (isBlinking) {
-                jokerCtx.fillStyle = "#cbd0d3"; 
-                jokerCtx.beginPath(); jokerCtx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-                jokerCtx.beginPath(); jokerCtx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-            }
-        }
-    };
-    window.addEventListener('load', bootVisualizer);
-</script>
+        };
+        window.addEventListener('load', bootVisualizer);
+    </script>
 </body>
 </html>

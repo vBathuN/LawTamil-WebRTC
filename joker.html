@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Master Visualizer Pro</title>
+    <title>LawTamil VTuber Master Visualizer Pro</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -20,11 +20,13 @@
             clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 3; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
 
-        /* --- THE MASTER PUPPET STAGE --- */
+        /* --- THE MASTER PUPPET CANVAS --- */
+        /* தாடை கீழே விரிவடைய 420px உயரம் கொடுக்கப்பட்டுள்ளது */
         #joker-stage {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 350px; z-index: 4; pointer-events: none;
+            width: 300px; height: 420px; z-index: 4; pointer-events: none;
             opacity: 0; transition: opacity 0.4s ease-in-out;
+            will-change: transform;
         }
         
         #visualizer { 
@@ -46,7 +48,7 @@
 
     <div class="anim-section">
         <div id="justice-glow"></div> 
-        <canvas id="joker-stage" width="300" height="350"></canvas>
+        <canvas id="joker-stage" width="300" height="420"></canvas>
         <div id="visualizer"></div>
     </div>
     
@@ -67,20 +69,25 @@
         const jokerCanvas = document.getElementById('joker-stage');
         const jokerCtx = jokerCanvas.getContext('2d');
 
-        // --- PURE PNG ASSET & AUTONOMOUS BLINK ENGINE ---
+        // --- PURE PNG ASSET ---
         const jokerImg = new Image();
-        jokerImg.src = './joker.png'; // உன் ரூட் ஃபோல்டர் படம்
+        jokerImg.src = './joker.png'; // உன் ரூட் ஃபோல்டரில் உள்ள அசல் Esports படம்
 
+        // --- அனிமேஷன் இயற்பியல் மாறிகள் (The Physics Dampers) ---
+        let currentStretch = 0;
+        let targetStretch = 0;
+        let breathAngle = 0;
         let isBlinking = false;
-        function startAutonomousBlink() {
+
+        // தன்னிச்சையான கண் சிமிட்டல் லூப் (2 முதல் 5 செகண்ட்)
+        function triggerAutonomousBlink() {
             isBlinking = true;
-            setTimeout(() => { isBlinking = false; }, 120); // 120ms இமை மூடல்
-            setTimeout(startAutonomousBlink, Math.random() * 4000 + 2000); // 2 முதல் 6 வினாடி ரேண்டம் சிமிட்டல்
+            setTimeout(() => { isBlinking = false; }, 130);
+            setTimeout(triggerAutonomousBlink, Math.random() * 3000 + 2000);
         }
-        jokerImg.onload = () => { startAutonomousBlink(); };
+        jokerImg.onload = () => { triggerAutonomousBlink(); };
         
         const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
-        
         for (let i = 0; i < numBars; i++) {
             const b = document.createElement('div'); b.className = 'v-bar';
             const angle = startAngle + (i * step); b.dataset.angle = angle;
@@ -94,14 +101,12 @@
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 128; 
-                analyser.smoothingTimeConstant = 0.3; 
+                analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
             const iframe = document.getElementById('vdo-engine');
-
             setInterval(() => {
                 try {
                     const iframeWin = iframe.contentWindow;
@@ -116,7 +121,7 @@
                                     try {
                                         if (audioCtx.state === 'suspended') audioCtx.resume();
                                         const cleanStream = new MediaStream([track]);
-                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source = audioCtx.createMediaStreamSource(cleanStream);
                                         source.connect(analyser); 
                                     } catch(err) {}
                                 }
@@ -130,10 +135,7 @@
                 } catch (e) {} 
             }, 10);
 
-            setInterval(() => {
-                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            }, 1000);
-
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
             renderVisualizer();
         }
 
@@ -155,60 +157,71 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            if (avgVol > 16) { 
+            if (avgVol > 12) { 
                 lastActiveTime = Date.now(); 
-                vContainer.style.opacity = "1";
-                jokerCanvas.style.opacity = "1";
+                vContainer.style.opacity = "1"; jokerCanvas.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
+
+                // சத்தத்தை 0 முதல் 35px தாடை இலக்காக மாற்றுதல்
+                targetStretch = Math.min(35, Math.max(0, (avgVol - 12) * 0.65));
             } else {
+                targetStretch = 0;
                 if (Date.now() - lastActiveTime > 2000) {
-                    vContainer.style.opacity = "0";
-                    jokerCanvas.style.opacity = "0";
+                    vContainer.style.opacity = "0"; jokerCanvas.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }
             }
 
             // =========================================================================
-            // --- மாஸ்டர் பப்பட் அனிமேஷன் (The 3-Zone Accordion Dynamic Seam) ---
+            // --- THE ACCORDION RUBBER ENGINE (With Lerp Damper & Breathing) ---
             // =========================================================================
             if (jokerImg.complete && jokerImg.naturalHeight > 0) {
-                jokerCtx.clearRect(0, 0, 300, 350);
+                
+                // 1. LERP DAMPER: மைக்கின் நடுக்கத்தை வெண்ணெய் போல மாற்றும் சூத்திரம்
+                currentStretch += (targetStretch - currentStretch) * 0.28;
+
+                // 2. BREATHING: அமைதியாக இருக்கும்போது காற்றில் மிதக்கும் சூத்திரம்
+                breathAngle += 0.03;
+                const idleFloatY = Math.sin(breathAngle) * 2.5; 
+
+                // 3. CRANIAL BOB: தாடை இறங்கும்போது மண்டை லேசாக மேலே ஏறும் நியூட்டன் விதி
+                const headPushedUpY = -(currentStretch * 0.15); 
+
+                // கேன்வாஸை ஒட்டுமொத்தமாக மிதக்கவிடுதல்
+                jokerCanvas.style.transform = `translate(-50%, calc(-50% + ${idleFloatY + headPushedUpY}px))`;
+
+                jokerCtx.clearRect(0, 0, 300, 420);
 
                 const natW = jokerImg.naturalWidth;
                 const natH = jokerImg.naturalHeight;
-                const scale = 300 / natH; // 300px உயரத்துக்குச் சுருக்கும் விகிதம்
+                
+                const BASE_H = 340; // சுருக்கப்படாத அசல் கேரக்டர் உயரம்
+                const scale = BASE_H / natH; 
 
-                // பேச்சின் சத்தத்தை 0 முதல் 28 பிக்சல் தாடை அசைவாக மாற்றுதல்
-                const talkVol = Math.min(28, Math.max(0, (avgVol - 10) * 0.65));
+                // அசல் படத்தில் பற்களுக்கு நடுவில் உள்ள இருண்ட பகுதியை அளந்தெடுத்த புள்ளிகள்
+                const sTop = natH * 0.585;  // மேல் பற்களின் விளிம்பு
+                const sBot = natH * 0.625;  // கீழ் பற்களின் விளிம்பு
+                const sRubberH = sBot - sTop; // 4% ரப்பர் பகுதி
 
-                // அசல் படத்தில் வாயின் மையப் பகுதியைக் குறிக்கும் அளவுகள்
-                const seamTop = natH * 0.59; // மேல் உதட்டின் விளிம்பு
-                const seamBot = natH * 0.63; // கீழ் உதட்டின் விளிம்பு
-                const seamH   = seamBot - seamTop; // 4% ரப்பர் பேண்ட் பகுதி
+                const dTopH = sTop * scale;
+                const dRubberH = (sRubberH * scale) + currentStretch; // STRETCHING HAPPENS HERE!
+                const dBotY = dTopH + dRubberH;
+                const dBotH = (natH - sBot) * scale;
 
-                const p1H = seamTop * scale;
-                const p2H = (seamH * scale) + talkVol; // ரப்பர் பேண்ட் நீட்சி!
-                const p3Y = p1H + p2H;                 // அச்சுப்பிசகாத தொடர்ச்சி
-                const p3H = (natH - seamBot) * scale;
+                // பகுதி 1: மேல் மண்டை (அசையாது)
+                jokerCtx.drawImage(jokerImg, 0, 0, natW, sTop,  0, 0, 300, dTopH);
 
-                // 1. மேல் மண்டை (அசையாது)
-                jokerCtx.drawImage(jokerImg, 0, 0, natW, seamTop, 0, 0, 300, p1H);
+                // பகுதி 2: நடுவாய் ரப்பர் பேண்ட் (சத்தத்திற்கு ஏற்ப செங்குத்தாக மட்டும் விரியும்)
+                jokerCtx.drawImage(jokerImg, 0, sTop, natW, sRubberH,  0, dTopH, 300, dRubberH);
 
-                // 2. நடுவாய் ரப்பர் தையல் (சத்தத்திற்கு ஏற்ப செங்குத்தாக விரிவடையும்)
-                jokerCtx.drawImage(jokerImg, 0, seamTop, natW, seamH, 0, p1H, 300, p2H);
+                // பகுதி 3: கீழ் தாடை (ரப்பர் விரிந்த அளவுக்குக் கீழே தள்ளப்படும்)
+                jokerCtx.drawImage(jokerImg, 0, sBot, natW, natH - sBot,  0, dBotY, 300, dBotH);
 
-                // 3. கீழ் தாடை (ரப்பர் விரிந்த அளவுக்குக் கீழே இறங்கும்)
-                jokerCtx.drawImage(jokerImg, 0, seamBot, natW, natH - seamBot, 0, p3Y, 300, p3H);
-
-                // --- அசல் கண் சிமிட்டல் (Eyeballs மீது வரையப்படும் பவுடர் நிற இமைகள்) ---
+                // --- கண் சிமிட்டல் (Eyeballs மீது வரையப்படும் பவுடர் நிற இமைகள்) ---
                 if (isBlinking) {
-                    jokerCtx.fillStyle = "#dcded7"; // அந்த Esports கேரக்டரின் தோல் நிறம்
-                    
-                    const leftEyeX = 300 * 0.415, eyeY = 300 * 0.41;
-                    const rightEyeX = 300 * 0.585;
-
-                    jokerCtx.beginPath(); jokerCtx.ellipse(leftEyeX, eyeY, 13, 7, 0, 0, Math.PI * 2); jokerCtx.fill();
-                    jokerCtx.beginPath(); jokerCtx.ellipse(rightEyeX, eyeY, 13, 7, 0, 0, Math.PI * 2); jokerCtx.fill();
+                    jokerCtx.fillStyle = "#cbd0d3"; // அந்த Esports கேரக்டரின் வெளிர் சாம்பல் தோல் நிறம்
+                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.415, BASE_H * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.585, BASE_H * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
                 }
             }
         };

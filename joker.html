@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Master Visualizer Pro - True 2.5D Rig</title>
+    <title>LawTamil Master Visualizer Pro - CrashProof 2.5D Rig</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -20,11 +20,13 @@
             filter: blur(6px); box-shadow: 0 0 50px rgba(255, 10, 10, 0.95); z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
 
-        /* --- THE MASTER 2.5D STAGE --- */
+        /* --- THE MASTER LIVE2D STAGE --- */
+        /* opacity: 1 !important மூலம் கேரக்டர் எப்போதும் ஸ்கிரீனில் தெரிவது உறுதி செய்யப்பட்டுள்ளது */
         #joker-stage {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
             width: 300px; height: 350px; z-index: 5; pointer-events: none;
-            opacity: 0; transition: opacity 0.4s ease-in-out;
+            opacity: 1 !important; 
+            will-change: transform;
         }
 
         #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
@@ -45,17 +47,15 @@
         document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
         let analyser, dataArray; 
-        let audioCtx; let lastActiveTime = Date.now(); 
+        let audioCtx; 
         
         const glowDiv = document.getElementById('justice-glow');
         const canvas = document.getElementById('joker-stage');
         const ctx = canvas.getContext('2d');
 
-        // =========================================================================
-        // --- 1. THE TWO MASTER ASSETS (நீ அனுப்பிய அசல் 2 படங்கள்) ---
-        // =========================================================================
-        const imgBg = new Image();   imgBg.src = './joker.jpg';     // முழுப் படம் (பின்னணி + உடலோடு)
-        const imgHead = new Image(); imgHead.src = './joker1.png';  // தலை மற்றும் தாடை மட்டும் (Transparent)
+        // --- 1. THE TWO MASTER ASSETS ---
+        const imgBg = new Image();   imgBg.src = './joker.jpg';     // அசல் முழுப் படம்
+        const imgHead = new Image(); imgHead.src = './joker1.png';  // தலை + தாடை மட்டும் (Transparent)
 
         let outlinePoints = [];
         let currJaw = 0, targetJaw = 0;
@@ -67,31 +67,50 @@
             setTimeout(startBlink, Math.random() * 3500 + 2000);
         }
 
-        // --- CONTOUR SCANNER (joker1.png-ன் அசல் அவுட்லைனை மெமரியில் ஸ்கேன் செய்யும் எந்திரம்) ---
+        // --- CRASH-PROOF SILHOUETTE SCANNER ---
         function scanHeadSilhouette() {
-            const off = document.createElement('canvas');
-            off.width = 300; off.height = 350;
-            const octx = off.getContext('2d', { willReadFrequently: true });
-            octx.drawImage(imgHead, 0, 0, 300, 350);
-            const imgData = octx.getImageData(0, 0, 300, 350).data;
-
+            outlinePoints = [];
             const cx = 150, cy = 160; 
-            const rays = 80; outlinePoints = [];
+            const rays = 80;
 
-            for (let i = 0; i < rays; i++) {
-                const angle = (i / rays) * (Math.PI * 2);
-                // கழுத்து வெட்டுப்பட்ட கீழ்ப்பகுதியைத் தவிர்க்க
-                if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+            try {
+                // முயற்சி A: அசல் பிக்சல் ஸ்கேன் (Web Server வழியாகத் திறந்திருந்தால் வேலை செய்யும்)
+                const off = document.createElement('canvas');
+                off.width = 300; off.height = 350;
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(imgHead, 0, 0, 300, 350);
+                const imgData = octx.getImageData(0, 0, 300, 350).data;
 
-                const nx = Math.cos(angle), ny = Math.sin(angle);
-                for (let r = 160; r > 20; r--) {
-                    const px = Math.round(cx + nx * r), py = Math.round(cy + ny * r);
-                    if (px >= 0 && px < 300 && py >= 0 && py < 350) {
-                        if (imgData[(py * 300 + px) * 4 + 3] > 40) { // Non-transparent அவுட்லைன் விளிம்பு!
-                            outlinePoints.push({ x: px, y: py, nx: nx, ny: ny });
-                            break;
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+
+                    const nx = Math.cos(angle), ny = Math.sin(angle);
+                    for (let r = 160; r > 20; r--) {
+                        const px = Math.round(cx + nx * r), py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 300 && py >= 0 && py < 350) {
+                            if (imgData[(py * 300 + px) * 4 + 3] > 40) { 
+                                outlinePoints.push({ x: px, y: py, nx: nx, ny: ny });
+                                break;
+                            }
                         }
                     }
+                }
+            } catch(e) {
+                // --- THE MASTER FALLBACK (CORS எரர் அடித்து JS கிராஷ் ஆவதைத் தடுக்கும் வலை) ---
+                // Local File ஆகத் திறந்திருப்பதால் Browser பிக்சல் ஸ்கேனைக் கொன்றுவிட்டது.
+                // எனவே நாமே ஜோக்கரின் தலை அளவுக்கு ஒரு 'ஸ்டாண்டர்ட் நீள்வட்ட அவுட்லைனை' மெமரியில் லாக் செய்கிறோம்!
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+
+                    const nx = Math.cos(angle), ny = Math.sin(angle);
+                    const rX = 115, rY = 135; // கேரக்டரின் தோராயமான தலை ரேடியஸ்
+                    outlinePoints.push({ 
+                        x: Math.round(cx + nx * rX), 
+                        y: Math.round(cy + ny * rY * 0.95), 
+                        nx: nx, ny: ny 
+                    });
                 }
             }
         }
@@ -154,34 +173,28 @@
             for(let i=0; i<25; i++) { totalVol += Math.max(0, (dataArray[i] || 0) - 82); }
             const avgVol = totalVol / 25;
 
-            if (avgVol > 8) { 
-                lastActiveTime = Date.now(); 
-                canvas.style.opacity = "1";
+            // பேசும் சத்தத்திற்கான சென்சிட்டிவிட்டி (Threshold) 8-ல் இருந்து 5 ஆகக் குறைக்கப்பட்டுள்ளது
+            if (avgVol > 5) { 
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 60);
-
-                // சத்தத்தை 0 முதல் 25px தாடை அசைவாக மாற்றுதல்
-                targetJaw = Math.min(25, Math.max(0, (avgVol - 8) * 0.65));
+                targetJaw = Math.min(25, Math.max(0, (avgVol - 5) * 0.7));
             } else {
                 targetJaw = 0;
-                if (Date.now() - lastActiveTime > 2000) {
-                    canvas.style.opacity = "0";
-                    if (glowDiv) glowDiv.style.opacity = "0";
-                }
+                if (glowDiv) glowDiv.style.opacity = "0";
             }
 
             // =========================================================================
-            // --- 2. THE 4-LAYER SANDWICH STAGE (The Master Output) ---
+            // --- UNCONDITIONAL MASTER DRAW (சத்தம் இருந்தாலும் இல்லாவிட்டாலும் படம் வரையப்படும்!) ---
             // =========================================================================
             if (imgBg.complete && imgHead.complete && imgHead.naturalHeight > 0) {
                 
-                currJaw += (targetJaw - currJaw) * 0.38; // தாடை லெர்ப் நடுக்கத்தடுப்பான்
+                currJaw += (targetJaw - currJaw) * 0.38; 
 
                 ctx.clearRect(0, 0, 300, 350);
 
-                // அடுக்கு 0: அசல் முழுப் படம் (joker.jpg) - பின்னணியில் அசையாமல் நிற்கும்!
+                // அடுக்கு 0: அசல் முழுப் படம் (joker.jpg) - நிரந்தரப் பின்னணி
                 ctx.drawImage(imgBg, 0, 0, 300, 350);
 
-                // அடுக்கு 1: CONTOUR STROKES (joker1.png-ன் அவுட்லைனில் இருந்து சுடும் கம்பிகள்)
+                // அடுக்கு 1: CONTOUR STROKES
                 if (outlinePoints.length > 0 && avgVol > 1) {
                     ctx.save();
                     ctx.lineWidth = 3.2; ctx.lineCap = 'round';
@@ -193,7 +206,6 @@
                         if (pwr > 1) {
                             ctx.strokeStyle = (i % 2 === 0) ? '#ff3333' : '#ff9933';
                             ctx.beginPath();
-                            // அவுட்லைன் விளிம்பிற்கு 2px உள்ளே தொடங்கி வெளியே சுடுதல்
                             ctx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
                             ctx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr));
                             ctx.stroke();
@@ -202,29 +214,17 @@
                     ctx.restore();
                 }
 
-                // --- 2.5D GUILLOTINE SLICING ---
                 const natW = imgHead.naturalWidth, natH = imgHead.naturalHeight;
                 const scale = 350 / natH; 
-                
-                // joker1.png-ல் மேல் உதட்டுக்கும் பற்களுக்கும் நடுவில் உள்ள அசல் Y-கோடு (58.5%)
-                const splitY = natH * 0.585; 
-                const splitH = splitY * scale;
+                const splitY = natH * 0.585; const splitH = splitY * scale;
 
-                // அடுக்கு 2: அசையும் தாடை (joker1.png-ன் கீழ்ப்பாதி -> 'currJaw px' கீழே இறங்கும்)
-                ctx.drawImage(
-                    imgHead, 
-                    0, splitY, natW, natH - splitY, 
-                    0, splitH + currJaw, 300, (natH - splitY) * scale
-                );
+                // அடுக்கு 2: அசையும் தாடை (currJaw px கீழே இறங்கும்)
+                ctx.drawImage(imgHead, 0, splitY, natW, natH - splitY, 0, splitH + currJaw, 300, (natH - splitY) * scale);
 
-                // அடுக்கு 3: அசையாத மேல் மண்டை (joker1.png-ன் மேல்பாதி -> Y=0-ல் லாக்)
-                ctx.drawImage(
-                    imgHead, 
-                    0, 0, natW, splitY, 
-                    0, 0, 300, splitH
-                );
+                // அடுக்கு 3: அசையாத மேல் மண்டை
+                ctx.drawImage(imgHead, 0, 0, natW, splitY, 0, 0, 300, splitH);
 
-                // --- கண் சிமிட்டல் ---
+                // ஈ. கண் சிமிட்டல்
                 if (isBlinking) {
                     ctx.fillStyle = "#cbd0d3"; 
                     ctx.beginPath(); ctx.ellipse(300 * 0.415, 350 * 0.41, 13, 7.5, 0, 0, Math.PI*2); ctx.fill();

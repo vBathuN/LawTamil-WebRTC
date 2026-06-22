@@ -55,11 +55,9 @@
         // பிழை திருத்தம் 1: 'crossOrigin' சேர்க்கப்பட்டுள்ளது (CORS Tainted Canvas Error வராது)
         // =========================================================================
         const bgImg = new Image();
-        bgImg.crossOrigin = "anonymous";
         bgImg.src = './joker.jpg';   // [Layer 0] - நிரந்தரப் பின்னணி
 
         const fgImg = new Image();
-        fgImg.crossOrigin = "anonymous";
         fgImg.src = './joker1.png';  // [Layers 1, 2, 3, 4] - பேசும்போது வரும் முகம்
 
         let contourNormals = [];

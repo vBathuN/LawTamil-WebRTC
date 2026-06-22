@@ -98,75 +98,77 @@
     // THE ULTIMATE KERNEL: 4096 Buffer + 0.817 Pitch + Smart Envelope Gate
     // =========================================================================
     const pitchWorkletCode = `
-    class TrueGranularEngine extends AudioWorkletProcessor {
-        constructor() {
-            super();
-            this.GRAIN = 1024; // 21ms Hanning Window
-            this.buffer = new Float32Array(this.GRAIN * 4);
-            this.wPtr = 0;
+        class NaturalVillainEngine extends AudioWorkletProcessor {
+            constructor() {
+                super();
+                // 1200 = 25ms (ஆண்களின் குரல்வளை அலைநீளத்தின் மிகச்சரியான கோல்டன் விண்டோ)
+                this.BASE_GRAIN = 1200; 
+                this.buffer = new Float32Array(this.BASE_GRAIN * 4);
+                this.wPtr = 0;
 
-            // இரண்டு டேப் ஹெட்கள் (ஒன்று எழும்போது மற்றொன்று அமுங்கும்)
-            this.headA = { pos: 0, age: 0 };
-            this.headB = { pos: 0, age: this.GRAIN / 2 }; 
+                // இரு ஹெட்களுக்கும் 'life' என்ற தனித்தனி ஆயுள் வழங்கப்பட்டுள்ளது
+                this.headA = { pos: 0, age: 0, life: this.BASE_GRAIN };
+                this.headB = { pos: 0, age: this.BASE_GRAIN / 2, life: this.BASE_GRAIN }; 
 
-            this.pitch = 0.817; // உங்களின் கோல்டன் ரேஷியோ
-        }
-
-        getSample(ptr) {
-            let fl = Math.floor(ptr);
-            let fr = ptr - fl;
-            let s0 = this.buffer[fl % (this.GRAIN * 4)];
-            let s1 = this.buffer[(fl + 1) % (this.GRAIN * 4)];
-            return s0 + (s1 - s0) * fr; // வெண்ணெய் போன்ற Linear Interpolation
-        }
-
-        process(inputs, outputs) {
-            const input = inputs[0][0];
-            const outputL = outputs[0][0];
-            const outputR = outputs[0][1];
-            if (!input || !outputL) return true;
-
-            const N = this.GRAIN;
-            const maxBuf = N * 4;
-
-            for (let i = 0; i < input.length; i++) {
-                // 1. இன்புட்டை எழுதுகிறோம்
-                this.buffer[this.wPtr] = input[i];
-                this.wPtr = (this.wPtr + 1) % maxBuf;
-
-                // 2. Hanning Bell-Curve விசை (0.0 -> 1.0 -> 0.0)
-                let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / N));
-                let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / N));
-
-                // 3. இரண்டு ஹெட்களையும் வாசித்து மிக்ஸ் செய்கிறோம்
-                let sample = (this.getSample(this.headA.pos) * winA) + 
-                             (this.getSample(this.headB.pos) * winB);
-
-                outputL[i] = sample;
-                if (outputR) outputR[i] = sample;
-
-                // 4. வயதைக் கூட்டுகிறோம்
-                this.headA.age++;
-                this.headB.age++;
-
-                this.headA.pos = (this.headA.pos + this.pitch) % maxBuf;
-                this.headB.pos = (this.headB.pos + this.pitch) % maxBuf;
-
-                // 5. ஒரு ஹெட் அதன் ஆயுளை (N) முடிக்கும்போது, சத்தமில்லாமல் '0' வால்யூமில் ரீசெட் ஆகிறது
-                if (this.headA.age >= N) {
-                    this.headA.age = 0;
-                    this.headA.pos = (this.wPtr - N + maxBuf) % maxBuf;
-                }
-                if (this.headB.age >= N) {
-                    this.headB.age = 0;
-                    this.headB.pos = (this.wPtr - N + maxBuf) % maxBuf;
-                }
+                this.pitch = 0.817; 
             }
-            return true;
+
+            getSample(ptr) {
+                let fl = Math.floor(ptr); let fr = ptr - fl;
+                let len = this.buffer.length;
+                let s0 = this.buffer[(fl + len) % len];
+                let s1 = this.buffer[(fl + 1 + len) % len];
+                return s0 + (s1 - s0) * fr;
+            }
+
+            // --- THE HUMANIZER: ஆயுட்காலத்தை ±8% நடுங்க வைக்கும் அல்காரிதம் ---
+            getJitteredLife() {
+                let shiver = (Math.random() - 0.5) * 180; // -90 முதல் +90 சாம்பிள் வரை நடுக்கம்
+                return Math.floor(this.BASE_GRAIN + shiver);
+            }
+
+            process(inputs, outputs) {
+                const input = inputs[0][0];
+                const outL = outputs[0][0]; const outR = outputs[0][1];
+                if (!input || !outL) return true;
+
+                const len = this.buffer.length;
+
+                for (let i = 0; i < input.length; i++) {
+                    this.buffer[this.wPtr] = input[i];
+                    this.wPtr = (this.wPtr + 1) % len;
+
+                    // 1. தற்போதைய ரண்டம் 'Life'-க்கு ஏற்ப சுருங்கி விரியும் Hanning Bell Curve
+                    let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / this.headA.life));
+                    let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / this.headB.life));
+
+                    let sample = (this.getSample(this.headA.pos) * winA) + 
+                                 (this.getSample(this.headB.pos) * winB);
+
+                    outL[i] = sample;
+                    if (outR) outR[i] = sample;
+
+                    this.headA.age++; this.headB.age++;
+                    this.headA.pos = (this.headA.pos + this.pitch) % len;
+                    this.headB.pos = (this.headB.pos + this.pitch) % len;
+
+                    // 2. Head A சாகும்போது, தனக்கான 'அடுத்த ஜென்மத்தின் ஆயுளை' ரண்டமாக நிர்ணயிக்கிறது!
+                    if (this.headA.age >= this.headA.life) {
+                        this.headA.life = this.getJitteredLife();
+                        this.headA.age = 0;
+                        this.headA.pos = (this.wPtr - this.headA.life + len) % len;
+                    }
+                    if (this.headB.age >= this.headB.life) {
+                        this.headB.life = this.getJitteredLife();
+                        this.headB.age = 0;
+                        this.headB.pos = (this.wPtr - this.headB.life + len) % len;
+                    }
+                }
+                return true;
+            }
         }
-    }
-    registerProcessor('joker-voice-engine', TrueGranularEngine);
-    `;
+        registerProcessor('joker-voice-engine', NaturalVillainEngine);
+        `;
         
     const connectedTracks = new Set(); 
 

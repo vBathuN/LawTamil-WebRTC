@@ -8795,7 +8795,10 @@ function setupReceiverTransform(receiver, UUID = false) {
   }
 }
 
-// --- PSYCHO-ANALYTICAL ORGANIC JOKER (Asymmetrical Gritty Vector Makeup - Effect 6) ---
+// --- REALTIME PNG PUPPET MASK (Dynamic 9-Argument Canvas Slicing - Effect 6) ---
+const jokerPuppet = new Image();
+jokerPuppet.src = './joker_mask.png'; // ரூட் ஃபோல்டரில் உள்ள அதே அசல் படம்!
+
 function mainMeshMask() {
 	if ((session.TFJSModel === null) || (session.TFJSModel === true)){
 		setTimeout(function(){mainMeshMask();},1000);
@@ -8823,142 +8826,58 @@ function mainMeshMask() {
 		const w = session.canvas.width;
 		const h = session.canvas.height;
 
-		// 1. PITCH BLACK VOID (அசல் வீடியோவை முழுமையாக மறைக்கும் கருப்புத் திரை)
-		ctx.save();
-		ctx.globalCompositeOperation = 'source-over';
-		ctx.fillStyle = "#000000";
-		ctx.fillRect(0, 0, w, h);
+		// 0. பின்னணியில் அசல் கேமரா வீடியோவை வரைகிறோம்.
+		// (அப்போதுதான் மாஸ்க்கின் வாய் பிளக்கும் போது, இடைவெளியில் உங்கள் அசல் பற்கள் தெரியும்!)
+		ctx.drawImage(session.canvasSource, 0, 0, w, h);
 
 		var output = [];
-		if (predictions.length > 0) {
+		if (predictions.length > 0 && jokerPuppet.complete && jokerPuppet.naturalHeight > 0) {
 			const kp = predictions[0].scaledMesh;
 
 			if (kp && kp.length > 152) {
 				const p = (i) => ({ x: kp[i][0], y: kp[i][1] });
-				const faceW = Math.abs(p(454).x - p(234).x); // மாறும் முக அகலம்
 
-				// --- Organic Smudge Helper (கலைந்த திட்டுத்திட்டான வர்ணம் பூச) ---
-				const smudgeFill = (pathFunc, color, blurVal, alphaVal) => {
-					ctx.save();
-					ctx.globalAlpha = alphaVal;
-					ctx.filter = blurVal > 0 ? `blur(${blurVal}px)` : 'none';
-					ctx.fillStyle = color;
-					ctx.beginPath();
-					pathFunc();
-					ctx.fill();
-					ctx.restore();
-				};
+				const nose = p(1);      // மூக்கு நுனி (Pivot Point)
+				const forehead = p(10); // நெற்றி
+				const chin = p(152);    // தாடை
 
-				// --- Gritty Stroke Helper (கோணலான காயம்/வழிந்த மை வரைய) ---
-				const grittyStroke = (pathFunc, color, lineWidth, blurVal = 0) => {
-					ctx.save();
-					ctx.filter = blurVal > 0 ? `blur(${blurVal}px)` : 'none';
-					ctx.strokeStyle = color;
-					ctx.lineWidth = lineWidth;
-					ctx.lineCap = 'round';
-					ctx.lineJoin = 'round';
-					ctx.beginPath();
-					pathFunc();
-					ctx.stroke();
-					ctx.restore();
-				};
+				// அசல் வாயின் திறப்பைக் கணக்கிடும் புள்ளிகள்
+				const upperLip = p(13); 
+				const lowerLip = p(14);
+				const mouthOpen = Math.max(0, lowerLip.y - upperLip.y);
+				
+				// பேசும்போது தாடை கீழே இறங்கும் தூரம் (1.2x மடங்கு)
+				const jawOffset = mouthOpen * 1.2;
 
-				// வர்ணங்கள் ஒன்றின்மேல் ஒன்று இயல்பாக ஒட்ட
-				ctx.globalCompositeOperation = 'lighter';
+				const maskH = Math.abs(chin.y - forehead.y) * 1.35; 
+				const maskW = maskH * (jokerPuppet.naturalWidth / jokerPuppet.naturalHeight);
+				const angle = Math.atan2(chin.x - forehead.x, chin.y - forehead.y);
 
-				// ====================================================================
-				// அடுக்கு 1: SWEATY CHALKY FOUNDATION (வியர்வையில் ஊறிய பவுடர் வெள்ளை)
-				// ====================================================================
-				const fc = { x: p(1).x, y: p(1).y };
-				// அ. பரவலான மங்கிய பவுடர் திட்டு
-				smudgeFill(() => {
-					ctx.ellipse(fc.x, fc.y - 10, faceW * 0.54, faceW * 0.65, 0, 0, Math.PI * 2);
-				}, 'rgba(210, 220, 230, 0.18)', 28, 1);
+				// --- மாஸ்டர் கணிதம்: படத்தை 66% (மேல்) மற்றும் 34% (கீழ் தாடை) எனப் பிரிக்கும் புள்ளி ---
+				const split = 0.66; 
 
-				// ஆ. முக எலும்பில் ஒட்டிய அடர் வெள்ளை
-				smudgeFill(() => {
-					ctx.moveTo(p(10).x, p(10).y); 
-					ctx.quadraticCurveTo(p(454).x, p(454).y - 20, p(152).x, p(152).y); 
-					ctx.quadraticCurveTo(p(234).x, p(234).y - 20, p(10).x, p(10).y);
-				}, 'rgba(235, 245, 255, 0.35)', 14, 1);
+				const natW = jokerPuppet.naturalWidth;
+				const natH = jokerPuppet.naturalHeight;
 
-				// ====================================================================
-				// அடுக்கு 2: ASYMMETRICAL SMEARED EYES (சமச்சீரற்ற, வழிந்த கண் மை)
-				// ====================================================================
-				// இடது கண்: நெற்றி நோக்கி செங்குத்தாகக் கோணலாக இழுக்கப்பட்டுள்ளது
-				smudgeFill(() => {
-					const t = p(105), b = p(147), inr = p(133), out = p(33);
-					ctx.moveTo(t.x - (faceW * 0.05), t.y - (faceW * 0.14)); 
-					ctx.quadraticCurveTo(inr.x + 10, inr.y - 5, b.x + 8, b.y + (faceW * 0.16)); // கன்னத்தில் வழியும் மை
-					ctx.quadraticCurveTo(out.x - 12, out.y + 10, t.x - (faceW * 0.05), t.y - (faceW * 0.14));
-				}, '#0b2b47', 10, 0.85);
+				ctx.save();
+				ctx.translate(nose.x, nose.y);
+				ctx.rotate(-angle);
 
-				// இடது கன்னத்தில் கீழே சொட்டும் ஒற்றை மைக் கோடு (Physical Drip)
-				grittyStroke(() => {
-					ctx.moveTo(p(147).x + 8, p(147).y + (faceW * 0.14));
-					ctx.lineTo(p(147).x + 12, p(147).y + (faceW * 0.26));
-				}, '#071c2e', faceW * 0.015, 2);
+				// பீஸ் 1: மேல் மாஸ்க் (நெற்றி முதல் மேல் உதடு வரை - மூக்கோடு நிலையாக நிற்கும்)
+				ctx.drawImage(
+					jokerPuppet,
+					0, 0, natW, natH * split,                           // Source Crop (sx, sy, sw, sh)
+					-maskW / 2, -maskH / 2, maskW, maskH * split        // Dest Position (dx, dy, dw, dh)
+				);
 
-				// வலது கண்: பொட்டு (Temple) நோக்கி பக்கவாட்டில் கலைக்கப்பட்டுள்ளது
-				smudgeFill(() => {
-					const t = p(334), b = p(376), inr = p(362), out = p(263);
-					ctx.moveTo(t.x + (faceW * 0.04), t.y - (faceW * 0.07));
-					ctx.quadraticCurveTo(inr.x - 8, inr.y, b.x - 5, b.y + (faceW * 0.1));
-					ctx.quadraticCurveTo(out.x + (faceW * 0.14), out.y - 5, t.x + (faceW * 0.04), t.y - (faceW * 0.07));
-				}, '#0f385e', 12, 0.85);
+				// பீஸ் 2: கீழ் தாடை (கீழ் உதடு முதல் தாடை வரை - 'jawOffset' அளவுக்குக் கீழே இறங்கும்!)
+				ctx.drawImage(
+					jokerPuppet,
+					0, natH * split, natW, natH * (1 - split),          // Source Crop
+					-maskW / 2, (-maskH / 2) + (maskH * split) + jawOffset, maskW, maskH * (1 - split) // Dest + jawOffset
+				);
 
-				// ====================================================================
-				// அடுக்கு 3: IMPERFECT CLOWN NOSE (வடிவமற்ற ரத்த மூக்கு)
-				// ====================================================================
-				smudgeFill(() => {
-					const n = p(1);
-					ctx.moveTo(n.x - 14, n.y - 10);
-					ctx.bezierCurveTo(n.x + 18, n.y - 15, n.x + 22, n.y + 14, n.x + 2, n.y + 18); // கோணல் உருளை வடிவம்
-					ctx.bezierCurveTo(n.x - 18, n.y + 15, n.x - 22, n.y - 4, n.x - 14, n.y - 10);
-				}, '#8a0f14', 6, 0.95);
-
-				// ====================================================================
-				// அடுக்கு 4: PSYCHOTIC GLASGOW SMILE (சாயம் ஊறிய, கிழிந்த வாய்)
-				// ====================================================================
-				const cL = p(61), cR = p(291);
-
-				// அ. Under-Stain: வாயைத் துடைக்கும் போது தோலில் ஊறிய மெரூன் சாயம்
-				smudgeFill(() => {
-					ctx.moveTo(cL.x - 25, cL.y - 12);
-					ctx.quadraticCurveTo(p(0).x, p(0).y - 20, cR.x + 25, cR.y - 12);
-					ctx.quadraticCurveTo(p(17).x, p(17).y + 28, cL.x - 25, cL.y - 12);
-				}, '#57080b', 20, 0.55);
-
-				ctx.globalCompositeOperation = 'source-over'; // கூர்மையான விளிம்புகளுக்கு
-
-				// ஆ. மேல் உதடு (Solid Paint)
-				smudgeFill(() => {
-					ctx.moveTo(cL.x, cL.y);
-					ctx.quadraticCurveTo(p(0).x, p(0).y - (faceW * 0.03), cR.x, cR.y);
-					ctx.quadraticCurveTo(p(13).x, p(13).y, cL.x, cL.y);
-				}, '#a81118', 2, 0.95);
-
-				// இ. கீழ் உதடு (தாடையோடு கீழே இறங்கும்)
-				smudgeFill(() => {
-					ctx.moveTo(cL.x, cL.y);
-					ctx.quadraticCurveTo(p(14).x, p(14).y, cR.x, cR.y);
-					ctx.quadraticCurveTo(p(17).x, p(17).y + (faceW * 0.035), cL.x, cL.y);
-				}, '#a81118', 2, 0.95);
-
-				// ஈ. கன்னத்துத் தழும்புகள் (Open Wound 3D illusion)
-				// இடது கிழிசல்
-				grittyStroke(() => { ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.1), cL.y + 4, cL.x - (faceW*0.22), cL.y - (faceW*0.11)); }, '#57080b', faceW * 0.03, 4);
-				grittyStroke(() => { ctx.moveTo(cL.x, cL.y); ctx.quadraticCurveTo(cL.x - (faceW*0.1), cL.y + 4, cL.x - (faceW*0.22), cL.y - (faceW*0.11)); }, '#ba1820', faceW * 0.012, 1);
-
-				// வலது கிழிசல் (மேல்நோக்கி வளைந்தது)
-				grittyStroke(() => { ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.12), cR.y - 8, cR.x + (faceW*0.24), cR.y - (faceW*0.07)); }, '#57080b', faceW * 0.03, 4);
-				grittyStroke(() => { ctx.moveTo(cR.x, cR.y); ctx.quadraticCurveTo(cR.x + (faceW*0.12), cR.y - 8, cR.x + (faceW*0.24), cR.y - (faceW*0.07)); }, '#ba1820', faceW * 0.012, 1);
-
-				// உ. தாடையில் வழியும் ஒற்றை ரத்தச் சொட்டு
-				grittyStroke(() => {
-					ctx.moveTo(p(17).x + 4, p(17).y);
-					ctx.quadraticCurveTo(p(17).x + 7, p(17).y + 20, p(152).x + 2, p(152).y + 12);
-				}, '#4a0508', faceW * 0.016, 2);
+				ctx.restore();
 			}
 
 			if (session.pushEffectsData){
@@ -8968,8 +8887,6 @@ function mainMeshMask() {
 				}
 			}
 		}
-
-		ctx.restore(); 
 		
 		if (session.pushEffectsData && output.length > 0){
 			if (isIFrame){

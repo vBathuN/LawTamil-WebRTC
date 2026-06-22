@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Master Visualizer Pro</title>
+    <title>LawTamil Master Visualizer Pro - Live2D Rig</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -15,30 +15,17 @@
         }
         
         #justice-glow {
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; 
-            background: radial-gradient(circle, rgba(255, 30, 30, 0.85) 0%, rgba(255, 30, 30, 0) 60%), radial-gradient(circle, rgba(255, 215, 0, 0.5) 10%, rgba(255, 215, 0, 0) 80%);
-            filter: blur(6px); box-shadow: 0 0 45px rgba(255, 20, 20, 0.9); z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border-radius: 50%; 
+            background: radial-gradient(circle, rgba(255, 20, 20, 0.85) 0%, rgba(255, 20, 20, 0) 60%), radial-gradient(circle, rgba(255, 215, 0, 0.5) 10%, rgba(255, 215, 0, 0) 80%);
+            filter: blur(6px); box-shadow: 0 0 50px rgba(255, 10, 10, 0.95); z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
 
-        /* --- THE MASTER PUPPET STAGE --- */
-        /* கம்பிகள் பின்னால் ஆட z-index: 10 கொடுக்கப்பட்டுள்ளது */
+        /* --- THE MASTER LIVE2D STAGE --- */
         #joker-stage {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 420px; z-index: 10; pointer-events: none;
+            width: 300px; height: 350px; z-index: 5; pointer-events: none;
             opacity: 0; transition: opacity 0.4s ease-in-out;
             will-change: transform;
-        }
-        
-        /* கம்பிகள் அடுக்கப்படும் கண்டெய்னர் (ஜோக்கருக்குப் பின்னால் z-index: 2) */
-        #visualizer { 
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; z-index: 2; pointer-events: none; 
-            opacity: 0; transition: opacity 0.4s ease-in-out; 
-        }
-        
-        .v-bar {
-            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ff3333; 
-            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
-            box-shadow: 0px 0px 15px #ff1a1a, 0px 0px 5px #ffca70; will-change: transform;
         }
 
         #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
@@ -48,8 +35,7 @@
 
     <div class="anim-section">
         <div id="justice-glow"></div> 
-        <div id="visualizer"></div>
-        <canvas id="joker-stage" width="300" height="420"></canvas>
+        <canvas id="joker-stage" width="300" height="350"></canvas>
     </div>
     
     <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
@@ -59,37 +45,27 @@
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
         document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
 
-        // கம்பிகள் ஜோக்கரின் தலைக்கு வெளியே எட்டிப்பார்க்கும் படி 110px ரேடியஸ்
-        const ARC_RADIUS = 110; 
-        let analyser, dataArray, vBars = []; 
+        let analyser, dataArray; 
         let audioCtx; let lastActiveTime = Date.now(); 
         
-        const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
         const jokerCanvas = document.getElementById('joker-stage');
         const jokerCtx = jokerCanvas.getContext('2d');
 
         // --- PURE SINGLE PNG ASSET ---
         const jokerImg = new Image();
-        jokerImg.src = './joker.png'; // உன் ரூட் ஃபோல்டரில் உள்ள அசல் படம்
+        jokerImg.src = './joker.png'; // உன் அசல் Esports படம் (remove.bg செய்தது)
 
-        let currStretch = 0, targetStretch = 0;
+        // இயற்பியல் லெர்ப் (Lerp) மாறிகள்
+        let currJaw = 0, targetJaw = 0;
         let isBlinking = false;
 
-        function triggerBlink() {
+        function startBlink() {
             isBlinking = true;
             setTimeout(() => { isBlinking = false; }, 120);
-            setTimeout(triggerBlink, Math.random() * 3500 + 2000);
+            setTimeout(startBlink, Math.random() * 3500 + 2000);
         }
-        jokerImg.onload = () => { triggerBlink(); };
-        
-        const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
-        for (let i = 0; i < numBars; i++) {
-            const b = document.createElement('div'); b.className = 'v-bar';
-            const angle = startAngle + (i * step); b.dataset.angle = angle;
-            b.style.transform = `rotate(${angle}deg) translateY(-${ARC_RADIUS}px) scaleY(1)`;
-            vContainer.appendChild(b); vBars.push(b);
-        }
+        jokerImg.onload = () => { startBlink(); };
 
         const connectedTracks = new Set(); 
 
@@ -140,73 +116,103 @@
             requestAnimationFrame(renderVisualizer);
             analyser.getByteFrequencyData(dataArray);
             
-            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
-            const activeVoiceBins = 16; const mappingRatio = activeVoiceBins / half; 
-            
-            vBars.forEach((bar, index) => {
-                let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
-                if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
-                let val = dataArray[dIdx] || 0; val = Math.max(0, val - 82); 
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
-                totalVolume += val; 
-            });
-            
-            const avgVol = totalVolume / vBars.length;
+            let totalVolume = 0;
+            for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
+            const avgVol = totalVolume / 25;
 
-            if (avgVol > 12) { 
+            if (avgVol > 8) { 
                 lastActiveTime = Date.now(); 
-                vContainer.style.opacity = "1"; jokerCanvas.style.opacity = "1";
-                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
+                jokerCanvas.style.opacity = "1";
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 60);
 
-                targetStretch = Math.min(28, Math.max(0, (avgVol - 12) * 0.6));
+                // சத்தத்தை 0 முதல் 24px தாடை இறக்கமாக மாற்றுதல்
+                targetJaw = Math.min(24, Math.max(0, (avgVol - 8) * 0.65));
             } else {
-                targetStretch = 0;
+                targetJaw = 0;
                 if (Date.now() - lastActiveTime > 2000) {
-                    vContainer.style.opacity = "0"; jokerCanvas.style.opacity = "0";
+                    jokerCanvas.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }
             }
 
             // =========================================================================
-            // --- THE SLIT-STRETCH PIXEL ENGINE (0% Background Gap) ---
+            // --- THE 3-TIER ANATOMICAL RIG & ORAL EQUALIZER ---
             // =========================================================================
             if (jokerImg.complete && jokerImg.naturalHeight > 0) {
                 
-                currStretch += (targetStretch - currStretch) * 0.35;
+                currJaw += (targetJaw - currJaw) * 0.35; // மென்மையான தாடை சறுக்கம்
 
-                jokerCtx.clearRect(0, 0, 300, 420);
+                jokerCtx.clearRect(0, 0, 300, 350);
 
                 const natW = jokerImg.naturalWidth;
                 const natH = jokerImg.naturalHeight;
-                
-                const drawW = 300;
-                const drawH = 330; // 420px கேன்வாஸிற்குள் படம் அமையும் உயரம்
-                const scale = drawH / natH; 
+                const scale = 340 / natH; 
 
-                // அசல் படத்தில் பற்கள் அமைந்துள்ள 4% மெல்லிய பிக்சல் பட்டை
-                const sTop = natH * 0.585;  
-                const sBot = natH * 0.625;  
-                const sSlitH = sBot - sTop; 
+                // --- 3 மண்டலங்களை வெட்டும் Y-புள்ளிகள் ---
+                const sTeethLine = natH * 0.585; // மேல் பற்களின் விளிம்பு
+                const sChinTip   = natH * 0.685; // வெள்ளை முக்கோணத் தாடையின் மிகக் கீழ் நுனி!
 
-                const dTopH  = sTop * scale;
-                const dSlitH = (sSlitH * scale) + currStretch; // வாய் பிக்சல்கள் மட்டும் ரப்பர் போல் நீளும்
-                const dBotY  = dTopH + dSlitH;
-                const dBotH  = (natH - sBot) * scale;
+                const hHead  = sTeethLine * scale;
+                const hJaw   = (sChinTip - sTeethLine) * scale;
+                const hTorso = (natH - sChinTip) * scale;
 
-                // 1. மேல் மண்டை (அசையாது)
-                jokerCtx.drawImage(jokerImg, 0, 0, natW, sTop,  0, 0, drawW, dTopH);
+                const yTorsoFixed = sChinTip * scale; // உடல் கல்லுப்போல நிற்கும் இடம்
 
-                // 2. வாய் பட்டை (சத்தத்திற்கு ஏற்ப பற்களின் பிக்சல்கள் செங்குத்தாக விரிவடையும்)
-                jokerCtx.drawImage(jokerImg, 0, sTop, natW, sSlitH,  0, dTopH, drawW, dSlitH);
+                // ---------------------------------------------------------------------
+                // அடுக்கு 1: அசைவில்லாத உடல் (Torso/Collar - at Fixed Y)
+                // ---------------------------------------------------------------------
+                jokerCtx.drawImage(
+                    jokerImg, 
+                    0, sChinTip, natW, natH - sChinTip, 
+                    0, yTorsoFixed, 300, hTorso
+                );
 
-                // 3. கீழ் தாடை (வாய் விரிந்த அளவுக்குக் கீழே தள்ளப்படும்)
-                jokerCtx.drawImage(jokerImg, 0, sBot, natW, natH - sBot,  0, dBotY, drawW, dBotH);
+                // ---------------------------------------------------------------------
+                // அடுக்கு 2: தொண்டைக்குள் அதிரும் Equalizer (Oral Equalizer)
+                // ---------------------------------------------------------------------
+                if (currJaw > 1) {
+                    const mouthLeft = 300 * 0.32;
+                    const mouthWidth = 300 * 0.36;
+
+                    // இருண்ட தொண்டைக் குழி
+                    jokerCtx.fillStyle = "#0a0102";
+                    jokerCtx.fillRect(mouthLeft - 5, hHead, mouthWidth + 10, currJaw);
+
+                    // பற்களுக்கு நடுவில் ஆடும் 20 சிவப்பு/ஆரஞ்சு ஆடியோ கம்பிகள்!
+                    const stepX = mouthWidth / 20;
+                    for (let b = 0; b < 20; b++) {
+                        const bin = Math.floor(b * (dataArray.length / 40));
+                        const pwr = (dataArray[bin] || 0) / 255;
+                        const barH = Math.min(currJaw * 0.85, currJaw * pwr); // வாய் திறப்புக்குள் கச்சிதமாக அடங்கும்
+
+                        jokerCtx.fillStyle = (b % 2 === 0) ? "#ff1a1a" : "#ff9900";
+                        jokerCtx.fillRect(mouthLeft + (b * stepX), hHead + ((currJaw - barH)/2), stepX - 1, barH);
+                    }
+                }
+
+                // ---------------------------------------------------------------------
+                // அடுக்கு 3: அசையும் தாடை (Shifted down over the static collar)
+                // ---------------------------------------------------------------------
+                jokerCtx.drawImage(
+                    jokerImg, 
+                    0, sTeethLine, natW, sChinTip - sTeethLine, 
+                    0, hHead + currJaw, 300, hJaw // 'currJaw' அளவுக்குக் கீழே இறங்கி உடலை மறைக்கும்!
+                );
+
+                // ---------------------------------------------------------------------
+                // அடுக்கு 4: மேல் மண்டை (Fixed Top)
+                // ---------------------------------------------------------------------
+                jokerCtx.drawImage(
+                    jokerImg, 
+                    0, 0, natW, sTeethLine, 
+                    0, 0, 300, hHead
+                );
 
                 // --- கண் சிமிட்டல் ---
                 if (isBlinking) {
                     jokerCtx.fillStyle = "#cbd0d3"; 
-                    jokerCtx.beginPath(); jokerCtx.ellipse(drawW * 0.415, drawH * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-                    jokerCtx.beginPath(); jokerCtx.ellipse(drawW * 0.585, drawH * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.415, 340 * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.585, 340 * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
                 }
             }
         };

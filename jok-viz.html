@@ -36,7 +36,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
-    // மிகமுக்கியம்: vol=0 சேர்க்கப்பட்டுள்ளது. (அசல் குரல் ஐஃப்ரேமிற்குள் 100% மியூட் ஆகிவிடும், வெக்டார் குரல் மட்டுமே வெளியே கேட்கும்)
+    // அசல் குரல் ஐஃப்ரேமிற்குள் மியூட் ஆகிவிடும் (vol=0), DSP-ல் உருமாறிய குரல் மட்டுமே வெளியே கேட்கும்
     document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
 
     let analyser, dataArray; 
@@ -98,7 +98,7 @@
     startAutonomousBlink();
 
     // =========================================================================
-    // THE GOD-MODE KERNEL: Pure JS Deep Voice Pitch Shifter (Zero External Files)
+    // அப்டேட் செய்யப்பட்ட DSP KERNEL: Linear Interpolation-உடன் (புடுக் சத்தம் வராது)
     // =========================================================================
     const pitchWorkletCode = `
     class GranularPitchShifter extends AudioWorkletProcessor {
@@ -106,7 +106,6 @@
             super();
             this.buffers = [new Float32Array(4096), new Float32Array(4096)];
             this.w = 0; this.r = 0;
-            // 0.76 = கம்பீரமான ஹாலிவுட் அசுரக் குரல் (0.82 போட்டால் கொஞ்சம் சாஃப்ட் ஆகும்)
             this.pitch = 0.80; 
         }
         process(inputs, outputs) {
@@ -118,7 +117,14 @@
             for (let i = 0; i < input[0].length; i++) {
                 for (let c = 0; c < channels; c++) {
                     this.buffers[c][this.w] = input[c][i];
-                    output[c][i] = this.buffers[c][Math.floor(this.r)];
+
+                    // --- Linear Interpolation (சாய்வுப் பாலம் கணிதம்) ---
+                    let pos = this.r;
+                    let idx1 = Math.floor(pos);
+                    let idx2 = (idx1 + 1) % 4096;
+                    let frac = pos - idx1; 
+
+                    output[c][i] = this.buffers[c][idx1] + (this.buffers[c][idx2] - this.buffers[c][idx1]) * frac;
                 }
                 this.w = (this.w + 1) % 4096;
                 this.r = (this.r + this.pitch) % 4096;
@@ -158,22 +164,17 @@
                                     const cleanStream = new MediaStream([track]);
                                     const rawMic = audioCtx.createMediaStreamSource(cleanStream);
 
-                                    // 1. இன்லைன் AudioWorklet-ஐ மெமரியில் ஏற்றுகிறோம்
                                     const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
                                     await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
                                     const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
 
-                                    // 2. Baritone Chest Resonance (நெஞ்சாங்குழியில் இருந்து எழும் பேஸ் அதிர்வு)
                                     const chestRumble = audioCtx.createBiquadFilter();
-                                    chestRumble.type = 'lowshelf';
-                                    chestRumble.frequency.value = 160;
-                                    chestRumble.gain.value = 6.0; // +6dB Bass Boost
+                                    chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
 
-                                    // 3. சிக்னல் பயணம்: RawMic -> ChestRumble -> DeepPitch -> Analyser -> Speakers
                                     rawMic.connect(chestRumble);
                                     chestRumble.connect(pitchConverter);
                                     pitchConverter.connect(analyser);
-                                    analyser.connect(audioCtx.destination); // உருமாறிய குரல் மட்டுமே வெளியே கேட்கும்!
+                                    analyser.connect(audioCtx.destination); 
                                 } catch(err) {}
                             }
                         });

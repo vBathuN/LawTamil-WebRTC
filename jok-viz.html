@@ -16,7 +16,6 @@
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
             will-change: transform;
-            perspective: 800px;
         }
     </style>
 </head>
@@ -26,16 +25,11 @@
         <canvas id="joker-stage" width="420" height="480"></canvas>
     </div>
     
-    <script>
+    <script type="module">
+        import { VDONinjaClient } from './main.js'; // உங்கள் சர்வரில் VDO.Ninja Core SDK இருக்கும் சரியான பாதை
+
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
-
-        // --- 1. HEADLESS WEBRTC TRANSPORT (JS மெமரியில் மட்டுமே இயங்கும் இன்ஜின்) ---
-        const vdoTransport = document.createElement('iframe');
-        vdoTransport.allow = "autoplay; microphone";
-        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
-        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
-        document.body.appendChild(vdoTransport);
 
         let analyser, dataArray; 
         let audioCtx; let lastActiveTime = Date.now(); 
@@ -166,7 +160,7 @@
     }
     registerProcessor('joker-voice-engine', TrueGranularEngine);
     `;
-        
+
         const connectedTracks = new Set(); 
 
         function bootVisualizer() {
@@ -177,44 +171,39 @@
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            setInterval(() => {
-                try {
-                    const iframeWin = vdoTransport.contentWindow;
-                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
-                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
-                        iframeWin.RTCPeerConnection = function(...args) {
-                            const pc = new OrigPeerConnection(...args);
-                            pc.addEventListener('track', async (event) => {
-                                const track = event.track;
-                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                                    connectedTracks.add(track.id);
-                                    try {
-                                        if (audioCtx.state === 'suspended') audioCtx.resume();
-                                        const cleanStream = new MediaStream([track]);
-                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+            // --- NATIVE ES6 CLIENT INITIALIZATION ---
+            const ninjaClient = new VDONinjaClient({
+                room: roomName,
+                autostart: true,
+                stereo: true,
+                proaudio: true,
+                muted: true // அசல் குரல் ஒலிக்காமல் தடுத்து, DSP Worklet வழியே மட்டுமே அவுட்புட் தருகிறோம்
+            });
 
-                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
-                                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
-                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+            ninjaClient.on('onTrack', async (track) => {
+                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                    connectedTracks.add(track.id);
+                    try {
+                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                        const cleanStream = new MediaStream([track]);
+                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
 
-                                        const chestRumble = audioCtx.createBiquadFilter();
-                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
 
-                                        rawMic.connect(chestRumble);
-                                        chestRumble.connect(pitchConverter);
-                                        pitchConverter.connect(analyser);
-                                        analyser.connect(audioCtx.destination); 
-                                    } catch(err) {}
-                                }
-                            });
-                            return pc;
-                        };
-                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
-                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
-                        iframeWin.__lawtamil_rtc_hooked = true;
-                    }
-                } catch (e) {} 
-            }, 500);
+                        const chestRumble = audioCtx.createBiquadFilter();
+                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+
+                        rawMic.connect(chestRumble);
+                        chestRumble.connect(pitchConverter);
+                        pitchConverter.connect(analyser);
+                        analyser.connect(audioCtx.destination); 
+                    } catch(err) {}
+                }
+            });
+
+            ninjaClient.start();
 
             setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
             renderStage();
@@ -229,11 +218,6 @@
                 analyser.getByteFrequencyData(dataArray);
                 let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
                 avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
-
-                // தலை விநாடிக்கு ஒருமுறை மெதுவாக இடது/வலது புறம் 2.5 டிகிரி திரும்பிப் பார்க்கும்:
-let lookSideAngle = Math.sin(Date.now() * 0.0015) * 2.5; 
-
-jokerCanvas.style.transform = `translate(-50%, -50%) rotateY(${lookSideAngle}deg)`;
             }
 
             if (avgVol > 8) { 

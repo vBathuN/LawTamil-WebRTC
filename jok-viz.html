@@ -95,15 +95,17 @@
     startAutonomousBlink();
 
     // =========================================================================
-    // அப்டேட் செய்யப்பட்ட DSP KERNEL: Linear Interpolation-உடன் (புடுக் சத்தம் வராது)
+    // THE ULTIMATE KERNEL: 4096 Buffer + 0.817 Pitch + Smart Envelope Gate
     // =========================================================================
     const pitchWorkletCode = `
     class GranularPitchShifter extends AudioWorkletProcessor {
         constructor() {
             super();
-            this.buffers = [new Float32Array(2048), new Float32Array(2048)];
-            this.w = 0; this.r = 0;
-            this.pitch = 0.817; 
+            this.buffers = [new Float32Array(4096), new Float32Array(4096)];
+            this.w = 0; 
+            this.r = 0;
+            this.pitch = 0.817; // நீங்கள் கண்டுபிடித்த கோல்டன் ரேஷியோ
+            this.env = 0.0;     // (New) சத்தமில்லாமல் வால்யூமை அமுக்கும் கேட்
         }
         process(inputs, outputs) {
             const input = inputs[0]; const output = outputs[0];
@@ -112,19 +114,35 @@
             const channels = Math.min(input.length, output.length, 2);
 
             for (let i = 0; i < input[0].length; i++) {
+                
+                // 1. தற்போதைய இன்புட் சிக்னலின் 'பவர்' எவ்வளவு எனப் பார்க்கிறோம்
+                let mono = input[0][i];
+                if (channels > 1) mono = (input[0][i] + input[1][i]) * 0.5;
+                let power = Math.abs(mono);
+
+                // 2. The Envelope Follower (0.002-க்கும் கீழே போனால் பேச்சு நின்றது என அர்த்தம்)
+                if (power > 0.002) {
+                    this.env += (1.0 - this.env) * 0.1;   // பேசும்போது 1.0-க்கு இன்ஸ்டன்ட் அட்டாக்
+                } else {
+                    this.env *= 0.998; // அமைதியானதும் 40ms-ல் வெண்ணெய் போல '0'-வுக்கு ஃபேட்-அவுட்
+                }
+
                 for (let c = 0; c < channels; c++) {
                     this.buffers[c][this.w] = input[c][i];
 
-                    // --- Linear Interpolation (சாய்வுப் பாலம் கணிதம்) ---
+                    // Linear Interpolation
                     let pos = this.r;
                     let idx1 = Math.floor(pos);
-                    let idx2 = (idx1 + 1) % 2048;
+                    let idx2 = (idx1 + 1) % 4096;
                     let frac = pos - idx1; 
 
-                    output[c][i] = this.buffers[c][idx1] + (this.buffers[c][idx2] - this.buffers[c][idx1]) * frac;
+                    let rawSample = this.buffers[c][idx1] + (this.buffers[c][idx2] - this.buffers[c][idx1]) * frac;
+
+                    // 3. அவுட்புட் சிக்னல் மீது அந்த 'env' ஃபேடரை மல்டிபிளை செய்கிறோம்!
+                    output[c][i] = rawSample * this.env;
                 }
-                this.w = (this.w + 1) % 2048;
-                this.r = (this.r + this.pitch) % 2048;
+                this.w = (this.w + 1) % 4096;
+                this.r = (this.r + this.pitch) % 4096;
             }
             return true;
         }

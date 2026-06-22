@@ -2,31 +2,25 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil ONNX VTuber - Permanent Live Edition</title>
+    <title>LawTamil Live VTuber - Master Edition</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
             height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
         }
-        
         .anim-section { 
-            width: 100%; height: 100%; 
-            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+            width: 100%; height: 100%; position: relative; 
+            display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
         }
-        
         #justice-glow {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
             filter: blur(4px); box-shadow: 0 0 40px rgba(255, 215, 0, 0.9); z-index: 3; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
-
-        /* பிழை திருத்தம்: opacity: 0 நீக்கப்பட்டது. கேன்வாஸ் நிரந்தரமாக 100% தெரியும் */
         #joker-stage {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 420px; z-index: 4; pointer-events: none;
-            will-change: transform;
+            width: 300px; height: 420px; z-index: 4; pointer-events: none; will-change: transform;
         }
-
         #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
     </style>
 </head>
@@ -51,44 +45,58 @@
         const jokerCanvas = document.getElementById('joker-stage');
         const jokerCtx = jokerCanvas.getContext('2d');
 
-        // =========================================================================
-        // பிழை திருத்தம் 1: 'crossOrigin' சேர்க்கப்பட்டுள்ளது (CORS Tainted Canvas Error வராது)
-        // =========================================================================
+        // --- 1. SMART ASSET LOADER (CORS தடை வராது + Extension தானாக மாறும்) ---
         const bgImg = new Image();
-        bgImg.src = './joker.jpg';   // [Layer 0] - நிரந்தரப் பின்னணி
-
         const fgImg = new Image();
-        fgImg.src = './joker1.png';  // [Layers 1, 2, 3, 4] - பேசும்போது வரும் முகம்
 
+        function loadWithFallback(imgObj, srcList) {
+            let i = 0;
+            imgObj.onerror = () => {
+                i++;
+                if (i < srcList.length) imgObj.src = srcList[i];
+            };
+            imgObj.src = srcList[0];
+        }
+
+        // சர்வரில் .png அல்லது .jpg என எது இருந்தாலும் இதுவே கண்டுபிடித்துக்கொள்ளும்
+        loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
+        loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
+
+        // --- 2. FAIL-SAFE VECTOR SCANNER ---
         let contourNormals = [];
+        let contourScanned = false;
 
-        function scanContour() {
-            const off = document.createElement('canvas');
-            off.width = 300; off.height = 340; 
-            const octx = off.getContext('2d', { willReadFrequently: true });
-            octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 0, 0, 300, 340);
-            const data = octx.getImageData(0, 0, 300, 340).data;
+        function safeScanContour() {
+            if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
+            try {
+                const off = document.createElement('canvas');
+                off.width = 300; off.height = 340; 
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 0, 0, 300, 340);
+                const data = octx.getImageData(0, 0, 300, 340).data;
 
-            const cx = 150, cy = 170; const rays = 75; contourNormals = [];
-
-            for (let i = 0; i < rays; i++) {
-                const angle = (i / rays) * (Math.PI * 2);
-                if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
-
-                const nx = Math.cos(angle); const ny = Math.sin(angle);
-
-                for (let r = 165; r > 15; r--) {
-                    const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
-                    if (px >= 0 && px < 300 && py >= 0 && py < 340) {
-                        if (data[(py * 300 + px) * 4 + 3] > 40) { 
-                            contourNormals.push({ x: px, y: py, nx: nx, ny: ny });
-                            break;
+                const cx = 150, cy = 170; const rays = 75; contourNormals = [];
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+                    const nx = Math.cos(angle); const ny = Math.sin(angle);
+                    for (let r = 165; r > 15; r--) {
+                        const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 300 && py >= 0 && py < 340) {
+                            if (data[(py * 300 + px) * 4 + 3] > 40) { 
+                                contourNormals.push({ x: px, y: py, nx: nx, ny: ny });
+                                break;
+                            }
                         }
                     }
                 }
+                contourScanned = true;
+            } catch (e) {
+                contourScanned = true; // ஸ்கேனிங் ஃபெயில் ஆனாலும் அனிமேஷன் நிற்காமல் தொடர இது அனுமதிக்கும்
             }
         }
 
+        // --- 3. ONNX NEURAL ENGINE ---
         const AudioBlendshapeNet = {
             predict: function(fft) {
                 let x = [];
@@ -103,24 +111,18 @@
 
         let currJaw = 0, targetJaw = 0;
         let currSmile = 0, targetSmile = 0;
-        let faceAlpha = 0, targetFaceAlpha = 0; // முகத்தின் வெளிப்படைத்தன்மை (Opacity)
+        let faceAlpha = 0, targetFaceAlpha = 0; 
         let breathAngle = 0; let isBlinking = false;
 
-        function triggerAutonomousBlink() {
+        function startAutonomousBlink() {
             isBlinking = true;
             setTimeout(() => { isBlinking = false; }, 120);
-            setTimeout(triggerAutonomousBlink, Math.random() * 3500 + 2000);
+            setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
         }
-        
-        let assetsLoaded = 0;
-        function onAssetLoad() {
-            assetsLoaded++;
-            if (assetsLoaded === 2) { scanContour(); triggerAutonomousBlink(); }
-        }
-        bgImg.onload = onAssetLoad; fgImg.onload = onAssetLoad;
+        startAutonomousBlink();
 
+        // --- 4. WEBRTC ENGINE HOOK ---
         const connectedTracks = new Set(); 
-
         function bootVisualizer() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -145,7 +147,7 @@
                                     try {
                                         if (audioCtx.state === 'suspended') audioCtx.resume();
                                         const cleanStream = new MediaStream([track]);
-                                        source = audioCtx.createMediaStreamSource(cleanStream);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
                                         source.connect(analyser); 
                                     } catch(err) {}
                                 }
@@ -157,15 +159,20 @@
                         iframeWin.__lawtamil_rtc_hooked = true;
                     }
                 } catch (e) {} 
-            }, 10);
+            }, 500);
 
             setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
-            renderVisualizer();
+            renderStage();
         }
 
-        const renderVisualizer = () => {
-            requestAnimationFrame(renderVisualizer);
+        // --- 5. MASTER RENDER PIPELINE ---
+        const renderStage = () => {
+            requestAnimationFrame(renderStage);
             
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) {
+                safeScanContour();
+            }
+
             let avgVol = 0;
             let blendshapes = { jawOpen: 0, mouthStretch: 0 };
 
@@ -179,25 +186,24 @@
 
             if (avgVol > 8) { 
                 lastActiveTime = Date.now(); 
-                targetFaceAlpha = 1.0; // ஆடியோ இருந்தால் முகத்தைக் காட்டு
+                targetFaceAlpha = 1.0; 
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
 
                 targetJaw = blendshapes.jawOpen * 36;        
                 targetSmile = blendshapes.mouthStretch * 18; 
             } else {
                 targetJaw = 0; targetSmile = 0;
-                if (Date.now() - lastActiveTime > 1500) {
-                    targetFaceAlpha = 0.0; // அமைதியாக இருந்தால் முகத்தை மறை
+                if (Date.now() - lastActiveTime > 1200) {
+                    targetFaceAlpha = 0.0; 
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }
             }
 
-            // பிழை திருத்தம் 2: natH Reference Error வராமல் முன்கூட்டியே செக் செய்யப்படுகிறது
             if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
                 
                 currJaw += (targetJaw - currJaw) * 0.32;
                 currSmile += (targetSmile - currSmile) * 0.28;
-                faceAlpha += (targetFaceAlpha - faceAlpha) * 0.12; // மென்மையான ஃபேட்-இன் / ஃபேட்-அவுட்
+                faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
 
                 breathAngle += 0.03;
                 const idleFloatY = Math.sin(breathAngle) * 2.0; 
@@ -216,23 +222,19 @@
                 const stretchX = -(currSmile * 0.5);
                 const stretchW = 300 + currSmile;
 
-                // =============================================================
-                // [LAYER 0]: நிரந்தரப் பின்னணி (joker.jpg) - எப்போதும் 100% தெரியும்
-                // =============================================================
+                // [LAYER 0]: நிரந்தர அசல் படம் (எப்போதும் 100% தெரியும்)
                 jokerCtx.globalAlpha = 1.0;
                 jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 0, 0, 300, 340);
 
-                // =============================================================
-                // [LAYERS 1 to 4]: பேசும்போது மட்டும் தோன்றும் அனிமேஷன் லேயர்கள்
-                // =============================================================
-                if (faceAlpha > 0.01) {
-                    jokerCtx.globalAlpha = faceAlpha; // ஆடியோவுக்கு ஏற்ப ஏறி இறங்கும் Alpha
+                // [LAYERS 1-4]: பேசும்போது மட்டும் மேலெழும் முகம்
+                if (faceAlpha > 0.005) {
+                    jokerCtx.globalAlpha = faceAlpha;
 
-                    // [LAYER 1]: அவுட்லைன் கம்பிகள்
+                    // Layer 1: Vector Wires
                     if (contourNormals.length > 0 && avgVol > 1) {
                         jokerCtx.save();
-                        jokerCtx.lineWidth = 3.2; jokerCtx.lineCap = 'round';
-                        jokerCtx.shadowColor = '#ff0055'; jokerCtx.shadowBlur = 12;
+                        jokerCtx.lineWidth = 3.0; jokerCtx.lineCap = 'round';
+                        jokerCtx.shadowColor = '#ff0055'; jokerCtx.shadowBlur = 10;
                         const stepBin = Math.floor((dataArray.length * 0.55) / contourNormals.length);
                         contourNormals.forEach((pt, i) => {
                             const bin = i * stepBin;
@@ -248,7 +250,7 @@
                         jokerCtx.restore();
                     }
 
-                    // [LAYER 2]: தொண்டைக் குழி + Equalizer
+                    // Layer 2: Throat Void + EQ
                     if (currJaw > 0.5) {
                         jokerCtx.save();
                         jokerCtx.fillStyle = '#050505';
@@ -273,23 +275,21 @@
                         jokerCtx.restore();
                     }
 
-                    // [LAYER 3]: அசையும் தாடை
+                    // Layer 3: Moving Jaw
                     const botH_nat = natH - splitY_nat;
                     const botH_draw = botH_nat * scale;
                     jokerCtx.drawImage(fgImg, 0, splitY_nat, natW, botH_nat, stretchX, splitY_draw + currJaw, stretchW, botH_draw);
 
-                    // [LAYER 4]: அசையாத மேல் மண்டை
+                    // Layer 4: Static Upper Skull
                     jokerCtx.drawImage(fgImg, 0, 0, natW, splitY_nat, 0, 0, 300, splitY_draw);
                 }
 
-                // =============================================================
-                // [TOPMOST LAYER]: கண் சிமிட்டல் (Alpha 1.0 - நிரந்தரமானது)
-                // =============================================================
+                // [TOPMOST]: நிரந்தரக் கண் சிமிட்டல் (பேசினாலும், அமைதியாக இருந்தாலும் இயங்கும்)
                 jokerCtx.globalAlpha = 1.0; 
                 if (isBlinking) {
                     jokerCtx.fillStyle = "#cbd0d3"; 
-                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.415, 340 * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
-                    jokerCtx.beginPath(); jokerCtx.ellipse(300 * 0.585, 340 * 0.41, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(124.5, 139.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(175.5, 139.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
                 }
             }
         };

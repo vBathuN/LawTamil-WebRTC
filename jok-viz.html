@@ -229,6 +229,11 @@
                 analyser.getByteFrequencyData(dataArray);
                 let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
                 avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
+
+                // தலை விநாடிக்கு ஒருமுறை மெதுவாக இடது/வலது புறம் 2.5 டிகிரி திரும்பிப் பார்க்கும்:
+let lookSideAngle = Math.sin(Date.now() * 0.0015) * 2.5; 
+
+jokerCanvas.style.transform = `translate(-50%, -50%) rotateY(${lookSideAngle}deg)`;
             }
 
             if (avgVol > 8) { 

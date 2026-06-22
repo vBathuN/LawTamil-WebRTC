@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil VTuber Pro - True Sandwich Rig</title>
+    <title>LawTamil Master Visualizer Pro - True 2-Image Rig</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -15,15 +15,15 @@
         }
         
         #justice-glow {
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; 
-            background: radial-gradient(circle, rgba(255, 30, 30, 0.85) 0%, rgba(255, 30, 30, 0) 60%), radial-gradient(circle, rgba(255, 215, 0, 0.5) 10%, rgba(255, 215, 0, 0) 80%);
-            filter: blur(5px); box-shadow: 0 0 45px rgba(255, 20, 20, 0.95); z-index: 1; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; border-radius: 50%; 
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
+            filter: blur(4px); box-shadow: 0 0 40px rgba(255, 215, 0, 0.9); z-index: 3; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
 
-        /* கேன்வாஸ் எப்போதும் ஸ்கிரீனில் தெரிவது 100% உறுதி செய்யப்பட்டுள்ளது */
+        /* படம் எப்போதும் ஸ்கிரீனில் தெரிவது opacity: 1 !important மூலம் உறுதி செய்யப்பட்டுள்ளது */
         #joker-stage {
             position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
-            width: 350px; height: 350px; z-index: 5; pointer-events: none;
+            width: 300px; height: 420px; z-index: 4; pointer-events: none;
             opacity: 1 !important; 
             will-change: transform;
         }
@@ -35,7 +35,7 @@
 
     <div class="anim-section">
         <div id="justice-glow"></div> 
-        <canvas id="joker-stage" width="350" height="350"></canvas>
+        <canvas id="joker-stage" width="300" height="420"></canvas>
     </div>
     
     <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
@@ -53,11 +53,12 @@
         const ctx = canvas.getContext('2d');
 
         // =========================================================================
-        // --- THE TWO MASTER ASSETS (உன் சர்வர் ஃபோல்டரில் உள்ள அசல் 2 படங்கள்) ---
+        // --- 1. THE STRICT REAL ASSETS (நீ சர்வரில் அப்லோட் செய்த 2 படங்கள்) ---
         // =========================================================================
-        const imgBg = new Image();   imgBg.src = './joker.jpg';    // அசல் முழுப் படம் (பின்னணியோடு)
-        const imgHead = new Image(); imgHead.src = './joker1.png'; // உடல் நீக்கப்பட்ட தலை (Transparent)
+        const imgBg = new Image();  imgBg.src = './joker.jpg';    // அசல் முழுப் படம்
+        const imgCut = new Image(); imgCut.src = './joker1.png';  // உடல் நீக்கப்பட்ட தலை (Transparent)
 
+        let outlineNormals = [];
         let currJaw = 0, targetJaw = 0;
         let isBlinking = false;
 
@@ -66,7 +67,45 @@
             setTimeout(() => { isBlinking = false; }, 120);
             setTimeout(startBlinkLoop, Math.random() * 3500 + 2000);
         }
-        imgHead.onload = () => { startBlinkLoop(); };
+
+        // --- CONTOUR SCANNER (joker1.png-ன் அசல் அவுட்லைனை மெமரியில் ஸ்கேன் செய்யும் எந்திரம்) ---
+        function scanCutoutSilhouette() {
+            const temp = document.createElement('canvas');
+            temp.width = 300; temp.height = 300; // 300x300 சதுரத்திற்குள் தலை அமையும்
+            const tctx = temp.getContext('2d', { willReadFrequently: true });
+            tctx.drawImage(imgCut, 0, 0, 300, 300);
+            const data = tctx.getImageData(0, 0, 300, 300).data;
+
+            const cx = 150, cy = 150; 
+            const rays = 75; outlineNormals = [];
+
+            for (let i = 0; i < rays; i++) {
+                const angle = (i / rays) * (Math.PI * 2);
+                // கழுத்து வெட்டுப்பட்ட கீழ்ப்பகுதியைத் தவிர்க்க
+                if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+
+                const nx = Math.cos(angle), ny = Math.sin(angle);
+                for (let r = 145; r > 20; r--) {
+                    const px = Math.round(cx + nx * r), py = Math.round(cy + ny * r);
+                    if (px >= 0 && px < 300 && py >= 0 && py < 300) {
+                        if (data[(py * 300 + px) * 4 + 3] > 40) { // Transparent எல்லையைத் தொட்டுவிட்டது!
+                            outlineNormals.push({ x: px, y: py, nx: nx, ny: ny });
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let loadedCount = 0;
+        const onAssetLoad = () => {
+            loadedCount++;
+            if (loadedCount === 2) {
+                scanCutoutSilhouette();
+                startBlinkLoop();
+            }
+        };
+        imgBg.onload = onAssetLoad; imgCut.onload = onAssetLoad;
 
         const connectedTracks = new Set(); 
 
@@ -121,13 +160,12 @@
             for(let i=0; i<25; i++) { totalVol += Math.max(0, (dataArray[i] || 0) - 80); }
             const avgVol = totalVol / 25;
 
-            // சென்சிட்டிவிட்டி 5 ஆக வைக்கப்பட்டுள்ளது (சின்ன சத்தத்திற்கும் வாய் ஆடும்)
-            if (avgVol > 5) { 
+            if (avgVol > 4) { 
                 lastActiveTime = Date.now();
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 60);
 
-                // சத்தத்தை 0 முதல் 22px தாடை இறக்கமாக மாற்றுதல்
-                targetJaw = Math.min(22, Math.max(0, (avgVol - 5) * 0.6));
+                // சத்தத்தை 0 முதல் 25px தாடை இறக்கமாக மாற்றுதல்
+                targetJaw = Math.min(25, Math.max(0, (avgVol - 4) * 0.65));
             } else {
                 targetJaw = 0;
                 if (Date.now() - lastActiveTime > 2000) {
@@ -136,73 +174,77 @@
             }
 
             // =========================================================================
-            // --- THE 4-LAYER SANDWICH DRAW (படம் இருந்தாலும் இல்லாவிட்டாலும் கேன்வாஸ் இயங்கும்)
+            // --- THE 4-LAYER SANDWICH BUILD (படம் வந்ததும் 24 மணி நேரமும் கேன்வாஸ் நிற்கும்)
             // =========================================================================
-            if (imgBg.complete && imgHead.complete && imgHead.naturalHeight > 0) {
+            if (loadedCount === 2) {
                 
-                currJaw += (targetJaw - currJaw) * 0.38; // தாடை நடுக்கத் தடுப்பான்
+                currJaw += (targetJaw - currJaw) * 0.38; 
 
-                ctx.clearRect(0, 0, 350, 350);
-
-                // ---------------------------------------------------------------------
-                // அடுக்கு 0: அசல் முழுப் படம் (joker.jpg) - நிரந்தரப் பின்னணி
-                // ---------------------------------------------------------------------
-                ctx.drawImage(imgBg, 0, 0, 350, 350);
+                ctx.clearRect(0, 0, 300, 420);
 
                 // ---------------------------------------------------------------------
-                // அடுக்கு 1: THE CROWN VISUALIZER (ஜோக்கரின் தலைக்குப்பின்னால் சிலிர்க்கும் கம்பிகள்)
+                // அடுக்கு 0: அசல் முழுப் படம் (joker.jpg) - 300x300 அளவில் அடியில் அசையாமல் நிற்கும்
                 // ---------------------------------------------------------------------
-                if (avgVol > 1) {
+                ctx.drawImage(imgBg, 0, 0, 300, 300);
+
+                // ---------------------------------------------------------------------
+                // அடுக்கு 1: SILHOUETTE STROKES (joker1.png-ன் அவுட்லைனில் இருந்து சுடும் கம்பிகள்)
+                // ---------------------------------------------------------------------
+                if (outlineNormals.length > 0 && avgVol > 1) {
                     ctx.save();
-                    ctx.lineWidth = 3.5; ctx.lineCap = 'round';
-                    ctx.strokeStyle = '#ff3333'; ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 8;
+                    ctx.lineWidth = 3.0; ctx.lineCap = 'round';
+                    ctx.shadowColor = '#ff1a1a'; ctx.shadowBlur = 8;
 
-                    const cx = 175, cy = 175;
-                    const r = 105; // அவனது தலைமுடி விளிம்பின் தோராயமான ரேடியஸ்
-                    const bars = 45;
-                    // -160 deg (இடது தோள்) முதல் -20 deg (வலது தோள்) வரை தலைக்கு மேல் வளைவு
-                    const startAng = -160 * (Math.PI / 180);
-                    const angStep = (140 * (Math.PI / 180)) / (bars - 1);
-
-                    for(let i=0; i<bars; i++) {
-                        const ang = startAng + (i * angStep);
-                        const bin = Math.floor((i / bars) * 22);
-                        const val = Math.max(0, (dataArray[bin] || 0) - 85) * 0.24;
-
-                        if (val > 1) {
+                    const step = Math.floor((dataArray.length * 0.5) / outlineNormals.length);
+                    outlineNormals.forEach((norm, idx) => {
+                        const audioVal = Math.max(0, (dataArray[idx * step] || 0) - 85) * 0.22;
+                        if (audioVal > 1) {
+                            ctx.strokeStyle = (idx % 2 === 0) ? '#ff3333' : '#ff9933';
                             ctx.beginPath();
-                            ctx.moveTo(cx + Math.cos(ang)*r, cy + Math.sin(ang)*r);
-                            ctx.lineTo(cx + Math.cos(ang)*(r + val), cy + Math.sin(ang)*(r + val));
+                            ctx.moveTo(norm.x, norm.y);
+                            ctx.lineTo(norm.x + (norm.nx * audioVal), norm.y + (normal.ny * audioVal));
                             ctx.stroke();
                         }
-                    }
+                    });
                     ctx.restore();
                 }
 
+                // --- வாயின் பிளவை மறைக்கும் கருப்புத் தொண்டை ---
+                if (currJaw > 1) {
+                    ctx.fillStyle = "#050000"; 
+                    ctx.fillRect(100, 175, 100, currJaw + 2);
+
+                    // வாய்க்குள் ஆடும் மைக்ரோ ஈக்வலைசர்!
+                    const barW = 100 / 15;
+                    for(let b=0; b<15; b++) {
+                        const val = (dataArray[b*2] || 0) / 255;
+                        const bh = Math.min(currJaw * 0.8, currJaw * val);
+                        ctx.fillStyle = (b%2===0) ? "#ff1a1a" : "#ff8800";
+                        ctx.fillRect(100 + (b*barW), 176 + (currJaw - bh)/2, barW - 1, bh);
+                    }
+                }
+
                 // --- 2.5D GUILLOTINE SLICE MATH ---
-                const natW = imgHead.naturalWidth, natH = imgHead.naturalHeight;
-                const scale = 350 / natH; 
-                
-                // joker1.png-ல் பற்களுக்கு நடுவில் செல்லும் அசல் Y-கோடு (58.5%)
-                const splitY_nat = natH * 0.585; 
-                const splitY_draw = splitY_nat * scale;
+                const natW = imgCut.naturalWidth, natH = imgCut.naturalHeight;
+                const splitY_nat = natH * 0.585; // பற்களுக்கு நடுவில் செல்லும் கோடு
+                const splitY_draw = 300 * 0.585; // 175.5 px
 
                 // ---------------------------------------------------------------------
-                // அடுக்கு 2: அசையும் தாடை (currJaw px அளவுக்குக் கீழே இறங்கும்)
+                // அடுக்கு 2: அசையும் தாடை (joker1.png கீழ்ப்பாதி -> currJaw px கீழே இறங்கும்)
                 // ---------------------------------------------------------------------
                 ctx.drawImage(
-                    imgHead, 
+                    imgCut, 
                     0, splitY_nat, natW, natH - splitY_nat, 
-                    0, splitY_draw + currJaw, 350, (natH - splitY_nat) * scale
+                    0, splitY_draw + currJaw, 300, 300 - splitY_draw
                 );
 
                 // ---------------------------------------------------------------------
-                // அடுக்கு 3: அசையாத மேல் மண்டை (கம்பிகளைத் தலைமுடிக்குள்ளேயே மறைக்கும்)
+                // அடுக்கு 3: அசையாத மேல் மண்டை (joker1.png மேல்பாதி -> Y=0-ல் லாக்)
                 // ---------------------------------------------------------------------
                 ctx.drawImage(
-                    imgHead, 
+                    imgCut, 
                     0, 0, natW, splitY_nat, 
-                    0, 0, 350, splitY_draw
+                    0, 0, 300, splitY_draw
                 );
 
                 // ---------------------------------------------------------------------
@@ -210,8 +252,8 @@
                 // ---------------------------------------------------------------------
                 if (isBlinking) {
                     ctx.fillStyle = "#cbd0d3"; 
-                    ctx.beginPath(); ctx.ellipse(350 * 0.415, 350 * 0.41, 13, 7.5, 0, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.ellipse(350 * 0.585, 350 * 0.41, 13, 7.5, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(300 * 0.415, 300 * 0.41, 13, 7.5, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(300 * 0.585, 300 * 0.41, 13, 7.5, 0, 0, Math.PI*2); ctx.fill();
                 }
             }
         };

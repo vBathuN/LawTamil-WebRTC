@@ -101,7 +101,7 @@
     class GranularPitchShifter extends AudioWorkletProcessor {
         constructor() {
             super();
-            this.buffers = [new Float32Array(4096), new Float32Array(4096)];
+            this.buffers = [new Float32Array(2048), new Float32Array(2048)];
             this.w = 0; this.r = 0;
             this.pitch = 0.817; 
         }
@@ -118,13 +118,13 @@
                     // --- Linear Interpolation (சாய்வுப் பாலம் கணிதம்) ---
                     let pos = this.r;
                     let idx1 = Math.floor(pos);
-                    let idx2 = (idx1 + 1) % 4096;
+                    let idx2 = (idx1 + 1) % 2048;
                     let frac = pos - idx1; 
 
                     output[c][i] = this.buffers[c][idx1] + (this.buffers[c][idx2] - this.buffers[c][idx1]) * frac;
                 }
-                this.w = (this.w + 1) % 4096;
-                this.r = (this.r + this.pitch) % 4096;
+                this.w = (this.w + 1) % 2048;
+                this.r = (this.r + this.pitch) % 2048;
             }
             return true;
         }

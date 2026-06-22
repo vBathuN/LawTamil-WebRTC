@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>LawTamil VTuber Master Visualizer Pro</title>
+    <style>
+        body { 
+            background-color: transparent !important; margin: 0; overflow: hidden; 
+            height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
+        }
+        
+        .anim-section { 
+            width: 100%; height: 100%; 
+            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+        }
+        
+        #justice-glow {
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 120px; height: 120px; border-radius: 50%; 
+            background: radial-gradient(circle, rgba(255, 30, 30, 0.85) 0%, rgba(255, 30, 30, 0) 60%), radial-gradient(circle, rgba(255, 215, 0, 0.5) 10%, rgba(255, 215, 0, 0) 80%);
+            filter: blur(8px); box-shadow: 0 0 50px rgba(255, 20, 20, 0.8); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
+        }
+
+        /* --- THE PNG-TUBER PUPPET CONTAINER --- */
+        #joker-puppet {
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%);
+            width: 240px; height: 240px; z-index: 7; pointer-events: none;
+            opacity: 0; transition: opacity 0.4s ease-in-out;
+        }
+
+        /* அசுரத்தனமான இருண்ட ரத்தப் பின்னணி (வாய் பிளக்கும் போது பற்களுக்குப் பின்னால் தெரியும்) */
+        #mouth-void {
+            position: absolute; top: 58%; left: 35%; width: 30%; height: 15%;
+            background: #120102; border-radius: 50%; z-index: 1;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        .puppet-part {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: contain; will-change: transform;
+        }
+
+        /* மேல்பகுதி தலை (நெற்றி முதல் மேல் உதடு வரை - அசைவில்லாமல் நிற்கும்) */
+        #joker-head {
+            z-index: 3;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 62.5%, 0% 62.5%);
+        }
+
+        /* கீழ்ப்பகுதி தாடை (கீழ் உதடு முதல் தாடை வரை - ஆடியோ சிக்னலுக்கு ஏற்ப ஸ்ப்ரிங் போல ஆடும்) */
+        #joker-jaw {
+            z-index: 2;
+            clip-path: polygon(0% 62.5%, 100% 62.5%, 100% 100%, 0% 100%);
+            transition: transform 0.05s ease-out;
+        }
+
+        /* தானாகக் கண் சிமிட்டும் இமைகள் (மறைந்திருக்கும், 4 வினாடிக்கு ஒருமுறை 'Flash' ஆகும்) */
+        .eyelid {
+            position: absolute; background: #0f1016; z-index: 4;
+            transform: scaleY(0); transform-origin: top; transition: transform 0.07s ease-in-out;
+        }
+        #eye-left { top: 41%; left: 40.5%; width: 6.5%; height: 4.5%; border-radius: 50%; }
+        #eye-right { top: 41%; left: 53%; width: 6.5%; height: 4.5%; border-radius: 50%; }
+        
+        #visualizer { 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            opacity: 0; transition: opacity 0.4s ease-in-out; 
+        }
+        
+        .v-bar {
+            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ff3333; 
+            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
+            box-shadow: 0px 0px 15px #ff1a1a, 0px 0px 5px #ffca70; 
+            will-change: transform;
+        }
+
+        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    </style>
+</head>
+<body>
+
+    <div class="anim-section">
+        <div id="justice-glow"></div> 
+
+        <div id="joker-puppet">
+            <div id="mouth-void"></div>
+            <img class="puppet-part" id="joker-head" src="./joker.png" alt="">
+            <img class="puppet-part" id="joker-jaw" src="./joker.png" alt="">
+            <div class="eyelid" id="eye-left"></div>
+            <div class="eyelid" id="eye-right"></div>
+        </div>
+
+        <div id="visualizer"></div>
+    </div>
+    
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
+
+        // அலைவரிசை கோடுகள் விரிவடையும் வட்டம் (ஜோக்கரின் தலைக்குப்பின்னால் கச்சிதமாக வர 125px)
+        const ARC_RADIUS = 125; 
+        let analyser, dataArray, vBars = []; 
+        let audioCtx; 
+        let lastActiveTime = Date.now(); 
+        
+        const vContainer = document.getElementById('visualizer'); 
+        const glowDiv = document.getElementById('justice-glow');
+        const puppet = document.getElementById('joker-puppet');
+        const jokerJaw = document.getElementById('joker-jaw');
+        const jokerHead = document.getElementById('joker-head');
+        
+        const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
+        
+        for (let i = 0; i < numBars; i++) {
+            const b = document.createElement('div'); b.className = 'v-bar';
+            const angle = startAngle + (i * step); b.dataset.angle = angle;
+            b.style.transform = `rotate(${angle}deg) translateY(-${ARC_RADIUS}px) scaleY(1)`;
+            vContainer.appendChild(b); vBars.push(b);
+        }
+
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 128; 
+                analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const iframe = document.getElementById('vdo-engine');
+
+            setInterval(() => {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            pc.addEventListener('track', (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source.connect(analyser); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 10);
+
+            renderVisualizer();
+            startAutonomousBlinking();
+        }
+
+        // தானாகக் கண் சிமிட்டும் இன்ஜின் (3 முதல் 6 செகண்ட் ரேண்டம் லூப்)
+        function startAutonomousBlinking() {
+            const lEye = document.getElementById('eye-left');
+            const rEye = document.getElementById('eye-right');
+            const blink = () => {
+                lEye.style.transform = 'scaleY(1)'; rEye.style.transform = 'scaleY(1)';
+                setTimeout(() => {
+                    lEye.style.transform = 'scaleY(0)'; rEye.style.transform = 'scaleY(0)';
+                }, 120);
+                setTimeout(blink, Math.random() * 3500 + 2500);
+            };
+            blink();
+        }
+
+        const renderVisualizer = () => {
+            if (!analyser) return; 
+            requestAnimationFrame(renderVisualizer);
+            analyser.getByteFrequencyData(dataArray);
+            
+            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
+            const activeVoiceBins = 16; 
+            const mappingRatio = activeVoiceBins / half; 
+            
+            vBars.forEach((bar, index) => {
+                let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
+                if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
+                let val = dataArray[dIdx] || 0;
+                val = Math.max(0, val - 82); 
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
+                totalVolume += val; 
+            });
+            
+            const avgVol = totalVolume / vBars.length;
+
+            if (avgVol > 10) { 
+                lastActiveTime = Date.now(); 
+                vContainer.style.opacity = "1";
+                puppet.style.opacity = "1";
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
+
+                // --- THE VTUBER JAW DRIVER (பேச்சின் சத்தத்திற்கு ஏற்ப தாடை இறங்கும் கணிதம்) ---
+                const jawDrop = Math.min(26, Math.max(0, (avgVol - 6) * 0.55));
+                jokerJaw.style.transform = `translateY(${jawDrop}px)`;
+
+                // பேசும்போது மண்டை லேசாக மேலும் கீழும் அதிரும் (Micro-Cranial Bobbing)
+                const headBob = Math.sin(Date.now() * 0.015) * (jawDrop * 0.12);
+                jokerHead.style.transform = `translateY(${headBob}px)`;
+
+            } else {
+                jokerJaw.style.transform = `translateY(0px)`;
+                jokerHead.style.transform = `translateY(0px)`;
+
+                if (Date.now() - lastActiveTime > 2000) {
+                    vContainer.style.opacity = "0";
+                    puppet.style.opacity = "0";
+                    if (glowDiv) glowDiv.style.opacity = "0";
+                }
+            }
+        };
+
+        window.addEventListener('load', bootVisualizer);
+    </script>
+</body>
+</html>

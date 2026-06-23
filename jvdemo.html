@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>LawTamil 16:9 Live Podcast Overlay</title>
+    <style>
+        /* --- 16:9 OBS STUDIO OVERLAY CSS (Responsive & Transparent) --- */
+        * { box-sizing: border-box; }
+        
+        body { 
+            background-color: transparent !important; 
+            margin: 0; padding: 0; overflow: hidden; 
+            width: 100vw; height: 100vh; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .obs-studio-wrapper {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none; /* பின்னணியில் உள்ள OBS கேமராவை கிளிக் செய்ய அனுமதிக்கும் */
+        }
+
+        /* 1. TOP HEADER BAR */
+        .studio-header {
+            margin: 3vh 3vw 0 3vw;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 10;
+        }
+
+        .podcast-brand-pill {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 1vh 1.8vw; border-radius: 50px;
+            display: flex; align-items: center; gap: 1vw;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .live-pulse-dot {
+            width: 1.2vw; height: 1.2vw; max-width: 16px; max-height: 16px;
+            background-color: #ef4444; border-radius: 50%;
+            animation: liveBlink 1.2s infinite ease-in-out;
+        }
+
+        .brand-title {
+            color: #f8fafc; font-size: 1.4vw; font-weight: 700; letter-spacing: 0.5px;
+        }
+
+        .host-tag {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #38bdf8; font-size: 1.2vw; font-weight: 600;
+            padding: 1vh 2vw; border-radius: 50px;
+            backdrop-filter: blur(12px);
+        }
+
+        /* 2. MIDDLE STAGE (LEFT: AGENDA + WAVE | RIGHT: VTUBER) */
+        .studio-body {
+            margin: 0 3vw;
+            flex-grow: 1;
+            display: flex; justify-content: space-between; align-items: center;
+            height: 75vh;
+        }
+
+        /* Left Content Panel */
+        .left-dashboard {
+            width: 52%;
+            display: flex; flex-direction: column; gap: 3.5vh;
+        }
+
+        .discussion-box {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 0.4vw solid #38bdf8;
+            border-radius: 1.2vw; padding: 3vh 2.5vw;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .box-title {
+            color: #38bdf8; font-size: 1.5vw; font-weight: 800;
+            margin-bottom: 2vh; display: flex; align-items: center; gap: 0.5vw;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1vh;
+        }
+
+        .bullet-points {
+            color: #e2e8f0; font-size: 1.25vw; line-height: 1.8;
+            margin: 0; padding-left: 1.5vw;
+        }
+        .bullet-points li { margin-bottom: 1.2vh; }
+
+        .audio-wave-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1vw; padding: 1.5vh 2vw;
+            backdrop-filter: blur(10px);
+        }
+
+        .wave-label {
+            color: #94a3b8; font-size: 0.85vw; font-weight: 700; letter-spacing: 2px;
+            margin-bottom: 1vh; display: block;
+        }
+
+        #podcast-spectrum-canvas {
+            width: 100%; height: 9vh; display: block;
+        }
+
+        /* Right VTuber Panel */
+        .right-vtuber-stage {
+            width: 44%; height: 100%;
+            position: relative; /* அசல் குறியீட்டின் absolute centering-க்கு இது மிக அவசியம் */
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* அசல் குறியீட்டின் கிளாஸ் */
+        .anim-section { 
+            width: 100%; height: 100%; position: relative; 
+        }
+
+        #joker-stage {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            will-change: transform;
+            perspective: 800px;
+        }
+
+        /* 3. BOTTOM NEWS TICKER */
+        .studio-footer {
+            width: 100vw; height: 6.5vh;
+            background: rgba(15, 23, 42, 0.95);
+            border-top: 2px solid #334155;
+            display: flex; align-items: center;
+            overflow: hidden; z-index: 10;
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.5);
+        }
+
+        .breaking-badge {
+            background: #dc2626; color: white;
+            font-size: 1.2vw; font-weight: 800; letter-spacing: 1px;
+            padding: 0 2vw; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            white-space: nowrap; z-index: 2;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.6);
+        }
+
+        .ticker-text-container {
+            display: flex; white-space: nowrap;
+            animation: marqueeTicker 35s linear infinite;
+        }
+
+        .ticker-item {
+            color: #f8fafc; font-size: 1.2vw; font-weight: 500;
+            margin-right: 8vw; display: inline-flex; align-items: center; gap: 0.8vw;
+        }
+
+        .ticker-item span { color: #38bdf8; font-weight: 700; }
+
+        @keyframes liveBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+        @keyframes marqueeTicker { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+    </style>
+</head>
+<body>
+
+    <div class="obs-studio-wrapper">
+        
+        <div class="studio-header">
+            <div class="podcast-brand-pill">
+                <div class="live-pulse-dot"></div>
+                <div class="brand-title">அரசியல் & சமூகம் | நேரலை ஆடியோ பாட்காஸ்ட்</div>
+            </div>
+            <div class="host-tag">🎙️ Host: Ekanthan</div>
+        </div>
+
+        <div class="studio-body">
+            
+            <div class="left-dashboard">
+                <div class="discussion-box">
+                    <div class="box-title">📌 இன்றைய விவாதப் புள்ளிகள்:</div>
+                    <ul class="bullet-points">
+                        <li>சமூக வலைத்தளங்களில் பெருகும் போலிச் செய்திகளும் அதன் பின்விளைவுகளும்</li>
+                        <li>கருத்துச் சுதந்திரத்திற்கும் அவதூறுக்கும் இடையேயான சட்ட வரம்பு என்ன?</li>
+                        <li>சாமானிய மக்களின் குரலாக டிஜிட்டல் ஊடகங்கள் மாறுகிறதா?</li>
+                    </ul>
+                </div>
+
+                <div class="audio-wave-card">
+                    <span class="wave-label">LIVE FREQUENCY SPECTRUM</span>
+                    <canvas id="podcast-spectrum-canvas" width="700" height="100"></canvas>
+                </div>
+            </div>
+
+            <div class="right-vtuber-stage">
+                <div class="anim-section">
+                    <canvas id="joker-stage" width="420" height="480"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="studio-footer">
+            <div class="breaking-badge">முக்கிய கருத்து</div>
+            <div class="ticker-text-container">
+                <div class="ticker-item">🔴 <span>நேரலை விவாதம்:</span> மக்களாட்சியில் ஊடகங்களின் பொறுப்புணர்வு குறித்த காரசாரமான அலசல்... உங்கள் கருத்துக்களை கமெண்டில் பதிவு செய்யுங்கள்!</div>
+                <div class="ticker-item">⚡ <span>LawTamil:</span> மேலும் பல சட்ட மற்றும் சமூகக் கட்டுரைகளுக்கு lawtamil.in வலைத்தளத்தைப் பார்வையிடவும்.</div>
+                <div class="ticker-item">🔔 <span>Subscribe:</span> YouTube-ல் Jurisprudence Tamil சேனலை சப்ஸ்கிரைப் செய்து பெல் ஐகானை அழுத்தவும்.</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+
+        // --- 1. HEADLESS WEBRTC TRANSPORT (JS மெமரியில் மட்டுமே இயங்கும் இன்ஜின்) ---
+        const vdoTransport = document.createElement('iframe');
+        vdoTransport.allow = "autoplay; microphone";
+        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        document.body.appendChild(vdoTransport);
+
+        let analyser, dataArray; 
+        let audioCtx; let lastActiveTime = Date.now(); 
+
+        const jokerCanvas = document.getElementById('joker-stage');
+        const jokerCtx = jokerCanvas.getContext('2d');
+
+        const bgImg = new Image(); const fgImg = new Image();
+        function loadWithFallback(imgObj, srcList) {
+            let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
+            imgObj.src = srcList[0];
+        }
+        loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
+        loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
+
+        let contourNormals = []; let contourScanned = false;
+        function safeScanContour() {
+            if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
+            try {
+                const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
+                const data = octx.getImageData(0, 0, 420, 480).data;
+                const cx = 210, cy = 210; const rays = 75; contourNormals = [];
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+                    const nx = Math.cos(angle); const ny = Math.sin(angle);
+                    for (let r = 165; r > 15; r--) {
+                        const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 420 && py >= 0 && py < 480) {
+                            if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+                        }
+                    }
+                }
+                contourScanned = true;
+            } catch (e) { contourScanned = true; }
+        }
+
+        const AudioBlendshapeNet = {
+            predict: function(fft) {
+                let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
+                const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
+                const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
+                let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
+                let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
+                return { jawOpen, mouthStretch };
+            }
+        };
+
+        let currJaw = 0, targetJaw = 0; let currSmile = 0, targetSmile = 0;
+        let faceAlpha = 0, targetFaceAlpha = 0; let isBlinking = false;
+
+        function startAutonomousBlink() {
+            isBlinking = true; setTimeout(() => { isBlinking = false; }, 120);
+            setTimeout(startAutonomousBlink, Math.random() * 3500 + 2000);
+        }
+        startAutonomousBlink();
+
+        // --- 2. THE HUMANIZER DSP KERNEL (±8% Jitter) ---
+        const pitchWorkletCode = `
+    class TrueGranularEngine extends AudioWorkletProcessor {
+        constructor() {
+            super();
+            this.GRAIN = 1024; // 21ms Hanning Window
+            this.buffer = new Float32Array(this.GRAIN * 4);
+            this.wPtr = 0;
+
+            // இரண்டு டேப் ஹெட்கள் (ஒன்று எழும்போது மற்றொன்று அமுங்கும்)
+            this.headA = { pos: 0, age: 0 };
+            this.headB = { pos: 0, age: this.GRAIN / 2 }; 
+
+            this.pitch = 0.817; // உங்களின் கோல்டன் ரேஷியோ
+        }
+
+        getSample(ptr) {
+            let fl = Math.floor(ptr);
+            let fr = ptr - fl;
+            let s0 = this.buffer[fl % (this.GRAIN * 4)];
+            let s1 = this.buffer[(fl + 1) % (this.GRAIN * 4)];
+            return s0 + (s1 - s0) * fr; // வெண்ணெய் போன்ற Linear Interpolation
+        }
+
+        process(inputs, outputs) {
+            const input = inputs[0][0];
+            const outputL = outputs[0][0];
+            const outputR = outputs[0][1];
+            if (!input || !outputL) return true;
+
+            const N = this.GRAIN;
+            const maxBuf = N * 4;
+
+            for (let i = 0; i < input.length; i++) {
+                this.buffer[this.wPtr] = input[i];
+                this.wPtr = (this.wPtr + 1) % maxBuf;
+
+                let winA = 0.5 * (1 - Math.cos((2 * Math.PI * this.headA.age) / N));
+                let winB = 0.5 * (1 - Math.cos((2 * Math.PI * this.headB.age) / N));
+
+                let sample = (this.getSample(this.headA.pos) * winA) + 
+                             (this.getSample(this.headB.pos) * winB);
+
+                outputL[i] = sample;
+                if (outputR) outputR[i] = sample;
+
+                this.headA.age++;
+                this.headB.age++;
+
+                this.headA.pos = (this.headA.pos + this.pitch) % maxBuf;
+                this.headB.pos = (this.headB.pos + this.pitch) % maxBuf;
+
+                if (this.headA.age >= N) {
+                    this.headA.age = 0;
+                    this.headA.pos = (this.wPtr - N + maxBuf) % maxBuf;
+                }
+                if (this.headB.age >= N) {
+                    this.headB.age = 0;
+                    this.headB.pos = (this.wPtr - N + maxBuf) % maxBuf;
+                }
+            }
+            return true;
+        }
+    }
+    registerProcessor('joker-voice-engine', TrueGranularEngine);
+    `;
+
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            setInterval(() => {
+                try {
+                    const iframeWin = vdoTransport.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+
+                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                                        await audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
+                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+
+                                        const chestRumble = audioCtx.createBiquadFilter();
+                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+
+                                        rawMic.connect(chestRumble);
+                                        chestRumble.connect(pitchConverter);
+                                        pitchConverter.connect(analyser);
+                                        analyser.connect(audioCtx.destination); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
+
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
+            renderStage();
+        }
+
+        // --- புதிய அம்சம்: இடது பக்க ஸ்பெக்ட்ரம் வரையும் சார்பு (அசல் டேட்டாவை மட்டும் படிக்கும்) ---
+        const specCanvas = document.getElementById('podcast-spectrum-canvas');
+        const specCtx = specCanvas ? specCanvas.getContext('2d') : null;
+
+        function drawLeftPodcastSpectrum(data) {
+            if (!specCtx || !data) return;
+            const w = specCanvas.width; const h = specCanvas.height;
+            specCtx.clearRect(0, 0, w, h);
+
+            const totalBars = 32; 
+            const step = Math.floor((data.length * 0.75) / totalBars); 
+            const barW = (w / totalBars) - 4;
+
+            for (let i = 0; i < totalBars; i++) {
+                const rawVal = data[i * step] || 0;
+                const gateVal = Math.max(0, rawVal - 75); // இரைச்சலை வடிகட்ட
+                const barH = (gateVal / 180) * h * 0.9;
+                const x = i * (barW + 4);
+
+                let barColor = '#38bdf8'; // Sky Blue
+                if (gateVal > 120) barColor = '#ef4444'; // Red Peak
+                else if (gateVal > 80) barColor = '#f59e0b'; // Yellow Mid
+
+                specCtx.fillStyle = barColor;
+                specCtx.beginPath();
+                specCtx.roundRect(x, h - barH, barW, Math.max(3, barH), [4, 4, 0, 0]);
+                specCtx.fill();
+            }
+        }
+
+        const renderStage = () => {
+            requestAnimationFrame(renderStage);
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
+
+            let avgVol = 0; let whisperLevel = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
+            if (analyser && dataArray) {
+                analyser.getByteFrequencyData(dataArray);
+                let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (dataArray[i] || 0) - 82); }
+                avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(dataArray);
+
+                let highFreqSum = 0; for(let k=12; k<22; k++) { highFreqSum += dataArray[k]; }
+                whisperLevel = highFreqSum / 10;
+
+                // ---> அசல் லூப்புக்குள் நமது ஸ்பெக்ட்ரம் வரையும் அழைப்பு <---
+                drawLeftPodcastSpectrum(dataArray);
+            }
+
+            let lookSideAngle = Math.sin(Date.now() * 0.002) * 2.5;
+            let glitchX = 0;
+
+            if (avgVol > 8) { 
+                lastActiveTime = Date.now(); targetFaceAlpha = 1.0; 
+                targetJaw = blendshapes.jawOpen * 22; targetSmile = blendshapes.mouthStretch * 12; 
+
+                if (avgVol > 35) { glitchX = (Math.random() - 0.5) * 6; }
+            } else {
+                targetJaw = 0; targetSmile = 0;
+                if (Date.now() - lastActiveTime > 1200) targetFaceAlpha = 0.0; 
+            }
+
+            jokerCanvas.style.transform = `translate(-50%, -50%) rotateY(${lookSideAngle}deg) translateX(${glitchX}px)`;
+
+            if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
+                currJaw += (targetJaw - currJaw) * 0.32; currSmile += (targetSmile - currSmile) * 0.28;
+                faceAlpha += (targetFaceAlpha - faceAlpha) * 0.14; 
+                jokerCtx.clearRect(0, 0, 420, 480);
+
+                jokerCtx.globalAlpha = 1.0;
+                jokerCtx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
+
+                if (faceAlpha > 0.005) {
+                    jokerCtx.globalAlpha = faceAlpha;
+                    if (contourNormals.length > 0 && avgVol > 1) {
+                        jokerCtx.save(); jokerCtx.lineWidth = 3.5; jokerCtx.lineCap = 'round';
+                        
+                        let primaryColor = '#ff1a1a'; let secondaryColor = '#ff4d4d';
+                        if (avgVol < 12 && whisperLevel > 50) {
+                            primaryColor = '#9900cc'; secondaryColor = '#cc33ff'; 
+                        }
+
+                        jokerCtx.shadowColor = primaryColor; jokerCtx.shadowBlur = 12;
+                        const stepBin = Math.floor((dataArray.length * 0.6) / contourNormals.length);
+                        contourNormals.forEach((pt, i) => {
+                            const bin = i * stepBin; const pwr = Math.max(0, (dataArray[bin] || 0) - 85) * 0.25;
+                            if (pwr > 1) {
+                                jokerCtx.strokeStyle = (i % 2 === 0) ? primaryColor : secondaryColor;
+                                jokerCtx.beginPath(); jokerCtx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
+                                jokerCtx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); jokerCtx.stroke();
+                            }
+                        });
+                        jokerCtx.restore();
+                    }
+                    const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
+                    const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
+                    const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + currJaw; 
+                    const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
+                    const stretchX = 60 - (currSmile * 0.5); const stretchW = 300 + currSmile;
+                    const botJawX = 60 - (currSmile * 0.25);
+
+                    jokerCtx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
+                    jokerCtx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
+                    jokerCtx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (currSmile*0.5), dBotH);
+                }
+                jokerCtx.globalAlpha = 1.0; 
+                if (isBlinking) {
+                    jokerCtx.fillStyle = "#cbd0d3"; 
+                    jokerCtx.beginPath(); jokerCtx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                    jokerCtx.beginPath(); jokerCtx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); jokerCtx.fill();
+                }
+            }
+        };
+        window.addEventListener('load', bootVisualizer);
+    </script>
+</body>
+</html>

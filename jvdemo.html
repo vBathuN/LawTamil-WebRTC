@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>LawTamil Dual-Core VTuber Pro (Host vs Guest Edition)</title>
+    <title>LawTamil Dual-Core VTuber Pro (Studio Table Edition)</title>
     <style>
         body { 
             background-color: transparent !important; margin: 0; overflow: hidden; 
@@ -11,15 +11,16 @@
             font-family: sans-serif;
         }
 
-        /* 16:9 DUAL STAGE ARENA */
+        /* 16:9 DUAL STAGE - "ROUND TABLE" LAYOUT */
         .podcast-theatre {
             width: 100%; height: 100%;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 4vw; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
+            gap: 10vw; /* இருவரையும் மையத்தில் நெருங்க வைக்கும் ஸ்டுடியோ டேபிள் கேப் */
+            padding: 0; box-sizing: border-box;
         }
 
         .vtuber-pod {
-            width: 42vw; max-width: 450px; 
+            width: 40vw; max-width: 440px; 
             height: 85vh; max-height: 520px;
             position: relative;
             display: flex; flex-direction: column; align-items: center;
@@ -29,12 +30,8 @@
             width: 100%; height: 100%; position: relative; 
         }
 
-        /* GUEST கேன்வாஸை கிடைமட்டமாகத் திருப்பும் மேஜிக் */
-        .mirror-flip { transform: scaleX(-1); }
-
         .joker-canvas {
             position: absolute; top: 50%; left: 50%; 
-            transform: translate(-50%, -50%);
             will-change: transform;
             perspective: 800px;
         }
@@ -44,10 +41,11 @@
             position: absolute; bottom: -2vh;
             background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 0.8vh 1.5vw; border-radius: 20px;
-            color: white; font-size: 1vw; font-weight: bold;
+            padding: 0.8vh 1.8vw; border-radius: 20px;
+            color: white; font-size: 1.1vw; font-weight: bold;
             display: flex; align-items: center; gap: 0.5vw;
             backdrop-filter: blur(8px); z-index: 10;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
         .badge-host { border-bottom: 3px solid #ff1a1a; }
@@ -58,7 +56,6 @@
 <body>
 
     <div class="podcast-theatre">
-        <!-- 1. HOST (Left Side - Crimson Red) -->
         <div class="vtuber-pod">
             <div class="anim-section">
                 <canvas id="stage-host" class="joker-canvas" width="420" height="480"></canvas>
@@ -68,9 +65,8 @@
             </div>
         </div>
 
-        <!-- 2. GUEST (Right Side - Toxic Acid Green & Mirrored) -->
         <div class="vtuber-pod">
-            <div class="anim-section mirror-flip">
+            <div class="anim-section">
                 <canvas id="stage-guest" class="joker-canvas" width="420" height="480"></canvas>
             </div>
             <div class="speaker-badge badge-guest">
@@ -90,29 +86,28 @@
         vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
         document.body.appendChild(vdoTransport);
 
-        let audioCtx; 
-        let workletPromise = null; // Race-condition தடுப்பான்
+        let audioCtx; let workletPromise = null; 
 
-        // --- 2. DUAL SPEAKER STATE ENCAPSULATION ---
+        // --- 2. DUAL SPEAKER STATE ---
         const speakers = [
             {
                 id: 'Host',
                 canvas: document.getElementById('stage-host'),
                 ctx: document.getElementById('stage-host').getContext('2d'),
-                filterStyle: 'none', // அசல் கிரிம்சன் ரெட்
+                filterStyle: 'none', 
                 pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
-                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500, // 1.5s Welcome Glow
+                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
                 isBlinking: false, analyser: null, dataArray: null, trackId: null
             },
             {
                 id: 'Guest',
                 canvas: document.getElementById('stage-guest'),
                 ctx: document.getElementById('stage-guest').getContext('2d'),
-                filterStyle: 'hue-rotate(140deg) saturate(1.4)', // TOXIC ACID GREEN MAGIC!
+                filterStyle: 'hue-rotate(140deg) saturate(1.4)', // TOXIC ACID GREEN
                 pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
-                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500, // 1.5s Welcome Glow
+                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
                 isBlinking: false, analyser: null, dataArray: null, trackId: null
             }
         ];
@@ -125,7 +120,6 @@
         loadWithFallback(bgImg, ['./joker.png', './joker.jpg', './joker.PNG', './joker.JPG']);
         loadWithFallback(fgImg, ['./joker1.png', './joker1.PNG']);
 
-        // Contour ஸ்கேனிங் இருவருக்கும் பொதுவானது (CPU மெமரி சேமிப்பு)
         let contourNormals = []; let contourScanned = false;
         function safeScanContour() {
             if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
@@ -161,24 +155,23 @@
             }
         };
 
-        // இருவருக்கும் தனித்தனியான Autonomous Blink லூப்
         function scheduleBlink(spk) {
             spk.isBlinking = true; setTimeout(() => { spk.isBlinking = false; }, 120);
             setTimeout(() => scheduleBlink(spk), Math.random() * 3500 + 2000);
         }
         speakers.forEach(spk => scheduleBlink(spk));
 
-        // --- 3. உங்களின் அசல் DSP KERNEL (0% Unmodified) ---
+        // --- 3. அசல் DSP KERNEL ---
         const pitchWorkletCode = `
     class TrueGranularEngine extends AudioWorkletProcessor {
         constructor() {
             super();
-            this.GRAIN = 1024; // 21ms Hanning Window
+            this.GRAIN = 1024; 
             this.buffer = new Float32Array(this.GRAIN * 4);
             this.wPtr = 0;
             this.headA = { pos: 0, age: 0 };
             this.headB = { pos: 0, age: this.GRAIN / 2 }; 
-            this.pitch = 0.817; // உங்களின் கோல்டன் ரேஷியோ
+            this.pitch = 0.817; 
         }
         getSample(ptr) {
             let fl = Math.floor(ptr); let fr = ptr - fl;
@@ -222,16 +215,12 @@
                             pc.addEventListener('track', async (event) => {
                                 const track = event.track;
                                 if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                                    
-                                    // காலியாக உள்ள முதல் ஸ்பீக்கர் ஸ்லாட்டைக் கண்டுபிடி
                                     let availSpeaker = speakers.find(s => s.trackId === null);
                                     if (availSpeaker) {
                                         availSpeaker.trackId = track.id;
                                         connectedTracks.set(track.id, availSpeaker);
 
                                         if (audioCtx.state === 'suspended') audioCtx.resume();
-                                        
-                                        // இந்த குறிப்பிட்ட நபருக்கான பிரத்யேக Analyser
                                         availSpeaker.analyser = audioCtx.createAnalyser();
                                         availSpeaker.analyser.fftSize = 128; availSpeaker.analyser.smoothingTimeConstant = 0.3;
                                         availSpeaker.dataArray = new Uint8Array(availSpeaker.analyser.frequencyBinCount);
@@ -254,7 +243,6 @@
                                         pitchConverter.connect(availSpeaker.analyser);
                                         availSpeaker.analyser.connect(audioCtx.destination);
 
-                                        // நபர் டிஸ்கனெக்ட் ஆனால் ஸ்லாட்டை ரிலீஸ் செய்
                                         track.onended = () => {
                                             availSpeaker.trackId = null; availSpeaker.analyser = null; availSpeaker.dataArray = null;
                                             connectedTracks.delete(track.id);
@@ -275,7 +263,7 @@
             renderTheatre();
         }
 
-        // --- 4. THE DUAL RENDER LOOP ---
+        // --- 4. THE UPGRADED STUDIO RENDER LOOP ---
         const renderTheatre = () => {
             requestAnimationFrame(renderTheatre);
             if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
@@ -304,7 +292,16 @@
                     if (Date.now() - spk.lastActiveTime > 1200) spk.targetFaceAlpha = 0.0; 
                 }
 
-                spk.canvas.style.transform = `translate(-50%, -50%) rotateY(${lookSideAngle}deg) translateX(${glitchX}px)`;
+                // =========================================================================
+                // மேஜிக் நடக்கும் இடம்: Host-க்கு சாதாரண Scale, Guest-க்கு Force Mirror Scale!
+                // =========================================================================
+                const mirrorScale = spk.id === 'Guest' ? 'scaleX(-1)' : 'scaleX(1)';
+                
+                // இருவரையும் மையத்தை நோக்கி 14 டிகிரி 'Inward' கோணத்தில் திருப்புதல்
+                const inwardTilt = 14; 
+                const dynamicTilt = inwardTilt + lookSideAngle;
+
+                spk.canvas.style.transform = `translate(-50%, -50%) ${mirrorScale} rotateY(${dynamicTilt}deg) translateX(${glitchX}px)`;
 
                 if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
                     spk.currJaw += (spk.targetJaw - spk.currJaw) * 0.32; spk.currSmile += (spk.targetSmile - spk.currSmile) * 0.28;
@@ -313,7 +310,6 @@
                     spk.ctx.clearRect(0, 0, 420, 480);
                     spk.ctx.save();
 
-                    // TOXIC GREEN ஃபில்டரை அப்ளை செய்யும் இடம்
                     if (spk.filterStyle !== 'none') spk.ctx.filter = spk.filterStyle;
 
                     spk.ctx.globalAlpha = 1.0;
@@ -322,7 +318,6 @@
                     if (spk.faceAlpha > 0.005) {
                         spk.ctx.globalAlpha = spk.faceAlpha;
                         
-                        // கம்பிகள் வரையும்போது ஃபில்டரை ஆஃப் செய்கிறோம் (அப்போதுதான் கம்பியின் ஒரிஜினல் நியான் பச்சை பிரகாசிக்கும்)
                         if (contourNormals.length > 0 && avgVol > 1) {
                             spk.ctx.save(); spk.ctx.filter = 'none'; 
                             spk.ctx.lineWidth = 3.5; spk.ctx.lineCap = 'round';
@@ -353,7 +348,7 @@
                         spk.ctx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
                         spk.ctx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (spk.currSmile*0.5), dBotH);
                     }
-                    spk.ctx.restore(); // ஃபில்டர் க்ளியர்
+                    spk.ctx.restore(); 
 
                     if (spk.isBlinking) {
                         spk.ctx.fillStyle = "#cbd0d3"; 

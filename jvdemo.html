@@ -229,7 +229,7 @@
               .to("#Img-5, #headline-5, #subline-5", .5, {opacity:0, ease:Sine.easeIn}, "-=.5");
         }
 
-        // Native JSONP Parser matching your Nivo script logic
+        // Native JSONP Parser (Fixed Label Overlap)
         function vaBannerInit(data) {
             const fallbacks = [
                 { t: "Tallinn", s: "April 1, 2020", i: "http://visualangle.ee/image/tallinn.jpg" },
@@ -245,11 +245,11 @@
                     let title = entry.title.$t || fallbacks[idx].t;
                     if (title.length > 18) title = title.substring(0, 18) + '..';
 
+                    // ⚠️ 'Images' லேபிலைத் தவிர்த்துவிட்டு, போஸ்ட்டின் அசல் தேதியை மட்டும் எடுக்கும் விதி
                     let subline = fallbacks[idx].s;
-                    if (entry.category && entry.category.length > 0) {
-                        subline = entry.category[0].term;
-                    } else if (entry.published) {
-                        subline = entry.published.$t.substring(0, 10);
+                    if (entry.published && entry.published.$t) {
+                        const postDate = new Date(entry.published.$t);
+                        subline = postDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
                     }
 
                     let imgUrl = fallbacks[idx].i;
@@ -269,7 +269,6 @@
                 document.getElementById(`subline-${n}`).innerText = item.s;
             });
 
-            // 300ms delay gives browser time to paint the fetched image srcs before GSAP queries .from({height:0})
             setTimeout(startPristineGSAP, 300);
         }
     </script>

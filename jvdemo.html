@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (Blogger HD & Emotion Gate Edition)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (Pristine Ad Banner & True Emotion Gate)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <link href="https://fonts.googleapis.com/css?family=Bevan" rel="stylesheet">
@@ -18,8 +18,7 @@
             background-color: transparent !important; overflow: hidden; 
             height: 100vh; width: 100vw;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
-            display: flex;
+            color: white; display: flex;
         }
 
         /* 1. LEFT SIDE: 100% FILLED AD BANNER */
@@ -40,7 +39,7 @@
             top: 0; left: 0; color: #303030;
         }
 
-        /* --- AD BANNER INTERNAL TYPOGRAPHY (Original As-is) --- */
+        /* --- AD BANNER INTERNAL TYPOGRAPHY (Margus Lillemägi Original) --- */
         .logo-txt, .headline-txt {
             color: #4285f4; font-family: 'Bevan', cursive;
             font-weight: 400; line-height: .9em; letter-spacing: -0.030em;
@@ -68,14 +67,16 @@
         .subline-txt {
             position: absolute; width: 240px; left: 30px; top: 445px; font-size: 28px;
         }
-        .ad-img-wrapper {
+        
+        /* Pristine Scoped Image Wrapper matching your style.css */
+        .left-ad-slot .img-wrapper {
             position: absolute; left: 10px; top: 160px;
             width: 280px; height: 240px; overflow: hidden;
         }
-        .ad-img-wrapper img {
+        .left-ad-slot .img-wrapper img {
             position: absolute; top: 0px; left: 0px;
             width: 280px; height: 280px; border-radius: 50%;
-            object-fit: cover; /* அதி-தரப் படங்கள் வட்டத்திற்குள் கச்சிதமாகப் பொருந்த */
+            object-fit: cover;
         }
         .ad-content button {
             position: absolute; left: 30px; top: 500px;
@@ -135,23 +136,23 @@
                 </div>
                 <div class="slogan-txt" id="slogan-txt">The conference for<br> web designers</div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-1"><img src="" alt=""></div>
+                <div class="img-wrapper hidden" id="Img-1"><img src="" alt=""></div>
                 <div class="headline-txt hidden" id="headline-1"></div>
                 <div class="subline-txt hidden" id="subline-1"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-2"><img src="" alt=""></div>
+                <div class="img-wrapper hidden" id="Img-2"><img src="" alt=""></div>
                 <div class="headline-txt hidden" id="headline-2"></div>
                 <div class="subline-txt hidden" id="subline-2"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-3"><img src="" alt=""></div>
+                <div class="img-wrapper hidden" id="Img-3"><img src="" alt=""></div>
                 <div class="headline-txt hidden" id="headline-3"></div>
                 <div class="subline-txt hidden" id="subline-3"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-4"><img src="" alt=""></div>
+                <div class="img-wrapper hidden" id="Img-4"><img src="" alt=""></div>
                 <div class="headline-txt hidden" id="headline-4"></div>
                 <div class="subline-txt hidden" id="subline-4"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-5"><img src="" alt=""></div>
+                <div class="img-wrapper hidden" id="Img-5"><img src="" alt=""></div>
                 <div class="headline-txt hidden" id="headline-5"></div>
                 <div class="subline-txt hidden" id="subline-5"></div>
                 
@@ -191,67 +192,7 @@
     </script>
 
     <script>
-        // ============================================================================
-        // ⚠️ இங்கே உங்கள் உண்மையான பிளாகர் URL-ஐ உள்ளிடவும் (கடைசியில் slash '/' வேண்டாம்)
-        // ============================================================================
-        const MY_BLOG_URL = "https://rss.rtbs.in"; 
-
-        async function fetchBloggerPostsAndAnimate() {
-            const defaultFallbacks = [
-                { t: "Tallinn", s: "April 1, 2020", i: "http://visualangle.ee/image/tallinn.jpg" },
-                { t: "Mike Smart", s: "evangelist", i: "http://visualangle.ee/image/hipster_001.jpg" },
-                { t: "John Inman", s: "developer", i: "http://visualangle.ee/image/hipster_002.jpg" },
-                { t: "Lyza Lanier", s: "creative dir", i: "http://visualangle.ee/image/hipster_004.jpg" },
-                { t: "Hans Moll", s: "UX designer", i: "http://visualangle.ee/image/hipster_003.jpg" }
-            ];
-
-            let posts = [];
-            try {
-                const res = await fetch(`${MY_BLOG_URL}/feeds/posts/default/-/Images?alt=json&max-results=5`);
-                const data = await res.json();
-                const entries = data.feed.entry || [];
-
-                posts = entries.map((entry, idx) => {
-                    // 1. Title Truncate (அதிகபட்சம் 18 எழுத்துக்கள்)
-                    let title = entry.title.$t || defaultFallbacks[idx].t;
-                    if (title.length > 18) title = title.substring(0, 18) + '..';
-
-                    // 2. Subline (முதல் Label அல்லது தேதி)
-                    let subline = defaultFallbacks[idx].s;
-                    if (entry.category && entry.category.length > 0) {
-                        subline = entry.category[0].term;
-                    } else if (entry.published) {
-                        const d = new Date(entry.published.$t);
-                        subline = d.toLocaleDateString('ta-IN', { month: 'short', day: 'numeric' });
-                    }
-
-                    // 3. Ultra-HD Image RegEx Upscaling (/s72-c/ -> /s1600/)
-                    let imgUrl = defaultFallbacks[idx].i;
-                    if (entry.media$thumbnail && entry.media$thumbnail.url) {
-                        imgUrl = entry.media$thumbnail.url.replace(/\/s\d+(-[cwhp\d-]+)?\//g, '/s1600/');
-                    }
-                    return { t: title, s: subline, i: imgUrl };
-                });
-
-                while (posts.length < 5) posts.push(defaultFallbacks[posts.length]);
-
-            } catch (err) {
-                console.warn("Blogger feed fetch error, loading pristine fallbacks:", err);
-                posts = defaultFallbacks;
-            }
-
-            // DOM-ல் செலுத்துதல்
-            posts.forEach((item, i) => {
-                const n = i + 1;
-                document.querySelector(`#Img-${n} img`).src = item.i;
-                document.getElementById(`headline-${n}`).innerText = item.t;
-                document.getElementById(`subline-${n}`).innerText = item.s;
-            });
-
-            // படங்கள் லோட் ஆன பிறகு GSAP அனிமேஷனைத் தொடங்கு (Zero Blank Glitch Guarantee)
-            startPristineGSAP();
-        }
-
+        // GSAP Pristine Timeline Generator
         function startPristineGSAP() {
             TweenMax.set("#logo-2", {rotation:35, transformOrigin:"50% 50%"});
             TweenMax.globalTimeScale(1.2);
@@ -288,8 +229,52 @@
               .to("#Img-5, #headline-5, #subline-5", .5, {opacity:0, ease:Sine.easeIn}, "-=.5");
         }
 
-        window.addEventListener('DOMContentLoaded', fetchBloggerPostsAndAnimate);
+        // Native JSONP Parser matching your Nivo script logic
+        function vaBannerInit(data) {
+            const fallbacks = [
+                { t: "Tallinn", s: "April 1, 2020", i: "http://visualangle.ee/image/tallinn.jpg" },
+                { t: "Mike Smart", s: "evangelist", i: "http://visualangle.ee/image/hipster_001.jpg" },
+                { t: "John Inman", s: "developer", i: "http://visualangle.ee/image/hipster_002.jpg" },
+                { t: "Lyza Lanier", s: "creative dir", i: "http://visualangle.ee/image/hipster_004.jpg" },
+                { t: "Hans Moll", s: "UX designer", i: "http://visualangle.ee/image/hipster_003.jpg" }
+            ];
+
+            let posts = [];
+            if (data && data.feed && data.feed.entry) {
+                posts = data.feed.entry.map((entry, idx) => {
+                    let title = entry.title.$t || fallbacks[idx].t;
+                    if (title.length > 18) title = title.substring(0, 18) + '..';
+
+                    let subline = fallbacks[idx].s;
+                    if (entry.category && entry.category.length > 0) {
+                        subline = entry.category[0].term;
+                    } else if (entry.published) {
+                        subline = entry.published.$t.substring(0, 10);
+                    }
+
+                    let imgUrl = fallbacks[idx].i;
+                    if (entry.media$thumbnail && entry.media$thumbnail.url) {
+                        imgUrl = entry.media$thumbnail.url.replace("s72-c", "s1600").replace("s72-w", "s1600");
+                    }
+                    return { t: title, s: subline, i: imgUrl };
+                });
+            }
+
+            while (posts.length < 5) posts.push(fallbacks[posts.length]);
+
+            posts.forEach((item, i) => {
+                const n = i + 1;
+                document.querySelector(`#Img-${n} img`).src = item.i;
+                document.getElementById(`headline-${n}`).innerText = item.t;
+                document.getElementById(`subline-${n}`).innerText = item.s;
+            });
+
+            // 300ms delay gives browser time to paint the fetched image srcs before GSAP queries .from({height:0})
+            setTimeout(startPristineGSAP, 300);
+        }
     </script>
+
+    <script src="https://rss.rtbs.in/feeds/posts/default/-/Images?alt=json-in-script&callback=vaBannerInit&max-results=5"></script>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
@@ -483,21 +468,17 @@
                 let glitchX = 0;
 
                 // =====================================================================
-                // ⚠️ THE EMOTION GATE (உணர்ச்சிப் பெருக்கு இருந்தால் மட்டுமே வாய் திறக்கும்)
+                // ⚠️ TRUE EMOTION GATE: 22-க்கு மேல் கத்தினால் மட்டுமே வாய் அகலத் திறக்கும்
                 // =====================================================================
-                const isHighEmotion = avgVol > 20 || (whisperLevel > 45 && avgVol > 12);
-
-                if (isHighEmotion) { 
-                    // கத்துவது / சிரிப்பது (High Emotion) -> வாய் பிரம்மாண்டமாகத் திறக்கும்
+                if (avgVol > 22) { 
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
-                    spk.targetJaw = blendshapes.jawOpen * 28; 
-                    spk.targetSmile = blendshapes.mouthStretch * 16; 
-                    if (avgVol > 35) glitchX = (Math.random() - 0.5) * 6;
+                    spk.targetJaw = blendshapes.jawOpen * 25; 
+                    spk.targetSmile = blendshapes.mouthStretch * 15; 
+                    if (avgVol > 40) glitchX = (Math.random() - 0.5) * 6;
                 } else if (avgVol > 5) {
-                    // சாதாரணப் பேச்சு (Low Energy) -> முகம் ஒளிரும், ஆனால் வாய் அசைவு ZERO!
-                    spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 0.95; 
-                    spk.targetJaw = 0; // JAW CLAMPED!
-                    spk.targetSmile = 0;
+                    // சாதாரணப் பேச்சுக்கு முகம் தெரியும், ஆனால் வாய் அசைவு ZERO (No flapping!)
+                    spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 0.9; 
+                    spk.targetJaw = 0; spk.targetSmile = 0;
                 } else {
                     spk.targetJaw = 0; spk.targetSmile = 0;
                     if (Date.now() - spk.lastActiveTime > 1200) spk.targetFaceAlpha = 0.0; 

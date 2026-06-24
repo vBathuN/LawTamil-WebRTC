@@ -207,7 +207,7 @@
 
             let posts = [];
             try {
-                const res = await fetch(`${MY_BLOG_URL}/feeds/posts/default?alt=json&max-results=5`);
+                const res = await fetch(`${MY_BLOG_URL}/feeds/posts/default/-/Images?alt=json&max-results=5`);
                 const data = await res.json();
                 const entries = data.feed.entry || [];
 

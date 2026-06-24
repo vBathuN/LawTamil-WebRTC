@@ -2,12 +2,14 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (Ad Banner Edition)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (True Zero-Gap Banner)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
+    <!-- Google Fonts for Ad Banner -->
     <link href="https://fonts.googleapis.com/css?family=Bevan" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Ubuntu:500" rel="stylesheet">
     
+    <!-- GSAP Animation Library -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
 
     <style>
@@ -22,38 +24,35 @@
             display: flex;
         }
 
-        /* 1. LEFT SIDE: AD BANNER SLOT (33vw Width - Centered Flex) */
+        /* =========================================================
+           1. LEFT SIDE: 100% FILLED AD BANNER (True Zero-Gap Slot)
+           ========================================================= */
         .left-ad-slot {
             width: 33vw; height: 100vh;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(2, 6, 23, 0.99) 100%);
-            border-right: 5px solid #4285f4; /* Banner-ன் Google Blue நிறத்திற்கு ஏற்ப மாற்றப்பட்டுள்ளது */
+            background-color: #efefef !important; /* Banner-ன் அசல் பின்னணி நிறம் முழுதும் நிரம்பும் */
+            border-right: 6px solid #4285f4; /* வலதுபுறம் பிரிக்கும் நீலக்கோடு மட்டும் */
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 25px 0 50px rgba(0,0,0,0.9);
-            z-index: 30;
             position: relative;
+            overflow: hidden;
+            z-index: 30;
+            box-shadow: 25px 0 50px rgba(0,0,0,0.9);
         }
 
-        /* --- INTEGRATED AD BANNER STYLES (Safely Scoped) --- */
-        .ad-container {
+        /* Banner Content-ஐ எவ்வித உருக்குலைவும் இன்றி முழு உயரத்திற்கு Stretch செய்யும் Wrapper */
+        .ad-scale-wrapper {
             width: 300px; height: 580px;
-            position: relative;
-            border: 8px solid #4285f4;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-            background-color: #efefef;
+            position: absolute;
+            transform-origin: center center;
         }
-        .ad-wrapper {
-            position: relative;
-            width: 300px; height: 580px;
-            text-align: center;
-            color: #303030;
-        }
+
         .ad-content {
-            perspective: 1400px;
             position: absolute;
             width: 100%; height: 100%;
+            top: 0; left: 0;
+            color: #303030;
         }
+
+        /* --- AD BANNER INTERNAL TYPOGRAPHY & ASSETS --- */
         .logo-txt, .headline-txt {
             color: #4285f4;
             font-family: 'Bevan', cursive;
@@ -69,11 +68,11 @@
 
         .headline-txt {
             position: absolute; width: 280px; left: 10px; top: 410px;
-            font-size: 35px; text-transform: uppercase;
+            font-size: 35px; text-transform: uppercase; text-align: center;
         }
         .slogan-txt, .subline-txt, .ad-content button {
             font-family: 'Ubuntu', sans-serif; font-weight: 500;
-            line-height: 1em; letter-spacing: -0.045em;
+            line-height: 1em; letter-spacing: -0.045em; text-align: center;
         }
         .slogan-txt {
             position: absolute; width: 240px; left: 30px; top: 95px;
@@ -100,7 +99,9 @@
         }
         .ad-content .hidden { opacity: 0; }
 
-        /* 2. TOP RIGHT CORNER: FIXED CHANNEL TITLE */
+        /* =========================================================
+           2. TOP RIGHT CORNER: FIXED CHANNEL TITLE
+           ========================================================= */
         .channel-title-corner {
             position: absolute; top: 3vh; right: 2.5vw;
             background: #0f172a; border: 3px solid #00ff66; color: #00ff66;
@@ -109,7 +110,9 @@
             box-shadow: 0 0 25px rgba(0, 255, 102, 0.4); z-index: 40;
         }
 
-        /* 3. RIGHT SIDE: DUAL JOKER STAGE */
+        /* =========================================================
+           3. RIGHT SIDE: DUAL JOKER STAGE
+           ========================================================= */
         .right-jokers-stage {
             width: 67vw; height: 100vh;
             display: flex; justify-content: center; align-items: flex-end;
@@ -138,43 +141,43 @@
 </head>
 <body>
 
+    <!-- LEFT: 100% FILLED AD BANNER -->
     <div class="left-ad-slot">
-        <div class="ad-container" id="container">
-            <div class="ad-wrapper" id="ad">
-                <div class="ad-content">
-                    <div id="logo-txt">
-                        <span class="logo-txt" id="logo-1">we</span>
-                        <span class="logo-txt" id="logo-2">b</span>
-                        <span class="logo-txt" id="logo-3">ex</span>
-                    </div>
-                    <div class="slogan-txt" id="slogan-txt">The conference for<br> web designers</div>
-                    
-                    <div class="ad-img-wrapper hidden" id="Img-1"><img src="http://visualangle.ee/image/tallinn.jpg" alt="Tallinn"></div>
-                    <div class="headline-txt hidden" id="headline-1">Tallinn</div>
-                    <div class="subline-txt hidden" id="subline-1">April 1, 2020</div>
-                    
-                    <div class="ad-img-wrapper hidden" id="Img-2"><img src="http://visualangle.ee/image/hipster_001.jpg" alt="Mike Smart"></div>
-                    <div class="headline-txt hidden" id="headline-2">Mike Smart</div>
-                    <div class="subline-txt hidden" id="subline-2">evangelist</div>
-                    
-                    <div class="ad-img-wrapper hidden" id="Img-3"><img src="http://visualangle.ee/image/hipster_002.jpg" alt="John Inman"></div>
-                    <div class="headline-txt hidden" id="headline-3">John Inman</div>
-                    <div class="subline-txt hidden" id="subline-3">developer</div>
-                    
-                    <div class="ad-img-wrapper hidden" id="Img-4"><img src="http://visualangle.ee/image/hipster_004.jpg" alt="Lyza Lanier"></div>
-                    <div class="headline-txt hidden" id="headline-4">Lyza Lanier</div>
-                    <div class="subline-txt hidden" id="subline-4">creative director</div>
-                    
-                    <div class="ad-img-wrapper hidden" id="Img-5"><img src="http://visualangle.ee/image/hipster_003.jpg" alt="Hans Moll"></div>
-                    <div class="headline-txt hidden" id="headline-5">Hans Moll</div>
-                    <div class="subline-txt hidden" id="subline-5">UX designer</div>
-                    
-                    <button id="cta">Learn More</button>
+        <div class="ad-scale-wrapper">
+            <div class="ad-content">
+                <div id="logo-txt">
+                    <span class="logo-txt" id="logo-1">we</span>
+                    <span class="logo-txt" id="logo-2">b</span>
+                    <span class="logo-txt" id="logo-3">ex</span>
                 </div>
+                <div class="slogan-txt" id="slogan-txt">The conference for<br> web designers</div>
+                
+                <div class="ad-img-wrapper hidden" id="Img-1"><img src="http://visualangle.ee/image/tallinn.jpg" alt="Tallinn"></div>
+                <div class="headline-txt hidden" id="headline-1">Tallinn</div>
+                <div class="subline-txt hidden" id="subline-1">April 1, 2020</div>
+                
+                <div class="ad-img-wrapper hidden" id="Img-2"><img src="http://visualangle.ee/image/hipster_001.jpg" alt="Mike Smart"></div>
+                <div class="headline-txt hidden" id="headline-2">Mike Smart</div>
+                <div class="subline-txt hidden" id="subline-2">evangelist</div>
+                
+                <div class="ad-img-wrapper hidden" id="Img-3"><img src="http://visualangle.ee/image/hipster_002.jpg" alt="John Inman"></div>
+                <div class="headline-txt hidden" id="headline-3">John Inman</div>
+                <div class="subline-txt hidden" id="subline-3">developer</div>
+                
+                <div class="ad-img-wrapper hidden" id="Img-4"><img src="http://visualangle.ee/image/hipster_004.jpg" alt="Lyza Lanier"></div>
+                <div class="headline-txt hidden" id="headline-4">Lyza Lanier</div>
+                <div class="subline-txt hidden" id="subline-4">creative director</div>
+                
+                <div class="ad-img-wrapper hidden" id="Img-5"><img src="http://visualangle.ee/image/hipster_003.jpg" alt="Hans Moll"></div>
+                <div class="headline-txt hidden" id="headline-5">Hans Moll</div>
+                <div class="subline-txt hidden" id="subline-5">UX designer</div>
+                
+                <button id="cta">Learn More</button>
             </div>
         </div>
     </div>
 
+    <!-- RIGHT: CHANNEL TITLE & JOKER STAGE -->
     <div class="channel-title-corner">JOKER DURBAR</div>
 
     <div class="right-jokers-stage">
@@ -193,6 +196,23 @@
         </div>
     </div>
     
+    <!-- DYNAMIC ZERO-GAP AUTO-SCALER FOR BANNER -->
+    <script>
+        function fitAdBannerToSlot() {
+            const slot = document.querySelector('.left-ad-slot');
+            const wrapper = document.querySelector('.ad-scale-wrapper');
+            if (!slot || !wrapper) return;
+
+            // Slot-ன் முழு உயரத்திற்கு (100vh) கச்சிதமாகப் பொருத்தும் Scale
+            const scaleFactor = slot.clientHeight / 580;
+            wrapper.style.transform = `scale(${scaleFactor})`;
+        }
+
+        window.addEventListener('resize', fitAdBannerToSlot);
+        window.addEventListener('DOMContentLoaded', fitAdBannerToSlot);
+    </script>
+
+    <!-- GSAP AD BANNER ANIMATION SCRIPT -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             TweenMax.set("#logo-2", {rotation:35, transformOrigin:"50% 50%"});
@@ -231,6 +251,7 @@
         });
     </script>
 
+    <!-- VTUBER STAGE & AUDIO ENGINE SCRIPT -->
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';

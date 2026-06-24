@@ -2,14 +2,12 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (True Zero-Gap Banner)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (Blogger HD & Emotion Gate Edition)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Google Fonts for Ad Banner -->
     <link href="https://fonts.googleapis.com/css?family=Bevan" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Ubuntu:500" rel="stylesheet">
     
-    <!-- GSAP Animation Library -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
 
     <style>
@@ -24,38 +22,27 @@
             display: flex;
         }
 
-        /* =========================================================
-           1. LEFT SIDE: 100% FILLED AD BANNER (True Zero-Gap Slot)
-           ========================================================= */
+        /* 1. LEFT SIDE: 100% FILLED AD BANNER */
         .left-ad-slot {
             width: 33vw; height: 100vh;
-            background-color: #efefef !important; /* Banner-ன் அசல் பின்னணி நிறம் முழுதும் நிரம்பும் */
-            border-right: 6px solid #4285f4; /* வலதுபுறம் பிரிக்கும் நீலக்கோடு மட்டும் */
+            background-color: #efefef !important; 
+            border-right: 6px solid #4285f4; 
             display: flex; justify-content: center; align-items: center;
-            position: relative;
-            overflow: hidden;
-            z-index: 30;
-            box-shadow: 25px 0 50px rgba(0,0,0,0.9);
+            position: relative; overflow: hidden;
+            z-index: 30; box-shadow: 25px 0 50px rgba(0,0,0,0.9);
         }
-
-        /* Banner Content-ஐ எவ்வித உருக்குலைவும் இன்றி முழு உயரத்திற்கு Stretch செய்யும் Wrapper */
         .ad-scale-wrapper {
             width: 300px; height: 580px;
-            position: absolute;
-            transform-origin: center center;
+            position: absolute; transform-origin: center center;
         }
-
         .ad-content {
-            position: absolute;
-            width: 100%; height: 100%;
-            top: 0; left: 0;
-            color: #303030;
+            position: absolute; width: 100%; height: 100%;
+            top: 0; left: 0; color: #303030;
         }
 
-        /* --- AD BANNER INTERNAL TYPOGRAPHY & ASSETS --- */
+        /* --- AD BANNER INTERNAL TYPOGRAPHY (Original As-is) --- */
         .logo-txt, .headline-txt {
-            color: #4285f4;
-            font-family: 'Bevan', cursive;
+            color: #4285f4; font-family: 'Bevan', cursive;
             font-weight: 400; line-height: .9em; letter-spacing: -0.030em;
         }
         .logo-txt {
@@ -88,6 +75,7 @@
         .ad-img-wrapper img {
             position: absolute; top: 0px; left: 0px;
             width: 280px; height: 280px; border-radius: 50%;
+            object-fit: cover; /* அதி-தரப் படங்கள் வட்டத்திற்குள் கச்சிதமாகப் பொருந்த */
         }
         .ad-content button {
             position: absolute; left: 30px; top: 500px;
@@ -99,9 +87,7 @@
         }
         .ad-content .hidden { opacity: 0; }
 
-        /* =========================================================
-           2. TOP RIGHT CORNER: FIXED CHANNEL TITLE
-           ========================================================= */
+        /* 2. TOP RIGHT CORNER: FIXED CHANNEL TITLE */
         .channel-title-corner {
             position: absolute; top: 3vh; right: 2.5vw;
             background: #0f172a; border: 3px solid #00ff66; color: #00ff66;
@@ -110,9 +96,7 @@
             box-shadow: 0 0 25px rgba(0, 255, 102, 0.4); z-index: 40;
         }
 
-        /* =========================================================
-           3. RIGHT SIDE: DUAL JOKER STAGE
-           ========================================================= */
+        /* 3. RIGHT SIDE: DUAL JOKER STAGE */
         .right-jokers-stage {
             width: 67vw; height: 100vh;
             display: flex; justify-content: center; align-items: flex-end;
@@ -141,7 +125,6 @@
 </head>
 <body>
 
-    <!-- LEFT: 100% FILLED AD BANNER -->
     <div class="left-ad-slot">
         <div class="ad-scale-wrapper">
             <div class="ad-content">
@@ -152,32 +135,31 @@
                 </div>
                 <div class="slogan-txt" id="slogan-txt">The conference for<br> web designers</div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-1"><img src="http://visualangle.ee/image/tallinn.jpg" alt="Tallinn"></div>
-                <div class="headline-txt hidden" id="headline-1">Tallinn</div>
-                <div class="subline-txt hidden" id="subline-1">April 1, 2020</div>
+                <div class="ad-img-wrapper hidden" id="Img-1"><img src="" alt=""></div>
+                <div class="headline-txt hidden" id="headline-1"></div>
+                <div class="subline-txt hidden" id="subline-1"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-2"><img src="http://visualangle.ee/image/hipster_001.jpg" alt="Mike Smart"></div>
-                <div class="headline-txt hidden" id="headline-2">Mike Smart</div>
-                <div class="subline-txt hidden" id="subline-2">evangelist</div>
+                <div class="ad-img-wrapper hidden" id="Img-2"><img src="" alt=""></div>
+                <div class="headline-txt hidden" id="headline-2"></div>
+                <div class="subline-txt hidden" id="subline-2"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-3"><img src="http://visualangle.ee/image/hipster_002.jpg" alt="John Inman"></div>
-                <div class="headline-txt hidden" id="headline-3">John Inman</div>
-                <div class="subline-txt hidden" id="subline-3">developer</div>
+                <div class="ad-img-wrapper hidden" id="Img-3"><img src="" alt=""></div>
+                <div class="headline-txt hidden" id="headline-3"></div>
+                <div class="subline-txt hidden" id="subline-3"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-4"><img src="http://visualangle.ee/image/hipster_004.jpg" alt="Lyza Lanier"></div>
-                <div class="headline-txt hidden" id="headline-4">Lyza Lanier</div>
-                <div class="subline-txt hidden" id="subline-4">creative director</div>
+                <div class="ad-img-wrapper hidden" id="Img-4"><img src="" alt=""></div>
+                <div class="headline-txt hidden" id="headline-4"></div>
+                <div class="subline-txt hidden" id="subline-4"></div>
                 
-                <div class="ad-img-wrapper hidden" id="Img-5"><img src="http://visualangle.ee/image/hipster_003.jpg" alt="Hans Moll"></div>
-                <div class="headline-txt hidden" id="headline-5">Hans Moll</div>
-                <div class="subline-txt hidden" id="subline-5">UX designer</div>
+                <div class="ad-img-wrapper hidden" id="Img-5"><img src="" alt=""></div>
+                <div class="headline-txt hidden" id="headline-5"></div>
+                <div class="subline-txt hidden" id="subline-5"></div>
                 
                 <button id="cta">Learn More</button>
             </div>
         </div>
     </div>
 
-    <!-- RIGHT: CHANNEL TITLE & JOKER STAGE -->
     <div class="channel-title-corner">JOKER DURBAR</div>
 
     <div class="right-jokers-stage">
@@ -196,25 +178,81 @@
         </div>
     </div>
     
-    <!-- DYNAMIC ZERO-GAP AUTO-SCALER FOR BANNER -->
     <script>
         function fitAdBannerToSlot() {
             const slot = document.querySelector('.left-ad-slot');
             const wrapper = document.querySelector('.ad-scale-wrapper');
-            if (!slot || !wrapper) return;
-
-            // Slot-ன் முழு உயரத்திற்கு (100vh) கச்சிதமாகப் பொருத்தும் Scale
-            const scaleFactor = slot.clientHeight / 580;
-            wrapper.style.transform = `scale(${scaleFactor})`;
+            if (slot && wrapper) {
+                wrapper.style.transform = `scale(${slot.clientHeight / 580})`;
+            }
         }
-
         window.addEventListener('resize', fitAdBannerToSlot);
         window.addEventListener('DOMContentLoaded', fitAdBannerToSlot);
     </script>
 
-    <!-- GSAP AD BANNER ANIMATION SCRIPT -->
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
+        // ============================================================================
+        // ⚠️ இங்கே உங்கள் உண்மையான பிளாகர் URL-ஐ உள்ளிடவும் (கடைசியில் slash '/' வேண்டாம்)
+        // ============================================================================
+        const MY_BLOG_URL = "https://yourblogname.blogspot.com"; 
+
+        async function fetchBloggerPostsAndAnimate() {
+            const defaultFallbacks = [
+                { t: "Tallinn", s: "April 1, 2020", i: "http://visualangle.ee/image/tallinn.jpg" },
+                { t: "Mike Smart", s: "evangelist", i: "http://visualangle.ee/image/hipster_001.jpg" },
+                { t: "John Inman", s: "developer", i: "http://visualangle.ee/image/hipster_002.jpg" },
+                { t: "Lyza Lanier", s: "creative dir", i: "http://visualangle.ee/image/hipster_004.jpg" },
+                { t: "Hans Moll", s: "UX designer", i: "http://visualangle.ee/image/hipster_003.jpg" }
+            ];
+
+            let posts = [];
+            try {
+                const res = await fetch(`${MY_BLOG_URL}/feeds/posts/default?alt=json&max-results=5`);
+                const data = await res.json();
+                const entries = data.feed.entry || [];
+
+                posts = entries.map((entry, idx) => {
+                    // 1. Title Truncate (அதிகபட்சம் 18 எழுத்துக்கள்)
+                    let title = entry.title.$t || defaultFallbacks[idx].t;
+                    if (title.length > 18) title = title.substring(0, 18) + '..';
+
+                    // 2. Subline (முதல் Label அல்லது தேதி)
+                    let subline = defaultFallbacks[idx].s;
+                    if (entry.category && entry.category.length > 0) {
+                        subline = entry.category[0].term;
+                    } else if (entry.published) {
+                        const d = new Date(entry.published.$t);
+                        subline = d.toLocaleDateString('ta-IN', { month: 'short', day: 'numeric' });
+                    }
+
+                    // 3. Ultra-HD Image RegEx Upscaling (/s72-c/ -> /s1600/)
+                    let imgUrl = defaultFallbacks[idx].i;
+                    if (entry.media$thumbnail && entry.media$thumbnail.url) {
+                        imgUrl = entry.media$thumbnail.url.replace(/\/s\d+(-[cwhp\d-]+)?\//g, '/s1600/');
+                    }
+                    return { t: title, s: subline, i: imgUrl };
+                });
+
+                while (posts.length < 5) posts.push(defaultFallbacks[posts.length]);
+
+            } catch (err) {
+                console.warn("Blogger feed fetch error, loading pristine fallbacks:", err);
+                posts = defaultFallbacks;
+            }
+
+            // DOM-ல் செலுத்துதல்
+            posts.forEach((item, i) => {
+                const n = i + 1;
+                document.querySelector(`#Img-${n} img`).src = item.i;
+                document.getElementById(`headline-${n}`).innerText = item.t;
+                document.getElementById(`subline-${n}`).innerText = item.s;
+            });
+
+            // படங்கள் லோட் ஆன பிறகு GSAP அனிமேஷனைத் தொடங்கு (Zero Blank Glitch Guarantee)
+            startPristineGSAP();
+        }
+
+        function startPristineGSAP() {
             TweenMax.set("#logo-2", {rotation:35, transformOrigin:"50% 50%"});
             TweenMax.globalTimeScale(1.2);
 
@@ -248,10 +286,11 @@
               .from("#headline-5, #subline-5", .5, {y:-240}, "-=0.5")
               .from("#Img-5, #headline-5, #subline-5", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
               .to("#Img-5, #headline-5, #subline-5", .5, {opacity:0, ease:Sine.easeIn}, "-=.5");
-        });
+        }
+
+        window.addEventListener('DOMContentLoaded', fetchBloggerPostsAndAnimate);
     </script>
 
-    <!-- VTUBER STAGE & AUDIO ENGINE SCRIPT -->
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
@@ -266,21 +305,15 @@
 
         const speakers = [
             {
-                id: 'Host',
-                canvas: document.getElementById('stage-host'),
-                ctx: document.getElementById('stage-host').getContext('2d'),
-                filterStyle: 'none', 
-                pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
+                id: 'Host', canvas: document.getElementById('stage-host'), ctx: document.getElementById('stage-host').getContext('2d'),
+                filterStyle: 'none', pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
                 isBlinking: false, analyser: null, dataArray: null, trackId: null
             },
             {
-                id: 'Guest',
-                canvas: document.getElementById('stage-guest'),
-                ctx: document.getElementById('stage-guest').getContext('2d'),
-                filterStyle: 'hue-rotate(140deg) saturate(1.4)',
-                pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
+                id: 'Guest', canvas: document.getElementById('stage-guest'), ctx: document.getElementById('stage-guest').getContext('2d'),
+                filterStyle: 'hue-rotate(140deg) saturate(1.4)', pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
                 isBlinking: false, analyser: null, dataArray: null, trackId: null
@@ -340,11 +373,8 @@
     class TrueGranularEngine extends AudioWorkletProcessor {
         constructor() {
             super();
-            this.GRAIN = 1024; 
-            this.buffer = new Float32Array(this.GRAIN * 4);
-            this.wPtr = 0;
-            this.headA = { pos: 0, age: 0 };
-            this.headB = { pos: 0, age: this.GRAIN / 2 }; 
+            this.GRAIN = 1024; this.buffer = new Float32Array(this.GRAIN * 4);
+            this.wPtr = 0; this.headA = { pos: 0, age: 0 }; this.headB = { pos: 0, age: this.GRAIN / 2 }; 
             this.pitch = 0.817; 
         }
         getSample(ptr) {
@@ -391,9 +421,7 @@
                                 if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
                                     let availSpeaker = speakers.find(s => s.trackId === null);
                                     if (availSpeaker) {
-                                        availSpeaker.trackId = track.id;
-                                        connectedTracks.set(track.id, availSpeaker);
-
+                                        availSpeaker.trackId = track.id; connectedTracks.set(track.id, availSpeaker);
                                         if (audioCtx.state === 'suspended') audioCtx.resume();
                                         availSpeaker.analyser = audioCtx.createAnalyser();
                                         availSpeaker.analyser.fftSize = 128; availSpeaker.analyser.smoothingTimeConstant = 0.3;
@@ -412,10 +440,8 @@
                                         const chestRumble = audioCtx.createBiquadFilter();
                                         chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
 
-                                        rawMic.connect(chestRumble);
-                                        chestRumble.connect(pitchConverter);
-                                        pitchConverter.connect(availSpeaker.analyser);
-                                        availSpeaker.analyser.connect(audioCtx.destination);
+                                        rawMic.connect(chestRumble); chestRumble.connect(pitchConverter);
+                                        pitchConverter.connect(availSpeaker.analyser); availSpeaker.analyser.connect(audioCtx.destination);
 
                                         track.onended = () => {
                                             availSpeaker.trackId = null; availSpeaker.analyser = null; availSpeaker.dataArray = null;
@@ -456,18 +482,29 @@
                 let lookSideAngle = Math.sin(Date.now() * 0.002) * 2.5;
                 let glitchX = 0;
 
-                if (avgVol > 8) { 
+                // =====================================================================
+                // ⚠️ THE EMOTION GATE (உணர்ச்சிப் பெருக்கு இருந்தால் மட்டுமே வாய் திறக்கும்)
+                // =====================================================================
+                const isHighEmotion = avgVol > 20 || (whisperLevel > 45 && avgVol > 12);
+
+                if (isHighEmotion) { 
+                    // கத்துவது / சிரிப்பது (High Emotion) -> வாய் பிரம்மாண்டமாகத் திறக்கும்
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
-                    spk.targetJaw = blendshapes.jawOpen * 22; spk.targetSmile = blendshapes.mouthStretch * 12; 
-                    if (avgVol > 35) { glitchX = (Math.random() - 0.5) * 6; }
+                    spk.targetJaw = blendshapes.jawOpen * 28; 
+                    spk.targetSmile = blendshapes.mouthStretch * 16; 
+                    if (avgVol > 35) glitchX = (Math.random() - 0.5) * 6;
+                } else if (avgVol > 5) {
+                    // சாதாரணப் பேச்சு (Low Energy) -> முகம் ஒளிரும், ஆனால் வாய் அசைவு ZERO!
+                    spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 0.95; 
+                    spk.targetJaw = 0; // JAW CLAMPED!
+                    spk.targetSmile = 0;
                 } else {
                     spk.targetJaw = 0; spk.targetSmile = 0;
                     if (Date.now() - spk.lastActiveTime > 1200) spk.targetFaceAlpha = 0.0; 
                 }
 
                 const mirrorScale = spk.id === 'Guest' ? 'scaleX(-1.35) scaleY(1.35)' : 'scale(1.35)';
-                const inwardTilt = 14; 
-                const dynamicTilt = inwardTilt + lookSideAngle;
+                const inwardTilt = 14; const dynamicTilt = inwardTilt + lookSideAngle;
 
                 spk.canvas.style.transform = `translateX(-50%) ${mirrorScale} rotateY(${dynamicTilt}deg) translateX(${glitchX}px)`;
 
@@ -475,9 +512,7 @@
                     spk.currJaw += (spk.targetJaw - spk.currJaw) * 0.32; spk.currSmile += (spk.targetSmile - spk.currSmile) * 0.28;
                     spk.faceAlpha += (spk.targetFaceAlpha - spk.faceAlpha) * 0.14; 
                     
-                    spk.ctx.clearRect(0, 0, 420, 480);
-                    spk.ctx.save();
-
+                    spk.ctx.clearRect(0, 0, 420, 480); spk.ctx.save();
                     if (spk.filterStyle !== 'none') spk.ctx.filter = spk.filterStyle;
 
                     spk.ctx.globalAlpha = 1.0;
@@ -485,11 +520,8 @@
 
                     if (spk.faceAlpha > 0.005) {
                         spk.ctx.globalAlpha = spk.faceAlpha;
-                        
                         if (contourNormals.length > 0 && avgVol > 1) {
-                            spk.ctx.save(); spk.ctx.filter = 'none'; 
-                            spk.ctx.lineWidth = 3.5; spk.ctx.lineCap = 'round';
-                            
+                            spk.ctx.save(); spk.ctx.filter = 'none'; spk.ctx.lineWidth = 3.5; spk.ctx.lineCap = 'round';
                             let primaryColor = spk.pColor; let secondaryColor = spk.sColor;
                             if (avgVol < 12 && whisperLevel > 50) { primaryColor = spk.wColor1; secondaryColor = spk.wColor2; }
 

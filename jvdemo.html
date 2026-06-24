@@ -2,7 +2,14 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (Zero Gap Edition)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (Ad Banner Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://fonts.googleapis.com/css?family=Bevan" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Ubuntu:500" rel="stylesheet">
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+
     <style>
         /* --- RESET & STRICT ZERO MARGIN POLICY --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,119 +22,162 @@
             display: flex;
         }
 
-        /* 1. LEFT SIDE: FULL HEIGHT TOPIC POSTER (35% Width) */
-        .left-topic-poster {
+        /* 1. LEFT SIDE: AD BANNER SLOT (33vw Width - Centered Flex) */
+        .left-ad-slot {
             width: 33vw; height: 100vh;
             background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(2, 6, 23, 0.99) 100%);
-            border-right: 5px solid #ff1a1a;
-            padding: 6vh 3vw;
-            display: flex; flex-direction: column; justify-content: center;
+            border-right: 5px solid #4285f4; /* Banner-ன் Google Blue நிறத்திற்கு ஏற்ப மாற்றப்பட்டுள்ளது */
+            display: flex; justify-content: center; align-items: center;
             box-shadow: 25px 0 50px rgba(0,0,0,0.9);
             z-index: 30;
+            position: relative;
         }
 
-        .poster-tag {
-            background: #ff1a1a; color: white;
-            font-size: 1.1vw; font-weight: 900; letter-spacing: 2px;
-            padding: 0.6vh 1.2vw; border-radius: 4px;
-            width: fit-content; margin-bottom: 2vh;
-            text-transform: uppercase;
+        /* --- INTEGRATED AD BANNER STYLES (Safely Scoped) --- */
+        .ad-container {
+            width: 300px; height: 580px;
+            position: relative;
+            border: 8px solid #4285f4;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            background-color: #efefef;
         }
-
-        .poster-title {
-            font-size: 3vw; font-weight: 900; line-height: 1.2;
-            margin-bottom: 3vh; color: #f8fafc;
+        .ad-wrapper {
+            position: relative;
+            width: 300px; height: 580px;
+            text-align: center;
+            color: #303030;
         }
-
-        .poster-title .acid-text { color: #00ff66; text-shadow: 0 0 15px rgba(0,255,102,0.4); }
-
-        .poster-divider {
-            border: none; border-top: 2px dashed rgba(255, 255, 255, 0.15);
-            margin-bottom: 3vh;
+        .ad-content {
+            perspective: 1400px;
+            position: absolute;
+            width: 100%; height: 100%;
         }
+        .logo-txt, .headline-txt {
+            color: #4285f4;
+            font-family: 'Bevan', cursive;
+            font-weight: 400; line-height: .9em; letter-spacing: -0.030em;
+        }
+        .logo-txt {
+            position: absolute; width: 240px; top: 30px; left: 30px;
+            font-size: 70px; text-align: left; opacity: .999;
+        }
+        #logo-1 { position: absolute; width: 110px; left: 30px; }
+        #logo-2 { position: absolute; width: 50px; left: 141px; color: #303030; opacity: .99; }
+        #logo-3 { position: absolute; width: 80px; left: 184px; }
 
-        .agenda-list { list-style: none; font-size: 1.4vw; line-height: 2.2; color: #cbd5e1; font-weight: 600; }
-        .agenda-list li::before { content: "🔥 "; }
+        .headline-txt {
+            position: absolute; width: 280px; left: 10px; top: 410px;
+            font-size: 35px; text-transform: uppercase;
+        }
+        .slogan-txt, .subline-txt, .ad-content button {
+            font-family: 'Ubuntu', sans-serif; font-weight: 500;
+            line-height: 1em; letter-spacing: -0.045em;
+        }
+        .slogan-txt {
+            position: absolute; width: 240px; left: 30px; top: 95px;
+            font-size: 25px; opacity: .99;
+        }
+        .subline-txt {
+            position: absolute; width: 240px; left: 30px; top: 445px; font-size: 28px;
+        }
+        .ad-img-wrapper {
+            position: absolute; left: 10px; top: 160px;
+            width: 280px; height: 240px; overflow: hidden;
+        }
+        .ad-img-wrapper img {
+            position: absolute; top: 0px; left: 0px;
+            width: 280px; height: 280px; border-radius: 50%;
+        }
+        .ad-content button {
+            position: absolute; left: 30px; top: 500px;
+            width: 240px; height: 50px; display: block;
+            padding: 12px 15px 10px 15px; background-color: #4285F4;
+            border: none; border-radius: 50px; font-size: 25px;
+            text-transform: uppercase; color: #efefef;
+            letter-spacing: 0.05em; cursor: pointer; outline: 0; opacity: .999;
+        }
+        .ad-content .hidden { opacity: 0; }
 
         /* 2. TOP RIGHT CORNER: FIXED CHANNEL TITLE */
         .channel-title-corner {
-            position: absolute;
-            top: 3vh; right: 2.5vw;
-            background: #0f172a;
-            border: 3px solid #00ff66;
-            color: #00ff66;
+            position: absolute; top: 3vh; right: 2.5vw;
+            background: #0f172a; border: 3px solid #00ff66; color: #00ff66;
             font-size: 2.2vw; font-weight: 900; letter-spacing: 1px;
-            padding: 0.8vh 1.8vw;
-            border-radius: 8px;
-            box-shadow: 0 0 25px rgba(0, 255, 102, 0.4);
-            z-index: 40;
+            padding: 0.8vh 1.8vw; border-radius: 8px;
+            box-shadow: 0 0 25px rgba(0, 255, 102, 0.4); z-index: 40;
         }
 
-        /* 3. RIGHT SIDE: DUAL JOKER STAGE (Strictly Bottom-Aligned) */
+        /* 3. RIGHT SIDE: DUAL JOKER STAGE */
         .right-jokers-stage {
             width: 67vw; height: 100vh;
-            display: flex; 
-            justify-content: center; align-items: flex-end; /* மொத்த வெற்றிடமும் மேலே தள்ளப்படும் */
-            padding-bottom: 2vh; /* தரையை ஒட்டி நிற்பார்கள் */
-            gap: 2vw;
-            position: relative;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 2vh; gap: 2vw; position: relative;
         }
-
         .vtuber-pod {
-            width: 29vw; height: 75vh;
-            position: relative;
+            width: 29vw; height: 75vh; position: relative;
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
         }
-
-        /* THE KILLER BULLET: Canvas bottom sunken deep into the floor behind the badge */
         .joker-canvas {
-            position: absolute;
-            bottom: -80px; /* மாய வெற்றிடத்தை பாதாளத்தில் புதைக்கும் கோடு */
-            left: 50%;
-            transform-origin: bottom center; /* ஸ்கேல் ஆனால் 'மேலே' மட்டுமே வளரும்! */
-            z-index: 10;
-            will-change: transform;
+            position: absolute; bottom: -80px; left: 50%;
+            transform-origin: bottom center; z-index: 10; will-change: transform;
         }
-
-        /* MASSIVE SPEAKER NAMES (Sits firmly on top of the sunken chin) */
         .speaker-badge {
-            position: absolute;
-            bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 90%;
-            background: #0f172a;
-            border: 3px solid white;
-            padding: 1.5vh 0; 
-            border-radius: 12px;
-            color: white; font-size: 2vw; font-weight: 900; letter-spacing: 0.5px;
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 90%; background: #0f172a; border: 3px solid white;
+            padding: 1.5vh 0; border-radius: 12px; color: white;
+            font-size: 2vw; font-weight: 900; letter-spacing: 0.5px;
             display: flex; justify-content: center; align-items: center; gap: 0.8vw;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
-            z-index: 20; /* கேன்வாஸுக்கு மேலே இது அமரும் */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 20;
         }
-
         .badge-host { border-bottom: 7px solid #ff1a1a; }
         .badge-guest { border-bottom: 7px solid #00ff66; }
-        .dot { width: 1.2vw; height: 1.2vw; max-width:18px; max-height:18px; border-radius: 50%; }
+        .dot { width: 1.2vw; height: 1.2vw; max-width: 18px; max-height: 18px; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <div class="left-topic-poster">
-        <div class="poster-tag">நேரலை விவாதம்</div>
-        <h1 class="poster-title">ஏம்பா நாய் கத்துது?<br><span class="acid-text">பிஸ்கட் தீந்து போச்சுண்ணே!</span></h1>
-        <hr class="poster-divider">
-        <ul class="agenda-list">
-            <li>ஊடகங்களின் போலிச் சத்தமும் பின்னணியும்</li>
-            <li>அரசியல்வாதிகளின் 'பிஸ்கட்' சித்தாந்தம்</li>
-            <li>சாமானியனின் குரல் எங்கே ஒலிக்கிறது?</li>
-        </ul>
+    <div class="left-ad-slot">
+        <div class="ad-container" id="container">
+            <div class="ad-wrapper" id="ad">
+                <div class="ad-content">
+                    <div id="logo-txt">
+                        <span class="logo-txt" id="logo-1">we</span>
+                        <span class="logo-txt" id="logo-2">b</span>
+                        <span class="logo-txt" id="logo-3">ex</span>
+                    </div>
+                    <div class="slogan-txt" id="slogan-txt">The conference for<br> web designers</div>
+                    
+                    <div class="ad-img-wrapper hidden" id="Img-1"><img src="http://visualangle.ee/image/tallinn.jpg" alt="Tallinn"></div>
+                    <div class="headline-txt hidden" id="headline-1">Tallinn</div>
+                    <div class="subline-txt hidden" id="subline-1">April 1, 2020</div>
+                    
+                    <div class="ad-img-wrapper hidden" id="Img-2"><img src="http://visualangle.ee/image/hipster_001.jpg" alt="Mike Smart"></div>
+                    <div class="headline-txt hidden" id="headline-2">Mike Smart</div>
+                    <div class="subline-txt hidden" id="subline-2">evangelist</div>
+                    
+                    <div class="ad-img-wrapper hidden" id="Img-3"><img src="http://visualangle.ee/image/hipster_002.jpg" alt="John Inman"></div>
+                    <div class="headline-txt hidden" id="headline-3">John Inman</div>
+                    <div class="subline-txt hidden" id="subline-3">developer</div>
+                    
+                    <div class="ad-img-wrapper hidden" id="Img-4"><img src="http://visualangle.ee/image/hipster_004.jpg" alt="Lyza Lanier"></div>
+                    <div class="headline-txt hidden" id="headline-4">Lyza Lanier</div>
+                    <div class="subline-txt hidden" id="subline-4">creative director</div>
+                    
+                    <div class="ad-img-wrapper hidden" id="Img-5"><img src="http://visualangle.ee/image/hipster_003.jpg" alt="Hans Moll"></div>
+                    <div class="headline-txt hidden" id="headline-5">Hans Moll</div>
+                    <div class="subline-txt hidden" id="subline-5">UX designer</div>
+                    
+                    <button id="cta">Learn More</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="channel-title-corner">
-        JOKER DURBAR
-    </div>
+    <div class="channel-title-corner">JOKER DURBAR</div>
 
     <div class="right-jokers-stage">
-        
         <div class="vtuber-pod">
             <canvas id="stage-host" class="joker-canvas" width="420" height="480"></canvas>
             <div class="speaker-badge badge-host">
@@ -141,9 +191,46 @@
                 <span class="dot" style="background:#00ff66;"></span> Mr. பிஸ்கட்
             </div>
         </div>
-
     </div>
     
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            TweenMax.set("#logo-2", {rotation:35, transformOrigin:"50% 50%"});
+            TweenMax.globalTimeScale(1.2);
+
+            var tl = new TimelineMax({repeat:-1});
+            tl.to("#Img-1, #headline-1, #subline-1", .5, {autoAlpha:.999, ease:Sine.easeOut})
+              .from("#Img-1", .5, {height:0}, "-=0.5")
+              .from("#headline-1, #subline-1", .5, {y:-240}, "-=0.5")
+              .from("#Img-1, #headline-1, #subline-1", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
+              .to("#Img-1, #headline-1, #subline-1", .5, {opacity:0, ease:Sine.easeIn}, "-=.5")
+              
+              .to("#Img-2, #headline-2, #subline-2", .5, {autoAlpha:.999, ease:Sine.easeOut})
+              .from("#Img-2", .5, {height:0}, "-=0.5")
+              .from("#headline-2, #subline-2", .5, {y:-240}, "-=0.5")
+              .from("#Img-2, #headline-2, #subline-2", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
+              .to("#Img-2, #headline-2, #subline-2", .5, {opacity:0, ease:Sine.easeIn}, "-=.5")
+              
+              .to("#Img-3, #headline-3, #subline-3", .5, {autoAlpha:.999, ease:Sine.easeOut})
+              .from("#Img-3", .5, {height:0}, "-=0.5")
+              .from("#headline-3, #subline-3", .5, {y:-240}, "-=0.5")
+              .from("#Img-3, #headline-3, #subline-3", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
+              .to("#Img-3, #headline-3, #subline-3", .5, {opacity:0, ease:Sine.easeIn}, "-=.5")
+              
+              .to("#Img-4, #headline-4, #subline-4", .5, {autoAlpha:.999, ease:Sine.easeOut})
+              .from("#Img-4", .5, {height:0}, "-=0.5")
+              .from("#headline-4, #subline-4", .5, {y:-240}, "-=0.5")
+              .from("#Img-4, #headline-4, #subline-4", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
+              .to("#Img-4, #headline-4, #subline-4", .5, {opacity:0, ease:Sine.easeIn}, "-=.5")
+              
+              .to("#Img-5, #headline-5, #subline-5", .5, {autoAlpha:.999, ease:Sine.easeOut})
+              .from("#Img-5", .5, {height:0}, "-=0.5")
+              .from("#headline-5, #subline-5", .5, {y:-240}, "-=0.5")
+              .from("#Img-5, #headline-5, #subline-5", 5, {z:-200, ease:Linear.easeNone}, "-=0.5")
+              .to("#Img-5, #headline-5, #subline-5", .5, {opacity:0, ease:Sine.easeIn}, "-=.5");
+        });
+    </script>
+
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
@@ -171,7 +258,7 @@
                 id: 'Guest',
                 canvas: document.getElementById('stage-guest'),
                 ctx: document.getElementById('stage-guest').getContext('2d'),
-                filterStyle: 'hue-rotate(140deg) saturate(1.4)', // TOXIC ACID GREEN
+                filterStyle: 'hue-rotate(140deg) saturate(1.4)',
                 pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
@@ -357,9 +444,6 @@
                     if (Date.now() - spk.lastActiveTime > 1200) spk.targetFaceAlpha = 0.0; 
                 }
 
-                // =========================================================================
-                // அனிமேஷன் லூப்பில் இருந்து Y-Centering நிரந்தரமாக நீக்கப்பட்டது (Strictly floor locked)
-                // =========================================================================
                 const mirrorScale = spk.id === 'Guest' ? 'scaleX(-1.35) scaleY(1.35)' : 'scale(1.35)';
                 const inwardTilt = 14; 
                 const dynamicTilt = inwardTilt + lookSideAngle;

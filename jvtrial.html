@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (Clean Slot & Bug Fixed Edition)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (Ticker & Brand Logo Edition)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
@@ -10,6 +10,13 @@
     <style>
         /* --- RESET & STRICT ZERO MARGIN POLICY --- */
         * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @font-face {
+          font-family: 'Tamil039';
+          src: url('https://cdn.lawtamil.in/font/Tamil039.woff2') format('woff2'),
+               url('https://cdn.lawtamil.in/font/Tamil039.woff') format('woff');
+          font-weight: bold; font-style: normal; font-display: swap; 
+        }
 
         body { 
             background-color: #242424 !important; overflow: hidden; 
@@ -20,7 +27,7 @@
         }
 
         /* =========================================================
-           1. LEFT SIDE: CLEAN EMPTY SLOT WITH BLUE BORDER
+           1. LEFT SIDE: CLEAN EMPTY SLOT & TICKER WIDGET
            ========================================================= */
         .left-ad-slot {
             width: 33vw; height: 100vh;
@@ -30,15 +37,59 @@
             position: relative;
         }
 
+        /* அசல் Ticker CSS - இடதுபுற காலியிடத்தில் மையப்படுத்தப்பட்டுள்ளது */
+        .breaking-container {
+            position: absolute;
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 96%; /* 33vw-க்குள் கச்சிதமாக அமர 90% அகலம் */
+            background: transparent;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px; border: 2px solid rgba(255, 240, 0, 0.25);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 0 15px rgba(255, 240, 0, 0.05);
+            text-align: center;
+            height: 700px; 
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        #adbreakingnews { width: 100%; padding-top: 15px; }
+        #adbreakingnews ul, #adbreakingnews li { list-style: none; margin: 0; padding: 0px; }
+        .af_news { height: 0px; overflow: hidden; transition: height 0.6s cubic-bezier(0.25, 1, 0.5, 1); display: flex; align-items: center; justify-content: center; }
+        .af_news.active { height: 700px; } 
+        #adbreakingnews li a {
+            font-family: 'Tamil039'; font-weight: bold; font-size: 28px; word-spacing: -10px; color: #fff;
+            transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1); text-decoration: none; 
+            text-shadow: 0px 4px 10px rgba(0,0,0,0.9), 0px 0px 5px rgba(255,255,255,0.3);
+            display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden;
+            line-height: 1.8; padding: 0 20px;
+        }
+
         /* =========================================================
-           2. TOP RIGHT CORNER: FIXED CHANNEL TITLE
+           2. TOP RIGHT CORNER: BRAND LOGO (RED & GREEN SPLIT)
            ========================================================= */
         .channel-title-corner {
-            position: absolute; top: 3vh; right: 2.5vw;
-            background: #0f172a; border: 3px solid #00ff66; color: #00ff66;
+            position: absolute; top: 5vh; right: 2.5vw;
+            display: flex; /* இரண்டு நிறங்களை பிரிக்க */
+            border-radius: 8px; overflow: hidden;
             font-size: 2.2vw; font-weight: 900; letter-spacing: 1px;
-            padding: 0.8vh 1.8vw; border-radius: 8px;
-            box-shadow: 0 0 25px rgba(0, 255, 102, 0.4); z-index: 40;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 40;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        .logo-joker {
+            background-color: #ff1a1a;
+            color: white;
+            padding: 0.8vh 1vw 0.8vh 1.8vw;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        .logo-durbar {
+            background-color: #00ff66;
+            color: white;
+            padding: 0.8vh 1.8vw 0.8vh 1vw;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6); /* பச்சை நிறத்தில் வெள்ளை எழுத்து தெரிய Shadow */
         }
 
         /* =========================================================
@@ -72,9 +123,16 @@
 </head>
 <body>
 
-    <div class="left-ad-slot"></div>
+    <div class="left-ad-slot">
+        <div class="breaking-container">
+            <div id='adbreakingnews'></div>
+        </div>
+    </div>
 
-    <div class="channel-title-corner">JOKER DURBAR</div>
+    <div class="channel-title-corner">
+        <div class="logo-joker">JOKER</div>
+        <div class="logo-durbar">DURBAR</div>
+    </div>
 
     <div class="right-jokers-stage">
         <div class="vtuber-pod">
@@ -93,6 +151,34 @@
     </div>
 
     <script>
+        function processFeed(response) {
+            var newsContainer = document.getElementById("adbreakingnews");
+            var entries = response.feed.entry;
+            if (entries) {
+                var newsList = "<ul>";
+                entries.forEach(function(entry) {
+                    var postLink = entry.link.find(l => l.rel === "alternate").href;
+                    newsList += '<li class="af_news"><a href="' + postLink + '" target="_blank">' + entry.title.$t + "</a></li>";
+                });
+                newsList += "</ul>";
+                newsContainer.innerHTML = newsList;
+                
+                let af_now = 0; 
+                const af_boxes = document.querySelectorAll(".af_news");
+                if (af_boxes.length > 0) {
+                    af_boxes[af_now].classList.add("active");
+                    setInterval(() => {
+                        af_boxes[af_now].classList.remove("active");
+                        af_now = (af_now + 1) % af_boxes.length;
+                        setTimeout(() => af_boxes[af_now].classList.add("active"), 500);
+                    }, 4000);
+                }
+            }
+        }
+    </script>
+    <script src="https://feed.rtbs.in/feeds/posts/default/-/jktop?alt=json-in-script&max-results=5&callback=processFeed"></script>
+
+    <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
@@ -104,7 +190,6 @@
 
         let audioCtx; let workletPromise = null; 
 
-        // ⚠️ மாற்றம் 1: track மற்றும் pc இரண்டையும் மெமரியில் சேமிக்க புதிய variables சேர்க்கப்பட்டுள்ளன
         const speakers = [
             {
                 id: 'Host', canvas: document.getElementById('stage-host'), ctx: document.getElementById('stage-host').getContext('2d'),
@@ -211,8 +296,6 @@
             if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
             if (audioCtx.state === 'suspended') audioCtx.resume();
 
-            // ⚠️ மாற்றம் 2: GHOST TRACK GARBAGE COLLECTOR
-            // ட்ராக் எப்போது 'ended' ஆனாலும், மெமரியை காலியாக்கி நாற்காலியை ஃப்ரீ செய்யும்
             setInterval(() => {
                 speakers.forEach(spk => {
                     if (spk.track && spk.track.readyState === 'ended') {
@@ -231,8 +314,6 @@
                         iframeWin.RTCPeerConnection = function(...args) {
                             const pc = new OrigPeerConnection(...args);
 
-                            // ⚠️ மாற்றம் 3: PEER CONNECTION DROPPED MONITOR
-                            // முழு நெட்வொர்க் கட் ஆனால் அந்த PC-க்குச் சொந்தமான ஜோக்கர் ஸ்லாட் காலி செய்யப்படும்
                             pc.addEventListener('connectionstatechange', () => {
                                 if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
                                     speakers.forEach(spk => {
@@ -250,8 +331,6 @@
                                 if (track.kind !== 'audio') return;
                                 if (connectedTracks.has(track.id)) return;
 
-                                // ⚠️ மாற்றம் 4: EXACT MATCH FOR YOUR RULE
-                                // யார் வந்தாலும் காலியாக இருக்கும் (null) முதல் நாற்காலியை மட்டும் பிடிப்பார்கள்
                                 let availSpeaker = speakers.find(s => s.trackId === null);
 
                                 if (availSpeaker) {
@@ -279,7 +358,6 @@
                                     const chestRumble = audioCtx.createBiquadFilter();
                                     chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
 
-                                    // இரண்டாவது ஜோக்கரின் ஆடியோ வால்யூம் குறைபாட்டைச் சரி செய்யும் Master Gain
                                     const masterGain = audioCtx.createGain();
                                     masterGain.gain.value = availSpeaker.id === 'Guest' ? 2.5 : 1.8; 
 
@@ -328,7 +406,6 @@
                 let lookSideAngle = Math.sin(Date.now() * 0.002) * 2.5;
                 let glitchX = 0;
 
-                // TRUE EMOTION GATE
                 if (avgVol > 22) { 
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
                     spk.targetJaw = blendshapes.jawOpen * 25; 

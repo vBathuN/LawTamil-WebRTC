@@ -259,7 +259,7 @@
     class TrueGranularEngine extends AudioWorkletProcessor {
         constructor() {
             super();
-            this.GRAIN = 768; this.buffer = new Float32Array(this.GRAIN * 4);
+            this.GRAIN = 1024; this.buffer = new Float32Array(this.GRAIN * 4);
             this.wPtr = 0; this.headA = { pos: 0, age: 0 }; this.headB = { pos: 0, age: this.GRAIN / 2 }; 
             this.pitch = 1.75; 
         }

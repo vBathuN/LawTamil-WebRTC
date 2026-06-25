@@ -104,20 +104,21 @@
 
         let audioCtx; let workletPromise = null; 
 
+        // ⚠️ மாற்றம் 1: track மற்றும் pc இரண்டையும் மெமரியில் சேமிக்க புதிய variables சேர்க்கப்பட்டுள்ளன
         const speakers = [
             {
                 id: 'Host', canvas: document.getElementById('stage-host'), ctx: document.getElementById('stage-host').getContext('2d'),
                 filterStyle: 'none', pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
-                isBlinking: false, analyser: null, dataArray: null, trackId: null, streamId: null
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             },
             {
                 id: 'Guest', canvas: document.getElementById('stage-guest'), ctx: document.getElementById('stage-guest').getContext('2d'),
                 filterStyle: 'hue-rotate(140deg) saturate(1.4)', pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
-                isBlinking: false, analyser: null, dataArray: null, trackId: null, streamId: null
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             }
         ];
 
@@ -202,13 +203,25 @@
         }
     }
     registerProcessor('joker-voice-engine', TrueGranularEngine);
-`;
+    `;
 
         const connectedTracks = new Map();
 
         function bootVisualizer() {
             if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
             if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // ⚠️ மாற்றம் 2: GHOST TRACK GARBAGE COLLECTOR
+            // ட்ராக் எப்போது 'ended' ஆனாலும், மெமரியை காலியாக்கி நாற்காலியை ஃப்ரீ செய்யும்
+            setInterval(() => {
+                speakers.forEach(spk => {
+                    if (spk.track && spk.track.readyState === 'ended') {
+                        if (spk.trackId) connectedTracks.delete(spk.trackId);
+                        spk.trackId = null; spk.track = null; spk.pc = null;
+                        spk.analyser = null; spk.dataArray = null;
+                    }
+                });
+            }, 1000);
 
             setInterval(() => {
                 try {
@@ -217,26 +230,34 @@
                         const OrigPeerConnection = iframeWin.RTCPeerConnection;
                         iframeWin.RTCPeerConnection = function(...args) {
                             const pc = new OrigPeerConnection(...args);
+
+                            // ⚠️ மாற்றம் 3: PEER CONNECTION DROPPED MONITOR
+                            // முழு நெட்வொர்க் கட் ஆனால் அந்த PC-க்குச் சொந்தமான ஜோக்கர் ஸ்லாட் காலி செய்யப்படும்
+                            pc.addEventListener('connectionstatechange', () => {
+                                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                                    speakers.forEach(spk => {
+                                        if (spk.pc === pc) {
+                                            if (spk.trackId) connectedTracks.delete(spk.trackId);
+                                            spk.trackId = null; spk.track = null; spk.pc = null;
+                                            spk.analyser = null; spk.dataArray = null;
+                                        }
+                                    });
+                                }
+                            });
                             
                             pc.addEventListener('track', async (event) => {
                                 const track = event.track;
                                 if (track.kind !== 'audio') return;
-
-                                const streams = event.streams || [];
-                                const streamId = streams[0] ? streams[0].id : null;
-
-                                // BUG FIX 1: பழைய Track ID-க்கள் முற்றிலுமாக துடைக்கப்பட்டு சுத்திகரிக்கப்படுகிறது
                                 if (connectedTracks.has(track.id)) return;
 
-                                // BUG FIX 2: Stream ID-யை அடிப்படையாக வைத்து குறிப்பிட்ட ஜோக்கர் இருக்கை லாக் செய்யப்படுகிறது
-                                let availSpeaker = speakers.find(s => s.streamId === streamId);
-                                if (!availSpeaker) {
-                                    availSpeaker = speakers.find(s => s.trackId === null || s.streamId === null);
-                                }
+                                // ⚠️ மாற்றம் 4: EXACT MATCH FOR YOUR RULE
+                                // யார் வந்தாலும் காலியாக இருக்கும் (null) முதல் நாற்காலியை மட்டும் பிடிப்பார்கள்
+                                let availSpeaker = speakers.find(s => s.trackId === null);
 
                                 if (availSpeaker) {
                                     availSpeaker.trackId = track.id;
-                                    availSpeaker.streamId = streamId;
+                                    availSpeaker.track = track;
+                                    availSpeaker.pc = pc;
                                     connectedTracks.set(track.id, availSpeaker);
 
                                     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -258,7 +279,7 @@
                                     const chestRumble = audioCtx.createBiquadFilter();
                                     chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
 
-                                    // BUG FIX 3: இரண்டாவது ஜோக்கர் குரல் குறைபாட்டை நீக்கும் Master Gain Booster
+                                    // இரண்டாவது ஜோக்கரின் ஆடியோ வால்யூம் குறைபாட்டைச் சரி செய்யும் Master Gain
                                     const masterGain = audioCtx.createGain();
                                     masterGain.gain.value = availSpeaker.id === 'Guest' ? 2.5 : 1.8; 
 
@@ -268,13 +289,10 @@
                                     masterGain.connect(availSpeaker.analyser); 
                                     availSpeaker.analyser.connect(audioCtx.destination);
 
-                                    // Stream துண்டிக்கப்பட்டால் மெமரியை க்ளியர் செய்யும் Garbage Collection
-                                    track.onended = track.onmute = () => {
-                                        availSpeaker.trackId = null; 
-                                        availSpeaker.streamId = null;
-                                        availSpeaker.analyser = null; 
-                                        availSpeaker.dataArray = null;
-                                        connectedTracks.delete(track.id);
+                                    track.onended = () => {
+                                        if (availSpeaker.trackId) connectedTracks.delete(availSpeaker.trackId);
+                                        availSpeaker.trackId = null; availSpeaker.track = null; availSpeaker.pc = null;
+                                        availSpeaker.analyser = null; availSpeaker.dataArray = null;
                                     };
                                 }
                             });

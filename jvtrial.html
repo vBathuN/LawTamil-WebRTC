@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
     <meta charset="UTF-8">
-    <title>Joker Durbar - Pro Broadcast Overlay (Clean Slot Edition)</title>
+    <title>Joker Durbar - Pro Broadcast Overlay (Clean Slot & Bug Fixed Edition)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
@@ -24,8 +24,8 @@
            ========================================================= */
         .left-ad-slot {
             width: 33vw; height: 100vh;
-            background-color: transparent !important; /* முற்றிலும் காலியிடம் */
-            border-right: 6px solid #4285f4; /* நீங்கள் கேட்ட அசல் நீல நிறக் கோடு */
+            background-color: transparent !important; 
+            border-right: 6px solid #4285f4; 
             z-index: 30;
             position: relative;
         }
@@ -110,14 +110,14 @@
                 filterStyle: 'none', pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
-                isBlinking: false, analyser: null, dataArray: null, trackId: null
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, streamId: null
             },
             {
                 id: 'Guest', canvas: document.getElementById('stage-guest'), ctx: document.getElementById('stage-guest').getContext('2d'),
                 filterStyle: 'hue-rotate(140deg) saturate(1.4)', pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
                 currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
                 faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
-                isBlinking: false, analyser: null, dataArray: null, trackId: null
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, streamId: null
             }
         ];
 
@@ -174,10 +174,8 @@
     class TrueGranularEngine extends AudioWorkletProcessor {
         constructor() {
             super();
-            // கார்ட்டூன் குரல் துல்லியத்திற்காக GRAIN அளவு 256 ஆக குறைக்கப்பட்டுள்ளது
             this.GRAIN = 256; this.buffer = new Float32Array(this.GRAIN * 4);
             this.wPtr = 0; this.headA = { pos: 0, age: 0 }; this.headB = { pos: 0, age: this.GRAIN / 2 }; 
-            // சுருதி (Pitch) 1.58 ஆக உயர்த்தப்பட்டுள்ளது
             this.pitch = 1.75; 
         }
         getSample(ptr) {
@@ -219,38 +217,65 @@
                         const OrigPeerConnection = iframeWin.RTCPeerConnection;
                         iframeWin.RTCPeerConnection = function(...args) {
                             const pc = new OrigPeerConnection(...args);
+                            
                             pc.addEventListener('track', async (event) => {
                                 const track = event.track;
-                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
-                                    let availSpeaker = speakers.find(s => s.trackId === null);
-                                    if (availSpeaker) {
-                                        availSpeaker.trackId = track.id; connectedTracks.set(track.id, availSpeaker);
-                                        if (audioCtx.state === 'suspended') audioCtx.resume();
-                                        availSpeaker.analyser = audioCtx.createAnalyser();
-                                        availSpeaker.analyser.fftSize = 128; availSpeaker.analyser.smoothingTimeConstant = 0.3;
-                                        availSpeaker.dataArray = new Uint8Array(availSpeaker.analyser.frequencyBinCount);
+                                if (track.kind !== 'audio') return;
 
-                                        const cleanStream = new MediaStream([track]);
-                                        const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+                                const streams = event.streams || [];
+                                const streamId = streams[0] ? streams[0].id : null;
 
-                                        if (!workletPromise) {
-                                            const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
-                                            workletPromise = audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
-                                        }
-                                        await workletPromise;
+                                // BUG FIX 1: பழைய Track ID-க்கள் முற்றிலுமாக துடைக்கப்பட்டு சுத்திகரிக்கப்படுகிறது
+                                if (connectedTracks.has(track.id)) return;
 
-                                        const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
-                                        const chestRumble = audioCtx.createBiquadFilter();
-                                        chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+                                // BUG FIX 2: Stream ID-யை அடிப்படையாக வைத்து குறிப்பிட்ட ஜோக்கர் இருக்கை லாக் செய்யப்படுகிறது
+                                let availSpeaker = speakers.find(s => s.streamId === streamId);
+                                if (!availSpeaker) {
+                                    availSpeaker = speakers.find(s => s.trackId === null || s.streamId === null);
+                                }
 
-                                        rawMic.connect(chestRumble); chestRumble.connect(pitchConverter);
-                                        pitchConverter.connect(availSpeaker.analyser); availSpeaker.analyser.connect(audioCtx.destination);
+                                if (availSpeaker) {
+                                    availSpeaker.trackId = track.id;
+                                    availSpeaker.streamId = streamId;
+                                    connectedTracks.set(track.id, availSpeaker);
 
-                                        track.onended = () => {
-                                            availSpeaker.trackId = null; availSpeaker.analyser = null; availSpeaker.dataArray = null;
-                                            connectedTracks.delete(track.id);
-                                        };
+                                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                                    availSpeaker.analyser = audioCtx.createAnalyser();
+                                    availSpeaker.analyser.fftSize = 128; 
+                                    availSpeaker.analyser.smoothingTimeConstant = 0.3;
+                                    availSpeaker.dataArray = new Uint8Array(availSpeaker.analyser.frequencyBinCount);
+
+                                    const cleanStream = new MediaStream([track]);
+                                    const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+
+                                    if (!workletPromise) {
+                                        const blob = new Blob([pitchWorkletCode], { type: 'application/javascript' });
+                                        workletPromise = audioCtx.audioWorklet.addModule(URL.createObjectURL(blob));
                                     }
+                                    await workletPromise;
+
+                                    const pitchConverter = new AudioWorkletNode(audioCtx, 'joker-voice-engine');
+                                    const chestRumble = audioCtx.createBiquadFilter();
+                                    chestRumble.type = 'lowshelf'; chestRumble.frequency.value = 160; chestRumble.gain.value = 6.0; 
+
+                                    // BUG FIX 3: இரண்டாவது ஜோக்கர் குரல் குறைபாட்டை நீக்கும் Master Gain Booster
+                                    const masterGain = audioCtx.createGain();
+                                    masterGain.gain.value = availSpeaker.id === 'Guest' ? 2.5 : 1.8; 
+
+                                    rawMic.connect(chestRumble); 
+                                    chestRumble.connect(pitchConverter);
+                                    pitchConverter.connect(masterGain);
+                                    masterGain.connect(availSpeaker.analyser); 
+                                    availSpeaker.analyser.connect(audioCtx.destination);
+
+                                    // Stream துண்டிக்கப்பட்டால் மெமரியை க்ளியர் செய்யும் Garbage Collection
+                                    track.onended = track.onmute = () => {
+                                        availSpeaker.trackId = null; 
+                                        availSpeaker.streamId = null;
+                                        availSpeaker.analyser = null; 
+                                        availSpeaker.dataArray = null;
+                                        connectedTracks.delete(track.id);
+                                    };
                                 }
                             });
                             return pc;
@@ -285,9 +310,7 @@
                 let lookSideAngle = Math.sin(Date.now() * 0.002) * 2.5;
                 let glitchX = 0;
 
-                // =====================================================================
                 // TRUE EMOTION GATE
-                // =====================================================================
                 if (avgVol > 22) { 
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
                     spk.targetJaw = blendshapes.jawOpen * 25; 

@@ -53,7 +53,7 @@
             font-family: 'Tamil039'; font-weight: bold; font-size: 28px; word-spacing: -10px; color: #fff;
             transition: all 1.5s cubic-bezier(0.25, 1, 0.5, 1); text-decoration: none; 
             text-shadow: 0px 4px 10px rgba(0,0,0,0.9), 0px 0px 5px rgba(255,255,255,0.3);
-            display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden;
+            display: -webkit-box; -webkit-line-clamp: 11; -webkit-box-orient: vertical; overflow: hidden;
             line-height: 1.9; padding: 0 20px;
         }
 
@@ -100,7 +100,7 @@
         }
 
         .joker-canvas {
-            position: absolute; bottom: -20px; left: 50%;
+            position: absolute; bottom: -75px; left: 50%;
             transform-origin: bottom center; z-index: 10; will-change: transform;
         }
 
@@ -152,24 +152,15 @@
     <script>
         function processFeed(response) {
             var newsContainer = document.getElementById("adbreakingnews");
-            if (!response || !response.feed || !response.feed.entry) {
-                newsContainer.innerHTML = "<ul><li class='af_news active'><a href='#'>செய்திகள் ஏதுமில்லை</a></li></ul>";
-                return;
-            }
-            
-            // பிழையைத் தவிர்க்க: ஒற்றைப் பதிவாக இருந்தாலும் Array ஆக மாற்றிக்கொள்ளும் பாதுகாப்பு
-            var rawEntries = response.feed.entry;
-            var entries = Array.isArray(rawEntries) ? rawEntries : [rawEntries];
-
-            if (entries.length > 0) {
+            if (response && response.feed && response.feed.entry) {
+                var rawEntries = response.feed.entry;
+                var entries = Array.isArray(rawEntries) ? rawEntries : [rawEntries];
                 var newsList = "<ul>";
                 entries.forEach(function(entry) {
-                    var altLink = entry.link.find(l => l.rel === "alternate");
+                    var altLink = entry.link && entry.link.find(l => l.rel === "alternate");
                     var postLink = altLink ? altLink.href : "#";
-                    var titleText = (entry.title && entry.title.$t) ? entry.title.$t : "தலைப்பு இல்லை";
-                    
-                    // விடுபட்ட <a> டேக் சரியாக இணைக்கப்பட்டுள்ளது
-                    newsList += '<li class="af_news"><a href="' + postLink + '" target="_blank">' + titleText + "</a></li>";
+                    var title = entry.title ? entry.title.$t : "";
+                    newsList += '<li class="af_news"><a href="' + postLink + '" target="_blank">' + title + '</a></li>';
                 });
                 newsList += "</ul>";
                 newsContainer.innerHTML = newsList;
@@ -178,13 +169,11 @@
                 const af_boxes = document.querySelectorAll(".af_news");
                 if (af_boxes.length > 0) {
                     af_boxes[af_now].classList.add("active");
-                    if (af_boxes.length > 1) {
-                        setInterval(() => {
-                            af_boxes[af_now].classList.remove("active");
-                            af_now = (af_now + 1) % af_boxes.length;
-                            setTimeout(() => af_boxes[af_now].classList.add("active"), 500);
-                        }, 6000);
-                    }
+                    setInterval(() => {
+                        af_boxes[af_now].classList.remove("active");
+                        af_now = (af_now + 1) % af_boxes.length;
+                        setTimeout(() => af_boxes[af_now].classList.add("active"), 500);
+                    }, 6000);
                 }
             }
         }

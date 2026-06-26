@@ -82,6 +82,7 @@
             width: 29vw; height: 75vh; position: relative;
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
             transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: bottom center;
         }
 
         /* --- HOST ALONE STATE (ஹோஸ்ட் மட்டும் இருக்கும் போது) --- */
@@ -95,10 +96,11 @@
         .vtuber-pod.hidden-pod {
             display: none !important;
             opacity: 0; pointer-events: none;
+            transform-origin: bottom center !important;
         }
 
         .joker-canvas {
-            position: absolute; bottom: -45px; left: 50%;
+            position: absolute; bottom: -20px; left: 50%;
             transform-origin: bottom center; z-index: 10; will-change: transform;
         }
 

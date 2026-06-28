@@ -143,22 +143,19 @@
                 gap: 2vh;
             }
 
-            /* இரண்டு பேர் இருக்கும் போது (Host + Guest Stack) */
             .vtuber-pod {
                 width: 82vw !important;
                 height: 42vh !important;
                 top: 4vh; 
             }
 
-            /* ஹோஸ்ட் மட்டும் சிங்கிளாக இருக்கும் போது (Host Alone) */
             .vtuber-pod.alone-host {
                 width: 90vw !important;
                 height: 55vh !important;
-                transform: scale(1.22); /* கம்பீரமாகத் தெரிய */
-                top: 25vh; /* நீங்கள் கேட்டபடி இன்னும் கீழே இறக்கப்பட்டுள்ளது */
+                transform: scale(1.22);
+                top: 25vh; 
             }
 
-            /* நேம் பாட்ஜ் முழுமையாக மறைக்கப்படும் */
             .speaker-badge {
                 display: none !important;
             }
@@ -184,7 +181,8 @@
     </div>
 
     <div class="right-jokers-stage" id="stage-container">
-        <div class="vtuber-pod" id="pod-host">
+        <!-- மாற்றம் 1: HTML-லேயே alone-host நிரந்தரமாக்கப்பட்டது -->
+        <div class="vtuber-pod alone-host" id="pod-host">
             <canvas id="stage-host" class="joker-canvas" width="420" height="480"></canvas>
             <div class="speaker-badge badge-host">
                 <span class="dot" style="background:#ff1a1a;"></span> Mr.Jockey
@@ -499,7 +497,8 @@
                 }
             });
         };
-        window.addEventListener('load', bootVisualizer);
+        /* மாற்றம் 2: window.load நீக்கப்பட்டு DOMContentLoaded கொடுக்கப்பட்டுள்ளது */
+        document.addEventListener('DOMContentLoaded', bootVisualizer);
     </script>
 </body>
 </html>

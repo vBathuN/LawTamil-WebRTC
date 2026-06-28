@@ -127,11 +127,11 @@
             }
 
             .channel-title-corner {
-                top: 4vh;
+                top: 5vh;
                 right: auto;
                 left: 50%;
                 transform: translateX(-50%);
-                font-size: 4.5vw;
+                font-size: 5vw;
             }
 
             .right-jokers-stage {
@@ -140,29 +140,27 @@
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
-                gap: 5vh;
-                padding-bottom: 6vh;
+                gap: 2vh;
             }
 
+            /* இரண்டு பேர் இருக்கும் போது (Host + Guest Stack) */
             .vtuber-pod {
-                width: 80vw !important;
-                height: 38vh !important;
+                width: 82vw !important;
+                height: 42vh !important;
+                top: 4vh; 
             }
 
+            /* ஹோஸ்ட் மட்டும் சிங்கிளாக இருக்கும் போது (Host Alone) */
             .vtuber-pod.alone-host {
                 width: 90vw !important;
-                height: 60vh !important;
-                transform: scale(1.18);
+                height: 55vh !important;
+                transform: scale(1.22); /* கம்பீரமாகத் தெரிய */
+                top: 25vh; /* நீங்கள் கேட்டபடி இன்னும் கீழே இறக்கப்பட்டுள்ளது */
             }
 
+            /* நேம் பாட்ஜ் முழுமையாக மறைக்கப்படும் */
             .speaker-badge {
-                font-size: 4vw !important;
-                padding: 1.2vh 4vw !important;
-            }
-
-            .alone-host .speaker-badge {
-                font-size: 4.8vw !important;
-                padding: 1.5vh 5vw !important;
+                display: none !important;
             }
 
             .dot {

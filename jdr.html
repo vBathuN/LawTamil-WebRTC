@@ -431,8 +431,8 @@
 
                 if (avgVol > 22) { 
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
-                    spk.targetJaw = blendshapes.jawOpen * 25; 
-                    spk.targetSmile = blendshapes.mouthStretch * 15; 
+                    spk.targetJaw = blendshapes.jawOpen * 18; 
+                    spk.targetSmile = blendshapes.mouthStretch * 12; 
                     if (avgVol > 40) glitchX = (Math.random() - 0.5) * 6;
                 } else if (avgVol > 5) {
                     spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 0.9; 

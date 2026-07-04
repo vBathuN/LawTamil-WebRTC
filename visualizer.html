@@ -49,7 +49,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
         
-        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart`;
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
 
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 

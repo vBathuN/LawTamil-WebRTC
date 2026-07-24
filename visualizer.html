@@ -101,8 +101,25 @@
                                         const source = audioCtx.createMediaStreamSource(cleanStream);
                                         source.connect(analyser); 
                                     } catch(err) {}
+
+                                    // 🟢 1. டிராக் எண்ட் (Track Ended) ஆகும்போது பட்டியலிலிருந்து நீக்க
+                                    track.addEventListener('ended', () => {
+                                        connectedTracks.delete(track.id);
+                                    });
                                 }
                             });
+
+                            // 🟢 2. ஒட்டுமொத்த நெட்வொர்க் இணைப்பு துண்டிக்கப்படும்போது நீக்க
+                            pc.addEventListener('connectionstatechange', () => {
+                                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                                    pc.getReceivers().forEach(receiver => {
+                                        if (receiver.track) {
+                                            connectedTracks.delete(receiver.track.id);
+                                        }
+                                    });
+                                }
+                            });
+
                             return pc;
                         };
                         
@@ -137,7 +154,6 @@
                 
                 let val = dataArray[dIdx] || 0;
                 
-                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
                 val = Math.max(0, val - 82); 
                 
                 bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
@@ -146,16 +162,14 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            // 🟢 திருத்தப்பட்ட தர்க்கம் (Connection Indicator Logic)
-
-            // 1. Push Link இணைப்பு வந்துவிட்டாலே முக்கால் வளையம் நிரந்தரமாகத் தெரியும்
+            // Push Link இணைப்பு வந்துவிட்டாலே முக்கால் வளையம் நிரந்தரமாகத் தெரியும்
             if (connectedTracks.size > 0) {
                 vContainer.style.opacity = "1"; 
             } else {
                 vContainer.style.opacity = "0"; 
             }
 
-            // 2. சத்தம் வரும்போது Glow (வெளிச்சம்) மட்டும் தோன்றும்
+            // சத்தம் வரும்போது Glow (வெளிச்சம்) மட்டும் தோன்றும்
             if (avgVol > 16) { 
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {

@@ -15,13 +15,13 @@
         }
         
         #justice-glow {
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
+            position: absolute; top: 33.2%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
             clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
         
         #visualizer { 
-            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            position: absolute; top: 33.2%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
             opacity: 0; 
             transition: opacity 0.4s ease-in-out; 
         }
@@ -54,7 +54,6 @@
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
-        let lastActiveTime = Date.now(); 
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -147,16 +146,20 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
+            // 🟢 திருத்தப்பட்ட தர்க்கம் (Connection Indicator Logic)
+
+            // 1. Push Link இணைப்பு வந்துவிட்டாலே முக்கால் வளையம் நிரந்தரமாகத் தெரியும்
+            if (connectedTracks.size > 0) {
+                vContainer.style.opacity = "1"; 
+            } else {
+                vContainer.style.opacity = "0"; 
+            }
+
+            // 2. சத்தம் வரும்போது Glow (வெளிச்சம்) மட்டும் தோன்றும்
             if (avgVol > 16) { 
-                lastActiveTime = Date.now(); 
-                vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
-                if (Date.now() - lastActiveTime > 2000) {
-                    vContainer.style.opacity = "0";
-                    if (glowDiv) glowDiv.style.opacity = "0";
-                }
+                if (glowDiv) glowDiv.style.opacity = "0";
             }
         };
 

@@ -54,7 +54,6 @@
         const ARC_RADIUS = 30; 
         let analyser, dataArray, vBars = []; 
         let audioCtx; 
-        let lastActiveTime = Date.now(); 
         
         const vContainer = document.getElementById('visualizer'); 
         const glowDiv = document.getElementById('justice-glow');
@@ -147,16 +146,20 @@
             
             const avgVol = totalVolume / vBars.length;
 
-            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
+            // 🟢 திருத்தப்பட்ட தர்க்கம் (Connection Indicator Logic)
+
+            // 1. Push Link இணைப்பு வந்துவிட்டாலே முக்கால் வளையம் நிரந்தரமாகத் தெரியும்
+            if (connectedTracks.size > 0) {
+                vContainer.style.opacity = "1"; 
+            } else {
+                vContainer.style.opacity = "0"; 
+            }
+
+            // 2. சத்தம் வரும்போது Glow (வெளிச்சம்) மட்டும் தோன்றும்
             if (avgVol > 16) { 
-                lastActiveTime = Date.now(); 
-                vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
-                if (Date.now() - lastActiveTime > 2000) {
-                    vContainer.style.opacity = "0";
-                    if (glowDiv) glowDiv.style.opacity = "0";
-                }
+                if (glowDiv) glowDiv.style.opacity = "0";
             }
         };
 

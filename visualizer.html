@@ -153,7 +153,7 @@
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
-                if (Date.now() - lastActiveTime > 3600000) {
+                if (Date.now() - lastActiveTime > 4000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }

@@ -503,8 +503,8 @@
                         const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
                         
                         // 🚨 புதிய படத்திற்கான வாய் அளவுகள் மாற்றப்பட்டுள்ளன 🚨
-                        const sTop = natH * 0.33; // பழைய அளவு: 0.585
-                        const sBot = natH * 0.38; // பழைய அளவு: 0.625
+                        const sTop = natH * 0.35; // பழைய அளவு: 0.585
+                        const sBot = natH * 0.40; // பழைய அளவு: 0.625
                         const sRubberH = sBot - sTop; 
                         
                         const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + spk.currJaw; 
@@ -518,12 +518,20 @@
                     }
                     spk.ctx.restore(); 
 
-                    // 🚨 கண் சிமிட்டும் அளவுகள் தேவைப்பட்டால் இங்கு மாற்றிக்கொள்ளலாம் 🚨
+                    // 🚨 மூட்டைப் பூச்சிக்கான புதிய கண் சிமிட்டும் அளவுகள் 🚨
                     if (spk.isBlinking) {
-                        spk.ctx.fillStyle = "#000000"; 
-                        spk.ctx.beginPath(); spk.ctx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); spk.ctx.fill();
+                        spk.ctx.fillStyle = "#1a1a1a"; 
+                        
+                        // இடது கண்
+                        spk.ctx.beginPath(); 
+                        spk.ctx.ellipse(175, 135, 22, 12, -0.2, 0, Math.PI*2); 
+                        spk.ctx.fill();
+                        
+                        // வலது கண்
                         ctx = spk.ctx;
-                        ctx.beginPath(); ctx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); ctx.fill();
+                        ctx.beginPath(); 
+                        ctx.ellipse(245, 135, 22, 12, 0.2, 0, Math.PI*2); 
+                        ctx.fill();
                     }
                 }
             });

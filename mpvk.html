@@ -1,397 +1,542 @@
 <!DOCTYPE html>
 <html lang="ta">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>மூட்டைப் பூச்சி WebRTC Voice Overlay</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden}
-body{
-  background-image:url("https://ul.lawtamil.in/bg.jpg?v=1.1");
-  background-size:cover;background-position:center;
-  color:#fff;font-family:"Segoe UI",Tahoma,sans-serif;
-}
-.stage{
-  width:100vw;height:100vh;position:relative;overflow:hidden;
-  display:flex;align-items:flex-end;justify-content:center;
-}
-.character{
-  position:absolute;left:50%;bottom:-1vh;
-  width:min(72vw,860px);
-  height:auto;
-  aspect-ratio:1024/1215;
-  transform:translateX(-50%);
-  transform-origin:50% 100%;
-  will-change:transform;
-}
-#actorCanvas{display:block;width:100%;height:100%}
-.badge{
-  position:absolute;left:50%;bottom:1.5vh;transform:translateX(-50%);
-  padding:.75rem 1.2rem;border-radius:12px;
-  background:rgba(15,23,42,.92);border:2px solid rgba(255,255,255,.85);
-  border-bottom:6px solid #b90000;box-shadow:0 10px 30px rgba(0,0,0,.55);
-  font-size:clamp(18px,2.1vw,30px);font-weight:900;white-space:nowrap;
-  z-index:20;
-}
-.badge .dot{
-  display:inline-block;width:.8em;height:.8em;border-radius:50%;
-  background:#ff1a1a;margin-right:.45em;vertical-align:middle;
-}
-.status{
-  position:absolute;top:1rem;left:1rem;z-index:30;
-  padding:.45rem .7rem;border-radius:8px;
-  background:rgba(0,0,0,.55);font-size:12px;color:#ddd;
-}
-@media (orientation:portrait){
-  .character{width:min(92vw,760px);bottom:0}
-  .badge{display:none}
-}
-</style>
+    <meta charset="UTF-8">
+    <title>Joker Durbar - Pro Broadcast Overlay (Director Controlled Auto-Queue)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/latest/TweenMax.min.js"></script>
+
+    <style>
+        /* --- RESET & STRICT ZERO MARGIN POLICY --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @font-face {
+          font-family: 'Tamil039';
+          src: url('https://cdn.lawtamil.in/font/Tamil039.woff2') format('woff2'),
+               url('https://cdn.lawtamil.in/font/Tamil039.woff') format('woff');
+          font-weight: bold; font-style: normal; font-display: swap; 
+        }
+
+        body { 
+            background-image: url("https://ul.lawtamil.in/bg.jpg?v=1.1") !important; overflow: hidden; 
+            height: 100vh; width: 100vw;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+        }
+
+        /* =========================================================
+           1. LEFT SIDE: TICKER WIDGET
+           ========================================================= */
+        .left-ad-slot {
+            width: 33vw; height: 100vh;
+            background-color: transparent !important;
+            border-right: 6px solid #4285f4;
+            z-index: 30; position: relative;
+        }
+
+        .breaking-container {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; background: transparent;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6), inset 0 0 15px rgba(255, 240, 0, 0.05);
+            text-align: center; height: 720px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
+        #adbreakingnews { width: 100%; padding: 15px 10px 0 10px; height: 100%; overflow-y: auto; }
+
+        /* =========================================================
+           2. TOP RIGHT CORNER: BRAND LOGO
+           ========================================================= */
+        .channel-title-corner {
+            position: absolute; top: 5vh; right: 2.8vw; display: flex;
+            border-radius: 8px; overflow: hidden; font-size: 2.2vw; font-weight: 900; letter-spacing: 1px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 40; border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        .logo-joker { background-color: #b90000; color: white; padding: 0.8vh 0.8vw; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .logo-durbar { background-color: #004a00; color: white; padding: 0.8vh 0.8vw; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
+
+        /* =========================================================
+           3. RIGHT SIDE: DUAL JOKER STAGE & DYNAMIC STYLING
+           ========================================================= */
+        .right-jokers-stage {
+            width: 67vw; height: 100vh;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 2vh; gap: 2vw; position: relative;
+            transition: all 0.6s ease-in-out;
+        }
+
+        /* --- அசல் அளவுகள் மாறாத VTuber Pod --- */
+        .vtuber-pod {
+            width: 29vw; height: 75vh; position: relative;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: bottom center;
+        }
+
+        /* --- HOST ALONE STATE --- */
+        .vtuber-pod.alone-host {
+            width: 45vw !important;
+            height: 85vh !important;
+            transform: scale(1.08);
+        }
+
+        .vtuber-pod.hidden-pod {
+            display: none !important;
+            opacity: 0; pointer-events: none;
+            transform-origin: bottom center !important;
+        }
+
+        /* =========================================================
+           ✨ புது வரவு 1: நியான் சைபர்பங்க் பார்டர்கள் (Cyberpunk Neon Pods)
+           ========================================================= */
+        .cyber-pod-frame {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(0, 0, 0, 0.65) 100%);
+            clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px));
+        }
+
+        /* Host Pod Neon Red */
+        #pod-host .cyber-pod-frame {
+            border: 2px solid rgba(255, 26, 26, 0.4);
+            box-shadow: inset 0 0 25px rgba(255, 26, 26, 0.25), 0 0 20px rgba(255, 26, 26, 0.3);
+            border-top: 4px solid #ff1a1a;
+            border-bottom: 4px solid #ff1a1a;
+        }
+
+        /* Guest Pod Neon Green */
+        #pod-guest .cyber-pod-frame {
+            border: 2px solid rgba(0, 255, 102, 0.4);
+            box-shadow: inset 0 0 25px rgba(0, 255, 102, 0.25), 0 0 20px rgba(0, 255, 102, 0.3);
+            border-top: 4px solid #00ff66;
+            border-bottom: 4px solid #00ff66;
+        }
+
+        /* =========================================================
+           ✨ புது வரவு 2: ஹாலோகிராம் மேடைத் தளம் (Holographic Floor Grid)
+           ========================================================= */
+        .holo-floor-canvas {
+            position: absolute;
+            bottom: 10px; left: 50%;
+            transform: translateX(-50%);
+            width: 90%; height: 60px;
+            z-index: 6; pointer-events: none;
+            opacity: 0.85;
+        }
+
+        /* --- அசல் Joker Canvas (பொசிஷன் மாறவில்லை) --- */
+        .joker-canvas {
+            position: absolute; bottom: -75px; left: 50%;
+            transform-origin: bottom center; z-index: 10; will-change: transform;
+        }
+
+        .speaker-badge {
+            position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: max-content; background: #0f172a; border: 3px solid white;
+            padding: 1.5vh 1.5vw; border-radius: 12px; color: white;
+            font-size: 2vw; font-weight: 900; letter-spacing: 0.5px;
+            display: flex; justify-content: center; align-items: center; gap: 0.8vw;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 20;
+            transition: all 0.5s ease;
+        }
+        .alone-host .speaker-badge { font-size: 2.3vw; padding: 1.8vh 2vw; }
+
+        .badge-host { border-bottom: 7px solid #ff1a1a; }
+        .badge-guest { border-bottom: 7px solid #00ff66; }
+        .dot { width: 1.2vw; height: 1.2vw; max-width: 18px; max-height: 18px; border-radius: 50%; }
+
+        /* =========================================================
+           4. OBS VERTICAL CANVAS (9:16) RESPONSIVE RULES
+           ========================================================= */
+        @media (orientation: portrait) {
+            .left-ad-slot { display: none !important; }
+            .channel-title-corner {
+                top: 5vh; right: auto; left: 50%;
+                transform: translateX(-50%); font-size: 5vw;
+            }
+            .right-jokers-stage {
+                width: 100vw !important; height: 100vh !important;
+                flex-direction: column; justify-content: center; align-items: center; gap: 2vh;
+            }
+            .vtuber-pod { width: 82vw !important; height: 42vh !important; top: 4vh; }
+            .vtuber-pod.alone-host {
+                width: 90vw !important; height: 55vh !important;
+                transform: scale(1.22); top: 25vh; 
+            }
+            .speaker-badge { display: none !important; }
+            .dot { width: 2.8vw; height: 2.8vw; }
+        }
+            .alone-host .cyber-pod-frame,
+            .alone-host .holo-floor-canvas {
+                display: none !important;
+                opacity: 0;
+         }
+    </style>
 </head>
 <body>
 
-<div class="stage">
-  <div class="status" id="status">WebRTC audio: waiting…</div>
-  <div class="character">
-    <canvas id="actorCanvas" width="1024" height="1215"></canvas>
-  </div>
-  <div class="badge"><span class="dot"></span>கருத்து கந்தன்</div>
-</div>
+    <div class="left-ad-slot">
+        <div class="breaking-container">
+            <div id='adbreakingnews'>
+                
+            </div>
+        </div>
+    </div>
 
-<iframe id="rtcTransport"
-  allow="autoplay; microphone"
-  style="position:absolute;width:1px;height:1px;opacity:.01;pointer-events:none;border:0"
-  title="WebRTC transport"></iframe>
+    <div class="channel-title-corner">
+        <div class="logo-joker">மூட்டைப் பூச்சி</div>
+        <div class="logo-durbar">வெற்றிக் கழகம்</div>
+    </div>
 
-<script>
-(() => {
-  "use strict";
+    <div class="right-jokers-stage" id="stage-container">
+        <div class="vtuber-pod alone-host" id="pod-host">
+            <div class="cyber-pod-frame"></div>
+            <canvas id="holo-host" class="holo-floor-canvas" width="300" height="60"></canvas>
 
-  /* ============================================================
-     FILES
-     ------------------------------------------------------------
-     Put these two PNGs beside this HTML file:
-       mpvk.png  = full character + chair
-       mpvk1.png = head/face layer only
-     Both uploaded images are 1024 × 1215 RGBA PNGs.
-     mpvk1's visible head ends around source Y = 547.
-     ============================================================ */
-  const BODY_SRC = "./mpvk.png";
-  const HEAD_SRC = "./mpvk1.png";
+            <canvas id="stage-host" class="joker-canvas" width="420" height="480"></canvas>
+            <div class="speaker-badge badge-host">
+                <span class="dot" style="background:#ff1a1a;"></span> கருத்து கந்தன்
+            </div>
+        </div>
 
-  const canvas = document.getElementById("actorCanvas");
-  const ctx = canvas.getContext("2d", { alpha:true });
-  const statusEl = document.getElementById("status");
+        <div class="vtuber-pod hidden-pod" id="pod-guest">
+            <div class="cyber-pod-frame"></div>
+            <canvas id="holo-guest" class="holo-floor-canvas" width="300" height="60"></canvas>
 
-  const bodyImg = new Image();
-  const headImg = new Image();
+            <canvas id="stage-guest" class="joker-canvas" width="420" height="480"></canvas>
+            <div class="speaker-badge badge-guest">
+                <span class="dot" style="background:#00ff66;"></span> முட்டு முருகன்
+            </div>
+        </div>
+    </div>
 
-  let audioCtx = null;
-  let analyser = null;
-  let timeData = null;
-  let freqData = null;
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
-  const state = {
-    jaw: 0,
-    targetJaw: 0,
-    blink: 0,
-    blinkTarget: 0,
-    nextBlink: 0,
-    speaking: false,
-    lastAudio: 0,
-    audioLevel: 0
-  };
+        const vdoTransport = document.createElement('iframe');
+        vdoTransport.allow = "autoplay; microphone";
+        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        document.body.appendChild(vdoTransport);
 
-  // ---- Source coordinates measured from the supplied 1024×1215 artwork ----
-  // The head-only PNG visibly occupies Y ≈ 0..547.
-  const SRC_W = 1024;
-  const SRC_H = 1215;
+        let audioCtx; 
 
-  // Head / eye / mouth geometry for mpvk1.png.
-  const HEAD_BOTTOM = 548;
-  const JAW_PIVOT_Y = 405;     // begins moving around the mouth/jaw
-  const JAW_MAX_OPEN = 34;     // maximum downward movement in source pixels
-  const JAW_MAX_STRETCH = 0.20;
-  const EYE_L = { x: 430, y: 355, rx: 52, ry: 31, rot: 0.08 };
-  const EYE_R = { x: 600, y: 355, rx: 52, ry: 31, rot:-0.08 };
-
-  function load(img, src){
-    return new Promise((resolve,reject)=>{
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  /*
-   * Remove the head from the full-body base by using the alpha of
-   * mpvk1.png. This prevents a "ghost jaw" from remaining underneath
-   * the animated head.
-   */
-  function drawBodyWithoutHead(){
-    ctx.save();
-    ctx.globalCompositeOperation = "source-over";
-    ctx.drawImage(bodyImg, 0, 0, SRC_W, SRC_H);
-
-    // Erase only pixels occupied by the head-layer artwork.
-    // This keeps the chair visible around the insect head.
-    const mask = document.createElement("canvas");
-    mask.width = SRC_W; mask.height = SRC_H;
-    const mctx = mask.getContext("2d", { willReadFrequently:true });
-    mctx.drawImage(headImg,0,0,SRC_W,SRC_H);
-
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.drawImage(mask,0,0);
-    ctx.restore();
-  }
-
-  function drawHead(){
-    const jaw = state.jaw;
-    const lowerH = HEAD_BOTTOM - JAW_PIVOT_Y;
-    const scaleY = 1 + (jaw / JAW_MAX_OPEN) * JAW_MAX_STRETCH;
-
-    // Upper head stays completely stable.
-    ctx.drawImage(
-      headImg,
-      0, 0, SRC_W, JAW_PIVOT_Y,
-      0, 0, SRC_W, JAW_PIVOT_Y
-    );
-
-    // Lower mouth/jaw section stretches downward.
-    const dstH = lowerH * scaleY;
-    ctx.drawImage(
-      headImg,
-      0, JAW_PIVOT_Y, SRC_W, lowerH,
-      0, JAW_PIVOT_Y, SRC_W, dstH
-    );
-
-    /*
-     * Extra controlled jaw drop. The mouth in the source image is already
-     * slightly open, so a modest vertical move looks more natural than
-     * a huge rubber-mouth deformation.
-     */
-    if (jaw > 2) {
-      const pull = Math.min(jaw * 0.28, 10);
-      ctx.save();
-      ctx.globalAlpha = 0.18;
-      ctx.translate(0, pull);
-      ctx.drawImage(
-        headImg,
-        0, JAW_PIVOT_Y + 12, SRC_W, HEAD_BOTTOM - (JAW_PIVOT_Y + 12),
-        0, JAW_PIVOT_Y + 12, SRC_W, HEAD_BOTTOM - (JAW_PIVOT_Y + 12)
-      );
-      ctx.restore();
-    }
-  }
-
-  function drawBlink(){
-    if(state.blink <= 0.01) return;
-
-    const k = state.blink;
-    ctx.save();
-
-    // Warm/dark chitin-like eyelids, placed over the real eye geometry.
-    ctx.fillStyle = `rgba(62,25,5,${0.96*k})`;
-    ctx.strokeStyle = `rgba(170,92,28,${0.8*k})`;
-    ctx.lineWidth = 5;
-
-    for(const e of [EYE_L,EYE_R]){
-      ctx.save();
-      ctx.translate(e.x,e.y);
-      ctx.rotate(e.rot);
-
-      ctx.beginPath();
-      ctx.ellipse(0,0,e.rx,e.ry,0,0,Math.PI*2);
-      ctx.fill();
-
-      // Small curved highlight/eyelid seam so the blink reads as a closing eye.
-      ctx.beginPath();
-      ctx.moveTo(-e.rx*0.72,0);
-      ctx.quadraticCurveTo(0,e.ry*0.20,e.rx*0.72,0);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-    ctx.restore();
-  }
-
-  function scheduleBlink(){
-    const delay = 2200 + Math.random()*4200;
-    setTimeout(() => {
-      // Fast close, brief closed state, quick reopen.
-      state.blinkTarget = 1;
-      setTimeout(() => state.blinkTarget = 0, 110);
-      scheduleBlink();
-    }, delay);
-  }
-
-  /*
-   * Better audio analysis:
-   * - time-domain RMS catches speech consistently
-   * - low/mid frequency energy helps distinguish vowels
-   * - smoothing prevents choppy one-frame jaw movement
-   */
-  function readAudio(){
-    if(!analyser || !timeData || !freqData) return 0;
-
-    analyser.getByteTimeDomainData(timeData);
-    analyser.getByteFrequencyData(freqData);
-
-    let sum = 0;
-    for(let i=0;i<timeData.length;i++){
-      const v = (timeData[i]-128)/128;
-      sum += v*v;
-    }
-    const rms = Math.sqrt(sum/timeData.length);
-
-    let low=0, mid=0;
-    const n=freqData.length;
-    for(let i=0;i<n;i++){
-      const v=freqData[i]/255;
-      if(i < n*0.18) low += v;
-      else if(i < n*0.55) mid += v;
-    }
-    low /= Math.max(1,n*0.18);
-    mid /= Math.max(1,n*0.37);
-
-    // Speech energy model; intentionally capped because the image mouth
-    // should remain believable, not open to an exaggerated cartoon jaw.
-    const speech = Math.min(1, rms*4.4 + low*0.38 + mid*0.25);
-    return speech;
-  }
-
-  function attachRemoteAudio(track){
-    try{
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if(audioCtx.state === "suspended") audioCtx.resume();
-
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.72;
-      timeData = new Uint8Array(analyser.fftSize);
-      freqData = new Uint8Array(analyser.frequencyBinCount);
-
-      const stream = new MediaStream([track]);
-      const source = audioCtx.createMediaStreamSource(stream);
-
-      // One analyser branch for lipsync + one audible branch for playback.
-      source.connect(analyser);
-      analyser.connect(audioCtx.destination);
-
-      statusEl.textContent = "WebRTC audio: connected";
-      statusEl.style.color = "#9cff9c";
-    }catch(err){
-      console.error("Audio attach failed:", err);
-      statusEl.textContent = "WebRTC audio: analyser error";
-    }
-  }
-
-  function handleRemoteTrack(track){
-    if(track.kind !== "audio") return;
-    attachRemoteAudio(track);
-  }
-
-  /*
-   * Hook the same-origin VDO.Ninja/WebRTC iframe used by your original
-   * page. This keeps the existing room parameter behaviour.
-   */
-  function bootWebRTC(){
-    const params = new URLSearchParams(location.search);
-    const room = params.get("room") || "JurisprudenceTamil";
-
-    const rtcFrame = document.getElementById("rtcTransport");
-    rtcFrame.src =
-      `./index.html?scene&room=${encodeURIComponent(room)}&autostart&stereo&proaudio&vol=0`;
-
-    const timer = setInterval(() => {
-      try{
-        const win = rtcFrame.contentWindow;
-        if(!win || !win.RTCPeerConnection || win.__mpvkHooked) return;
-
-        const OriginalPC = win.RTCPeerConnection;
-
-        win.RTCPeerConnection = function(...args){
-          const pc = new OriginalPC(...args);
-
-          pc.addEventListener("track", ev => {
-            if(ev.track && ev.track.kind === "audio"){
-              handleRemoteTrack(ev.track);
+        const speakers = [
+            {
+                id: 'Host', pod: document.getElementById('pod-host'), canvas: document.getElementById('stage-host'), ctx: document.getElementById('stage-host').getContext('2d'),
+                filterStyle: 'none', pColor: '#ff1a1a', sColor: '#ff4d4d', wColor1: '#9900cc', wColor2: '#cc33ff',
+                currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
+                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, track: null, pc: null
+            },
+            {
+                id: 'Guest', pod: document.getElementById('pod-guest'), canvas: document.getElementById('stage-guest'), ctx: document.getElementById('stage-guest').getContext('2d'),
+                filterStyle: 'hue-rotate(140deg) saturate(1.4)', pColor: '#00ff66', sColor: '#33ff88', wColor1: '#00e5ff', wColor2: '#0088ff',
+                currJaw: 0, targetJaw: 0, currSmile: 0, targetSmile: 0, 
+                faceAlpha: 0.85, targetFaceAlpha: 0, lastActiveTime: Date.now() + 1500,
+                isBlinking: false, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             }
-          });
+        ];
 
-          pc.addEventListener("connectionstatechange", () => {
-            if(["disconnected","failed","closed"].includes(pc.connectionState)){
-              statusEl.textContent = "WebRTC audio: disconnected";
-              statusEl.style.color = "#ffb0b0";
+        const bgImg = new Image(); const fgImg = new Image();
+        function loadWithFallback(imgObj, srcList) {
+            let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
+            imgObj.src = srcList[0];
+        }
+        
+        // 🚨 JPG படங்கள் சேர்க்கப்பட்டுள்ளன 🚨
+        loadWithFallback(bgImg, ['./mpvk.jpg', './mpvk.png', './mpvk.PNG', './mpvk.JPG']);
+        loadWithFallback(fgImg, ['./mpvk1.jpg', './mpvk1.png', './mpvk1.PNG', './mpvk1.JPG']);
+
+        let contourNormals = []; let contourScanned = false;
+        function safeScanContour() {
+            if (contourScanned || !fgImg.complete || fgImg.naturalWidth === 0) return;
+            try {
+                const off = document.createElement('canvas'); off.width = 420; off.height = 480; 
+                const octx = off.getContext('2d', { willReadFrequently: true });
+                octx.drawImage(fgImg, 0, 0, fgImg.naturalWidth, fgImg.naturalHeight, 60, 40, 300, 340);
+                const data = octx.getImageData(0, 0, 420, 480).data;
+                const cx = 210, cy = 210; const rays = 75; contourNormals = [];
+                for (let i = 0; i < rays; i++) {
+                    const angle = (i / rays) * (Math.PI * 2);
+                    if (angle > Math.PI * 0.35 && angle < Math.PI * 0.65) continue;
+                    const nx = Math.cos(angle); const ny = Math.sin(angle);
+                    for (let r = 165; r > 15; r--) {
+                        const px = Math.round(cx + nx * r); const py = Math.round(cy + ny * r);
+                        if (px >= 0 && px < 420 && py >= 0 && py < 480) {
+                            if (data[(py * 420 + px) * 4 + 3] > 40) { contourNormals.push({ x: px, y: py, nx: nx, ny: ny }); break; }
+                        }
+                    }
+                }
+                contourScanned = true;
+            } catch (e) { contourScanned = true; }
+        }
+
+        const AudioBlendshapeNet = {
+            predict: function(fft) {
+                let x = []; for(let i=0; i<16; i++) { x[i] = Math.max(0, (fft[i] || 0) - 78) / 177; }
+                const f1Vowel = (x[1]*1.0 + x[2]*1.5 + x[3]*1.8 + x[4]*1.2 + x[5]*0.7) / 6.2;
+                const f2Sibilant = (x[9]*0.8 + x[11]*1.4 + x[13]*1.7 + x[15]*1.1) / 5.0;
+                let jawOpen = Math.min(1.0, Math.max(0.0, (f1Vowel * 1.7) - 0.05));
+                let mouthStretch = Math.min(1.0, Math.max(0.0, (f2Sibilant * 1.6) - (f1Vowel * 0.4)));
+                return { jawOpen, mouthStretch };
             }
-          });
-
-          return pc;
         };
 
-        win.RTCPeerConnection.prototype = OriginalPC.prototype;
-        Object.assign(win.RTCPeerConnection, OriginalPC);
-        win.__mpvkHooked = true;
-        clearInterval(timer);
-      }catch(err){
-        // Same-origin access may take a moment while iframe loads.
-      }
-    }, 250);
-  }
+        function scheduleBlink(spk) {
+            spk.isBlinking = true; setTimeout(() => { spk.isBlinking = false; }, 120);
+            setTimeout(() => scheduleBlink(spk), Math.random() * 3500 + 2000);
+        }
+        speakers.forEach(spk => scheduleBlink(spk));
 
-  function render(now){
-    requestAnimationFrame(render);
+        const connectedTracks = new Map();
+        const waitingQueue = []; 
 
-    // Smooth animation values.
-    state.jaw += (state.targetJaw - state.jaw) * 0.24;
-    state.blink += (state.blinkTarget - state.blink) * 0.60;
+        function updateStageLayout() {
+            const activeGuests = speakers[1].trackId !== null;
+            if (!activeGuests) {
+                speakers[0].pod.classList.add('alone-host');
+                speakers[1].pod.classList.add('hidden-pod');
+            } else {
+                speakers[0].pod.classList.remove('alone-host');
+                speakers[1].pod.classList.remove('hidden-pod');
+            }
+        }
 
-    ctx.clearRect(0,0,SRC_W,SRC_H);
+        function assignTrackToSpeaker(track, pc) {
+            let availSpeaker = speakers.find(s => s.trackId === null);
+            if (!availSpeaker) return false;
 
-    if(bodyImg.complete && headImg.complete){
-      drawBodyWithoutHead();
-      drawHead();
-      drawBlink();
-    }
+            availSpeaker.trackId = track.id;
+            availSpeaker.track = track;
+            availSpeaker.pc = pc;
+            connectedTracks.set(track.id, availSpeaker);
 
-    const speech = readAudio();
-    state.audioLevel += (speech - state.audioLevel) * 0.22;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            availSpeaker.analyser = audioCtx.createAnalyser();
+            availSpeaker.analyser.fftSize = 128; 
+            availSpeaker.analyser.smoothingTimeConstant = 0.3;
+            availSpeaker.dataArray = new Uint8Array(availSpeaker.analyser.frequencyBinCount);
 
-    const talking = state.audioLevel > 0.07;
-    state.speaking = talking;
+            const cleanStream = new MediaStream([track]);
+            const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+            rawMic.connect(availSpeaker.analyser); 
+            availSpeaker.analyser.connect(audioCtx.destination);
 
-    if(talking){
-      // Natural variation: jaw follows speech intensity but never snaps.
-      const variation = 0.82 + 0.18*Math.sin(now*0.021);
-      state.targetJaw = Math.min(JAW_MAX_OPEN, state.audioLevel * 42 * variation);
-      state.lastAudio = now;
-    }else{
-      // Close gently after speech.
-      state.targetJaw = Math.max(0, state.targetJaw - 1.6);
-    }
-  }
+            updateStageLayout();
 
-  Promise.all([load(bodyImg,BODY_SRC),load(headImg,HEAD_SRC)])
-    .then(() => {
-      // Sanity check: the supplied files should be 1024×1215 RGBA images.
-      if(bodyImg.naturalWidth !== 1024 || bodyImg.naturalHeight !== 1215 ||
-         headImg.naturalWidth !== 1024 || headImg.naturalHeight !== 1215){
-        console.warn("Unexpected MPVK image dimensions:",
-          bodyImg.naturalWidth,bodyImg.naturalHeight,
-          headImg.naturalWidth,headImg.naturalHeight);
-      }
-      scheduleBlink();
-      bootWebRTC();
-      requestAnimationFrame(render);
-    })
-    .catch(err => {
-      console.error(err);
-      statusEl.textContent = "mpvk.png / mpvk1.png load failed";
-      statusEl.style.color = "#ffb0b0";
-    });
+            track.onended = () => { handleTrackDisconnect(availSpeaker); };
+            return true;
+        }
 
-})();
-</script>
+        function handleTrackDisconnect(spk) {
+            if (spk.trackId) connectedTracks.delete(spk.trackId);
+            spk.trackId = null; spk.track = null; spk.pc = null;
+            spk.analyser = null; spk.dataArray = null;
+
+            if (waitingQueue.length > 0) {
+                const nextItem = waitingQueue.shift();
+                assignTrackToSpeaker(nextItem.track, nextItem.pc);
+            } else {
+                updateStageLayout();
+            }
+        }
+
+        function bootVisualizer() {
+            if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            updateStageLayout();
+
+            setInterval(() => {
+                speakers.forEach(spk => {
+                    if (spk.track && spk.track.readyState === 'ended') { handleTrackDisconnect(spk); }
+                });
+            }, 1000);
+
+            setInterval(() => {
+                try {
+                    const iframeWin = vdoTransport.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+
+                            pc.addEventListener('connectionstatechange', () => {
+                                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                                    speakers.forEach(spk => { if (spk.pc === pc) handleTrackDisconnect(spk); });
+                                    for (let i = waitingQueue.length - 1; i >= 0; i--) {
+                                        if (waitingQueue[i].pc === pc) waitingQueue.splice(i, 1);
+                                    }
+                                }
+                            });
+                            
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind !== 'audio') return;
+                                if (connectedTracks.has(track.id)) return;
+
+                                const assigned = assignTrackToSpeaker(track, pc);
+                                if (!assigned) {
+                                    waitingQueue.push({ track: track, pc: pc });
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
+
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
+            renderTheatre();
+        }
+
+        const holoHostCanvas = document.getElementById('holo-host');
+        const holoHostCtx = holoHostCanvas.getContext('2d');
+        const holoGuestCanvas = document.getElementById('holo-guest');
+        const holoGuestCtx = holoGuestCanvas.getContext('2d');
+
+        function renderHologramFloor(ctx, color, vol) {
+            ctx.clearRect(0, 0, 300, 60);
+            const cx = 150, cy = 30;
+            const time = Date.now() * 0.003;
+            const radius = 22 + Math.sin(time) * 3 + (vol * 0.3);
+
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = vol > 15 ? 15 : 5;
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, radius * 3.5, radius * 0.8, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.setLineDash([8, 6]);
+            ctx.lineDashOffset = -time * 15;
+            ctx.ellipse(cx, cy, radius * 2.2, radius * 0.5, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        const renderTheatre = () => {
+            requestAnimationFrame(renderTheatre);
+            if (!contourScanned && fgImg.complete && fgImg.naturalWidth > 0) safeScanContour();
+
+            speakers.forEach(spk => {
+                let avgVol = 0; let whisperLevel = 0; let blendshapes = { jawOpen: 0, mouthStretch: 0 };
+                
+                if (spk.analyser && spk.dataArray) {
+                    spk.analyser.getByteFrequencyData(spk.dataArray);
+                    let totalVolume = 0; for(let i=0; i<25; i++) { totalVolume += Math.max(0, (spk.dataArray[i] || 0) - 82); }
+                    avgVol = totalVolume / 25; blendshapes = AudioBlendshapeNet.predict(spk.dataArray);
+
+                    let highFreqSum = 0; for(let k=12; k<22; k++) { highFreqSum += spk.dataArray[k]; }
+                    whisperLevel = highFreqSum / 10;
+                }
+
+                if (spk.id === 'Host') {
+                    renderHologramFloor(holoHostCtx, '#ff1a1a', avgVol);
+                } else {
+                    renderHologramFloor(holoGuestCtx, '#00ff66', avgVol);
+                }
+
+                let lookSideAngle = Math.sin(Date.now() * 0.002) * 2.5;
+                let glitchX = 0;
+
+                if (avgVol > 22) { 
+                    spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 1.0; 
+                    spk.targetJaw = blendshapes.jawOpen * 18; 
+                    spk.targetSmile = blendshapes.mouthStretch * 12; 
+                    if (avgVol > 40) glitchX = (Math.random() - 0.5) * 6;
+                } else if (avgVol > 5) {
+                    spk.lastActiveTime = Date.now(); spk.targetFaceAlpha = 0.9; 
+                    spk.targetJaw = 0; spk.targetSmile = 0;
+                } else {
+                    spk.targetJaw = 0; spk.targetSmile = 0;
+                    if (Date.now() - spk.lastActiveTime > 1200) spk.targetFaceAlpha = 0.0; 
+                }
+
+                const mirrorScale = spk.id === 'Guest' ? 'scaleX(-1.35) scaleY(1.35)' : 'scale(1.35)';
+                const inwardTilt = 14; const dynamicTilt = inwardTilt + lookSideAngle;
+
+                spk.canvas.style.transform = `translateX(-50%) ${mirrorScale} rotateY(${dynamicTilt}deg) translateX(${glitchX}px)`;
+
+                if (bgImg.complete && fgImg.complete && bgImg.naturalHeight > 0 && fgImg.naturalHeight > 0) {
+                    spk.currJaw += (spk.targetJaw - spk.currJaw) * 0.32; spk.currSmile += (spk.targetSmile - spk.currSmile) * 0.28;
+                    spk.faceAlpha += (spk.targetFaceAlpha - spk.faceAlpha) * 0.14; 
+                    
+                    spk.ctx.clearRect(0, 0, 420, 480); spk.ctx.save();
+                    if (spk.filterStyle !== 'none') spk.ctx.filter = spk.filterStyle;
+
+                    spk.ctx.globalAlpha = 1.0;
+                    spk.ctx.drawImage(bgImg, 0, 0, bgImg.naturalWidth, bgImg.naturalHeight, 60, 40, 300, 340);
+
+                    if (spk.faceAlpha > 0.005) {
+                        spk.ctx.globalAlpha = spk.faceAlpha;
+                        if (contourNormals.length > 0 && avgVol > 1) {
+                            spk.ctx.save(); spk.ctx.filter = 'none'; spk.ctx.lineWidth = 3.5; spk.ctx.lineCap = 'round';
+                            let primaryColor = spk.pColor; let secondaryColor = spk.sColor;
+                            if (avgVol < 12 && whisperLevel > 50) { primaryColor = spk.wColor1; secondaryColor = spk.wColor2; }
+
+                            spk.ctx.shadowColor = primaryColor; spk.ctx.shadowBlur = 12;
+                            const stepBin = Math.floor((spk.dataArray.length * 0.6) / contourNormals.length);
+                            contourNormals.forEach((pt, i) => {
+                                const bin = i * stepBin; const pwr = Math.max(0, (spk.dataArray[bin] || 0) - 85) * 0.25;
+                                if (pwr > 1) {
+                                    spk.ctx.strokeStyle = (i % 2 === 0) ? primaryColor : secondaryColor;
+                                    spk.ctx.beginPath(); spk.ctx.moveTo(pt.x - (pt.nx * 2), pt.y - (pt.ny * 2));
+                                    spk.ctx.lineTo(pt.x + (pt.nx * pwr), pt.y + (pt.ny * pwr)); spk.ctx.stroke();
+                                }
+                            });
+                            spk.ctx.restore();
+                        }
+                        const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
+                        
+                        // 🚨 புதிய படத்திற்கான வாய் அளவுகள் மாற்றப்பட்டுள்ளன 🚨
+                        const sTop = natH * 0.35; // பழைய அளவு: 0.585
+                        const sBot = natH * 0.40; // பழைய அளவு: 0.625
+                        const sRubberH = sBot - sTop; 
+                        
+                        const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + spk.currJaw; 
+                        const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
+                        const stretchX = 60 - (spk.currSmile * 0.5); const stretchW = 300 + spk.currSmile;
+                        const botJawX = 60 - (spk.currSmile * 0.25);
+
+                        spk.ctx.drawImage(fgImg, 0, 0, natW, sTop,  60, 40, 300, dTopH);
+                        spk.ctx.drawImage(fgImg, 0, sTop, natW, sRubberH,  stretchX, 40 + dTopH, stretchW, dRubberH);
+                        spk.ctx.drawImage(fgImg, 0, sBot, natW, natH - sBot,  botJawX, 40 + dBotY, 300 + (spk.currSmile*0.5), dBotH);
+                    }
+                    spk.ctx.restore(); 
+
+                    // 🚨 மூட்டைப் பூச்சிக்கான சரியான கண் சிமிட்டும் அளவுகள் மற்றும் கோணம் 🚨
+                    if (spk.isBlinking) {
+                        spk.ctx.fillStyle = "#331a00"; // அடர் பழுப்பு நிறம் (புருவத்தின் நிழல் போல)
+                        
+                        // இடது கண்: X=165, Y=140, சாய்வு கோணம் (Rotation) = 20 டிகிரி (0.35 Radian)
+                        spk.ctx.beginPath(); 
+                        spk.ctx.ellipse(165, 140, 26, 18, 0.35, 0, Math.PI*2); 
+                        spk.ctx.fill();
+                        
+                        // வலது கண்: X=255, Y=140, சாய்வு கோணம் (Rotation) = -20 டிகிரி (-0.35 Radian)
+                        ctx = spk.ctx;
+                        ctx.beginPath(); 
+                        ctx.ellipse(255, 140, 26, 18, -0.35, 0, Math.PI*2); 
+                        ctx.fill();
+                    }
+                }
+            });
+        };
+        document.addEventListener('DOMContentLoaded', bootVisualizer);
+    </script>
 </body>
 </html>

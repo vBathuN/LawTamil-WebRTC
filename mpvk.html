@@ -518,19 +518,19 @@
                     }
                     spk.ctx.restore(); 
 
-                    // 🚨 மூட்டைப் பூச்சிக்கான புதிய கண் சிமிட்டும் அளவுகள் 🚨
+                    // 🚨 மூட்டைப் பூச்சிக்கான சரியான கண் சிமிட்டும் அளவுகள் மற்றும் கோணம் 🚨
                     if (spk.isBlinking) {
-                        spk.ctx.fillStyle = "#1a1a1a"; 
+                        spk.ctx.fillStyle = "#331a00"; // அடர் பழுப்பு நிறம் (புருவத்தின் நிழல் போல)
                         
-                        // இடது கண்
+                        // இடது கண்: X=165, Y=140, சாய்வு கோணம் (Rotation) = 20 டிகிரி (0.35 Radian)
                         spk.ctx.beginPath(); 
-                        spk.ctx.ellipse(175, 135, 22, 12, -0.2, 0, Math.PI*2); 
+                        spk.ctx.ellipse(165, 140, 26, 18, 0.35, 0, Math.PI*2); 
                         spk.ctx.fill();
                         
-                        // வலது கண்
+                        // வலது கண்: X=255, Y=140, சாய்வு கோணம் (Rotation) = -20 டிகிரி (-0.35 Radian)
                         ctx = spk.ctx;
                         ctx.beginPath(); 
-                        ctx.ellipse(245, 135, 22, 12, 0.2, 0, Math.PI*2); 
+                        ctx.ellipse(255, 140, 26, 18, -0.35, 0, Math.PI*2); 
                         ctx.fill();
                     }
                 }

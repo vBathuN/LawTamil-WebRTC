@@ -188,8 +188,8 @@
     </div>
 
     <div class="channel-title-corner">
-        <div class="logo-joker">JOKER</div>
-        <div class="logo-durbar">DURBAR</div>
+        <div class="logo-joker">மூட்டைப் பூச்சி</div>
+        <div class="logo-durbar">வெற்றிக் கழகம்</div>
     </div>
 
     <div class="right-jokers-stage" id="stage-container">
@@ -248,8 +248,10 @@
             let i = 0; imgObj.onerror = () => { i++; if (i < srcList.length) imgObj.src = srcList[i]; };
             imgObj.src = srcList[0];
         }
-        loadWithFallback(bgImg, ['./mpvk.png', './mpvk.jpg', './mpvk.PNG', './mpvk.JPG']);
-        loadWithFallback(fgImg, ['./mpvk1.png', './mpvk1.PNG']);
+        
+        // 🚨 JPG படங்கள் சேர்க்கப்பட்டுள்ளன 🚨
+        loadWithFallback(bgImg, ['./mpvk.jpg', './mpvk.png', './mpvk.PNG', './mpvk.JPG']);
+        loadWithFallback(fgImg, ['./mpvk1.jpg', './mpvk1.png', './mpvk1.PNG', './mpvk1.JPG']);
 
         let contourNormals = []; let contourScanned = false;
         function safeScanContour() {
@@ -396,9 +398,6 @@
             renderTheatre();
         }
 
-        /* =========================================================
-           ✨ ஹாலோகிராம் மேடை ரண்டரிங் (Hologram Floor Loop)
-           ========================================================= */
         const holoHostCanvas = document.getElementById('holo-host');
         const holoHostCtx = holoHostCanvas.getContext('2d');
         const holoGuestCanvas = document.getElementById('holo-guest');
@@ -416,12 +415,10 @@
             ctx.shadowBlur = vol > 15 ? 15 : 5;
             ctx.lineWidth = 2;
 
-            // நீள்வட்ட ஹாலோகிராம் ரிங் 1
             ctx.beginPath();
             ctx.ellipse(cx, cy, radius * 3.5, radius * 0.8, 0, 0, Math.PI * 2);
             ctx.stroke();
 
-            // உள் ரிங் 2
             ctx.beginPath();
             ctx.setLineDash([8, 6]);
             ctx.lineDashOffset = -time * 15;
@@ -447,7 +444,6 @@
                     whisperLevel = highFreqSum / 10;
                 }
 
-                // ஹாலோகிராம் மேடை அப்டேட்
                 if (spk.id === 'Host') {
                     renderHologramFloor(holoHostCtx, '#ff1a1a', avgVol);
                 } else {
@@ -505,7 +501,12 @@
                             spk.ctx.restore();
                         }
                         const natW = fgImg.naturalWidth; const natH = fgImg.naturalHeight; const scale = 340 / natH; 
-                        const sTop = natH * 0.585; const sBot = natH * 0.625; const sRubberH = sBot - sTop; 
+                        
+                        // 🚨 புதிய படத்திற்கான வாய் அளவுகள் மாற்றப்பட்டுள்ளன 🚨
+                        const sTop = natH * 0.33; // பழைய அளவு: 0.585
+                        const sBot = natH * 0.38; // பழைய அளவு: 0.625
+                        const sRubberH = sBot - sTop; 
+                        
                         const dTopH = sTop * scale; const dRubberH = (sRubberH * scale) + spk.currJaw; 
                         const dBotY = dTopH + dRubberH; const dBotH = (natH - sBot) * scale;
                         const stretchX = 60 - (spk.currSmile * 0.5); const stretchW = 300 + spk.currSmile;
@@ -517,8 +518,9 @@
                     }
                     spk.ctx.restore(); 
 
+                    // 🚨 கண் சிமிட்டும் அளவுகள் தேவைப்பட்டால் இங்கு மாற்றிக்கொள்ளலாம் 🚨
                     if (spk.isBlinking) {
-                        spk.ctx.fillStyle = "#cbd0d3"; 
+                        spk.ctx.fillStyle = "#000000"; 
                         spk.ctx.beginPath(); spk.ctx.ellipse(184.5, 179.4, 14, 8, 0, 0, Math.PI*2); spk.ctx.fill();
                         ctx = spk.ctx;
                         ctx.beginPath(); ctx.ellipse(235.5, 179.4, 14, 8, 0, 0, Math.PI*2); ctx.fill();

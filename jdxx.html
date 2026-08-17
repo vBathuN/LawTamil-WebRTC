@@ -167,13 +167,18 @@
             .vtuber-pod { width: 82vw !important; height: 42vh !important; top: 4vh; }
             
             /* --- PORTRAIT SINGLE JOKER (FIXED) --- */
-            /* கட் ஆகாமல் சரியாக திரைக்குள் பொருந்தும் படி அமைக்கப்பட்ட அளவுகள் */
             .vtuber-pod.alone-host {
                 width: 80vw !important;  
                 height: 48vh !important; 
                 transform: scale(1.15);  
                 top: 10vh; 
                 margin: 0 auto;
+            }
+            
+            /* 🔴 ஜோக்கர் உருவத்தை மட்டும் பெரிதாக்க 🔴 */
+            .vtuber-pod.alone-host .joker-canvas {
+                scale: 1.25; /* தேவைக்கேற்ப 1.3 அல்லது 1.35 என மாற்றிக்கொள்ளலாம் */
+                bottom: -90px; /* மேடையோடு சரியாக நிற்க */
             }
             
             .speaker-badge { display: none !important; }

@@ -162,22 +162,31 @@
                 width: 100vw !important; height: 100vh !important;
                 flex-direction: column; justify-content: center; align-items: center; gap: 2vh;
             }
+            
+            /* இருவர் இருக்கும் போது (Dual Host) */
             .vtuber-pod { width: 82vw !important; height: 42vh !important; top: 4vh; }
             
-            /* ஒருவர் மட்டும் இருக்கும் போது பெரிதாக்கப்பட்டுள்ளது */
+            /* --- PORTRAIT SINGLE JOKER (FIXED) --- */
+            /* கட் ஆகாமல் சரியாக திரைக்குள் பொருந்தும் படி அமைக்கப்பட்ட அளவுகள் */
             .vtuber-pod.alone-host {
-                width: 90vw !important; height: 55vh !important;
-                transform: scale(1.4); 
-                top: 20vh; 
+                width: 80vw !important;  
+                height: 48vh !important; 
+                transform: scale(1.15);  
+                top: 10vh; 
+                margin: 0 auto;
             }
             
-            /* இருவர் இருந்தால் badge மறைய, ஒருவர் இருந்தால் தெரிய */
             .speaker-badge { display: none !important; }
+            
+            /* சிங்கிள் ஜோக்கர் Name Badge கட் ஆகாமல் தெரிய */
             .vtuber-pod.alone-host .speaker-badge {
                 display: flex !important;
-                bottom: -8vh; /* மேடைக்கு கீழே தள்ளி வைக்கப்பட்டுள்ளது */
+                bottom: -6vh; 
+                font-size: 3.5vw;
+                padding: 1.5vh 3vw;
+                white-space: nowrap;
             }
-            .dot { width: 2.8vw; height: 2.8vw; }
+            .dot { width: 3vw; height: 3vw; }
         }
     </style>
 </head>

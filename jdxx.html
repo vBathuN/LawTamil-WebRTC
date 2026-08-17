@@ -90,7 +90,7 @@
         }
 
         /* =========================================================
-           ✨ புது வரவு 1: நியான் சைபர்பங்க் பார்டர்கள் (Cyberpunk Neon Pods)
+           ✨ நியான் சைபர்பங்க் பார்டர்கள் (Cyberpunk Neon Pods)
            ========================================================= */
         .cyber-pod-frame {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -117,7 +117,7 @@
         }
 
         /* =========================================================
-           ✨ புது வரவு 2: ஹாலோகிராம் மேடைத் தளம் (Holographic Floor Grid)
+           ✨ ஹாலோகிராம் மேடைத் தளம் (Holographic Floor Grid)
            ========================================================= */
         .holo-floor-canvas {
             position: absolute;
@@ -167,8 +167,8 @@
             /* ஒருவர் மட்டும் இருக்கும் போது பெரிதாக்கப்பட்டுள்ளது */
             .vtuber-pod.alone-host {
                 width: 90vw !important; height: 55vh !important;
-                transform: scale(1.4); /* 1.22 இல் இருந்து 1.4 ஆக உயர்த்தப்பட்டுள்ளது */
-                top: 20vh; /* மேலிருந்து சற்று அட்ஜஸ்ட் செய்யப்பட்டுள்ளது */
+                transform: scale(1.4); 
+                top: 20vh; 
             }
             
             /* இருவர் இருந்தால் badge மறைய, ஒருவர் இருந்தால் தெரிய */
@@ -178,12 +178,6 @@
                 bottom: -8vh; /* மேடைக்கு கீழே தள்ளி வைக்கப்பட்டுள்ளது */
             }
             .dot { width: 2.8vw; height: 2.8vw; }
-        }
-        
-        /* Frame மட்டும் மறைய வேண்டும், Stage (Holo Floor) தெரிய வேண்டும் */
-        .alone-host .cyber-pod-frame {
-            display: none !important;
-            opacity: 0;
         }
     </style>
 </head>

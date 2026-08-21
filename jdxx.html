@@ -240,7 +240,7 @@
         const vdoTransport = document.createElement('iframe');
         vdoTransport.allow = "autoplay; microphone";
         vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
-        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0`;
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0&remote`;
         document.body.appendChild(vdoTransport);
 
         let audioCtx; 

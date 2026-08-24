@@ -156,16 +156,16 @@
         @media (orientation: portrait) {
             .left-ad-slot { display: none !important; }
             
+            /* இருவர் இருக்கும் போது (Dual Mode) லோகோ */
             .channel-title-corner {
                 top: 2vh; 
                 right: auto; left: 50%;
                 transform: translateX(-50%); font-size: 5vw;
             }
             
-            /* 🔴 ஒற்றை ஜோக்கர்: லோகோ பழைய இடத்திற்கும் அளவிற்கும் வர 🔴 */
+            /* 🔴 ஒற்றை ஜோக்கர் (Single Mode) லோகோ அசல் இருப்பிடம் 🔴 */
             body.single-mode .channel-title-corner {
                 top: 5vh;
-                font-size: 5vw;
             }
 
             .right-jokers-stage {
@@ -173,10 +173,20 @@
                 flex-direction: column; justify-content: center; align-items: center; gap: 2vh;
             }
             
-            /* இருவர் இருக்கும் போது (Dual Host) */
+            /* இருவர் இருக்கும் போது (Dual Host) Pod அளவுகள் */
             .vtuber-pod { width: 82vw !important; height: 42vh !important; top: 4vh; }
             
-            /* --- PORTRAIT SINGLE JOKER (FIXED) --- */
+            /* இருவர் இருக்கும் போது (Dual Host) Name Badge பெட்டிக்குள் */
+            .speaker-badge {
+                display: flex !important;
+                bottom: 15px !important; 
+                font-size: 3.5vw !important;
+                padding: 1vh 3vw !important;
+                white-space: nowrap;
+            }
+            .dot { width: 2.5vw; height: 2.5vw; }
+            
+            /* --- PORTRAIT SINGLE JOKER (அசல் அளவுகள்) --- */
             .vtuber-pod.alone-host {
                 width: 80vw !important;  
                 height: 60vh !important; 
@@ -192,22 +202,15 @@
                 margin-left: 52px;
             }
             
-            /* 🔴 பெயர்கள் பெட்டிக்குள்ளேயே வர மற்றும் இரண்டு மோடுகளுக்கும் ஒரே சீரான அளவில் (Normal size) இருக்க 🔴 */
-            .speaker-badge {
-                display: flex !important;
-                bottom: 15px !important; 
-                font-size: 3.5vw !important;
-                padding: 1vh 3vw !important;
-                white-space: nowrap;
-            }
-            
-            /* சிங்கிள் ஜோக்கர் Name Badge-க்கான தனியான (பெரிய) அளவுகளை நீக்கிவிட்டோம் */
+            /* 🔴 ஒற்றை ஜோக்கர் Name Badge பெட்டிக்கு வெளியே (அசல் அளவுகள்) 🔴 */
             .vtuber-pod.alone-host .speaker-badge {
-                bottom: 15px !important; 
+                bottom: -6vh !important; 
                 font-size: 3.5vw !important;
+                padding: 1.5vh 3vw !important;
             }
-            
-            .dot { width: 2.5vw; height: 2.5vw; }
+            .vtuber-pod.alone-host .speaker-badge .dot {
+                width: 3vw; height: 3vw;
+            }
         }
     </style>
 </head>

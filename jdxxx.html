@@ -54,6 +54,7 @@
             position: absolute; top: 5vh; right: 2.8vw; display: flex;
             border-radius: 8px; overflow: hidden; font-size: 2.2vw; font-weight: 900; letter-spacing: 1px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 40; border: 3px solid rgba(255, 255, 255, 0.3);
+            transition: top 0.5s ease;
         }
         .logo-joker { background-color: #b90000; color: white; padding: 0.8vh 0.8vw; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
         .logo-durbar { background-color: #004a00; color: white; padding: 0.8vh 0.8vw; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); }
@@ -154,11 +155,19 @@
            ========================================================= */
         @media (orientation: portrait) {
             .left-ad-slot { display: none !important; }
+            
             .channel-title-corner {
-                top: 2vh; /* லோகோ மேலே நகர்த்தப்பட்டுள்ளது */
+                top: 2vh; 
                 right: auto; left: 50%;
                 transform: translateX(-50%); font-size: 5vw;
             }
+            
+            /* 🔴 ஒற்றை ஜோக்கர்: லோகோ பழைய இடத்திற்கும் அளவிற்கும் வர 🔴 */
+            body.single-mode .channel-title-corner {
+                top: 5vh;
+                font-size: 5vw;
+            }
+
             .right-jokers-stage {
                 width: 100vw !important; height: 100vh !important;
                 flex-direction: column; justify-content: center; align-items: center; gap: 2vh;
@@ -176,32 +185,33 @@
                 margin: 0 auto;
             }
             
-            /* 🔴 ஜோக்கர் உருவத்தை மட்டும் பெரிதாக்க 🔴 */
+            /* ஜோக்கர் உருவத்தை மட்டும் பெரிதாக்க */
             .vtuber-pod.alone-host .joker-canvas {
                 scale: 1.25; 
-                bottom: -90px; /* மேடையோடு சரியாக நிற்க */
+                bottom: -90px;
                 margin-left: 52px;
             }
             
-            /* பெயர்கள் பெட்டிக்குள்ளேயே வர மாற்றப்பட்டுள்ளது */
+            /* 🔴 பெயர்கள் பெட்டிக்குள்ளேயே வர மற்றும் இரண்டு மோடுகளுக்கும் ஒரே சீரான அளவில் (Normal size) இருக்க 🔴 */
             .speaker-badge {
                 display: flex !important;
-                bottom: 15px !important; /* பெட்டிக்கு உள்ளே நிற்க */
-                font-size: 3.5vw;
-                padding: 1vh 3vw;
+                bottom: 15px !important; 
+                font-size: 3.5vw !important;
+                padding: 1vh 3vw !important;
                 white-space: nowrap;
             }
             
-            /* சிங்கிள் ஜோக்கர் Name Badge கட் ஆகாமல் தெரிய */
+            /* சிங்கிள் ஜோக்கர் Name Badge-க்கான தனியான (பெரிய) அளவுகளை நீக்கிவிட்டோம் */
             .vtuber-pod.alone-host .speaker-badge {
-                bottom: 20px !important; /* பெட்டிக்கு உள்ளே நிற்க */
-                font-size: 4vw;
+                bottom: 15px !important; 
+                font-size: 3.5vw !important;
             }
-            .dot { width: 3vw; height: 3vw; }
+            
+            .dot { width: 2.5vw; height: 2.5vw; }
         }
     </style>
 </head>
-<body>
+<body class="single-mode">
 
     <div class="left-ad-slot">
         <div class="breaking-container">
@@ -324,9 +334,11 @@
             if (!activeGuests) {
                 speakers[0].pod.classList.add('alone-host');
                 speakers[1].pod.classList.add('hidden-pod');
+                document.body.classList.add('single-mode');
             } else {
                 speakers[0].pod.classList.remove('alone-host');
                 speakers[1].pod.classList.remove('hidden-pod');
+                document.body.classList.remove('single-mode'); 
             }
         }
 

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>Vaagai Live WebRTC Visualizer</title>
+    <style>
+        body { 
+            background-color: transparent !important; margin: 0; overflow: hidden; 
+            width: 100vw; height: 100vh; position: relative;
+        }
+        
+        #visualizer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 6; pointer-events: none; opacity: 0; 
+            transition: opacity 0.4s ease-in-out; 
+        }
+
+        /* 4 மூலைகளுக்கான மையப்புள்ளிகள் (இடைவெளி இல்லை) */
+        .corner-anchor { position: absolute; width: 0; height: 0; }
+        #corner-tl { top: 0; left: 0; }
+        #corner-tr { top: 0; right: 0; }
+        #corner-bl { bottom: 0; left: 0; }
+        #corner-br { bottom: 0; right: 0; }
+        
+        /* கதிர்களின் அளவு */
+        .v-bar {
+            position: absolute; bottom: 0; left: 0; 
+            width: 3px; height: 12px; 
+            border-radius: 1.5px; margin-left: -1.5px; 
+            transform-origin: bottom center; 
+            will-change: transform;
+        }
+
+        /* வலதுபுற மூலைகளுக்குச் சிவப்பு நிறம் */
+        .v-bar-red {
+            background: linear-gradient(0deg, #ff9999 0%, #ff0000 100%);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.9);
+        }
+        
+        /* இடதுபுற மூலைகளுக்குத் தங்க நிறம் */
+        .v-bar-gold {
+            background: linear-gradient(0deg, #ffe5b4 0%, #ffc16f 100%);
+            box-shadow: 0 0 10px rgba(255, 193, 111, 0.9);
+        }
+
+        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    </style>
+</head>
+<body>
+
+    <div id="visualizer">
+        <div id="corner-tl" class="corner-anchor"></div>
+        <div id="corner-tr" class="corner-anchor"></div>
+        <div id="corner-bl" class="corner-anchor"></div>
+        <div id="corner-br" class="corner-anchor"></div>
+    </div>
+    
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio`;
+
+        let analyser, dataArray, vBars = []; 
+        let audioCtx; 
+        let lastActiveTime = Date.now(); 
+        
+        const vContainer = document.getElementById('visualizer'); 
+        
+        const corners = [
+            { id: 'corner-tl', startAngle: 90, endAngle: 180, colorClass: 'v-bar-gold' },
+            { id: 'corner-tr', startAngle: 180, endAngle: 270, colorClass: 'v-bar-red' },
+            { id: 'corner-bl', startAngle: 0, endAngle: 90, colorClass: 'v-bar-gold' },
+            { id: 'corner-br', startAngle: 270, endAngle: 360, colorClass: 'v-bar-red' }
+        ];
+        
+        const barsPerCorner = 15;
+
+        corners.forEach(corner => {
+            const container = document.getElementById(corner.id);
+            const step = (corner.endAngle - corner.startAngle) / (barsPerCorner - 1);
+            
+            for(let i = 0; i < barsPerCorner; i++) {
+                const b = document.createElement('div'); 
+                b.className = `v-bar ${corner.colorClass}`;
+                const angle = corner.startAngle + (i * step); 
+                b.dataset.angle = angle;
+                
+                b.dataset.lengthMod = Math.sin((i / (barsPerCorner - 1)) * Math.PI);
+                
+                /* இடைவெளி இன்றி நேரடியாக 0px லிருந்து சுழலும் */
+                b.style.transform = `rotate(${angle}deg) scaleY(1)`;
+                container.appendChild(b); 
+                vBars.push(b);
+            }
+        });
+
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 128; 
+                analyser.smoothingTimeConstant = 0.4; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const iframe = document.getElementById('vdo-engine');
+
+            setInterval(() => {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            
+                            pc.addEventListener('track', (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source.connect(analyser); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 10);
+
+            setInterval(() => {
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            }, 1000);
+
+            renderVisualizer();
+        }
+
+        const renderVisualizer = () => {
+            if (!analyser) return; 
+            requestAnimationFrame(renderVisualizer);
+            analyser.getByteFrequencyData(dataArray);
+            
+            let totalVolume = 0;
+            const barsPerCorner = 15;
+            
+            vBars.forEach((bar, index) => {
+                let cornerPos = index % barsPerCorner; 
+                
+                /* நடுகதிர் நீளமாக இருக்க Math.abs லாஜிக் */
+                let mapIdx = Math.abs(cornerPos - Math.floor(barsPerCorner / 2));
+                
+                const val = dataArray[2 + mapIdx * 2] || 0; 
+                let cleanVal = Math.max(0, val - 40); 
+                
+                let lengthMod = parseFloat(bar.dataset.lengthMod);
+                
+                /* கதிர்களின் நீளத்தை கணிசமாகக் குறைக்கப்பட்ட அளவு */
+                let scaleY = 1 + (cleanVal / 60) * (0.5 + lengthMod * 1.2);
+                
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) scaleY(${scaleY})`; 
+                totalVolume += cleanVal; 
+            });
+            
+            const avgVol = totalVolume / vBars.length;
+
+            if (avgVol > 2) { 
+                lastActiveTime = Date.now(); 
+                vContainer.style.opacity = "1";
+            } else if (Date.now() - lastActiveTime > 1500) {
+                vContainer.style.opacity = "0";
+            }
+        };
+
+        window.addEventListener('load', bootVisualizer);
+    </script>
+</body>
+</html>

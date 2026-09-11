@@ -15,13 +15,13 @@
         }
         
         #justice-glow {
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
             background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
             clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.2s ease-out; 
         }
         
         #visualizer { 
-            position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
             opacity: 0; 
             transition: opacity 0.4s ease-in-out; 
         }
@@ -75,9 +75,7 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 128; 
-                analyser.smoothingTimeConstant = 0.6; 
-                analyser.minDecibels = -90; 
-                analyser.maxDecibels = 0; 
+                analyser.smoothingTimeConstant = 0.4; // அசல் வேகம்
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -129,40 +127,40 @@
             requestAnimationFrame(renderVisualizer);
             analyser.getByteFrequencyData(dataArray);
             
-            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
-            
-            // 🟢 மைய அதிர்வெண்களை வளையம் முழுவதும் பரவலாக்கும் லாஜிக்
-            const activeVoiceBins = 12; 
+            const half = Math.floor(vBars.length / 2); 
+            let totalVolume = 0;
+            const activeVoiceBins = 16; 
             const mappingRatio = activeVoiceBins / half; 
             
             vBars.forEach((bar, index) => {
-                let dist = Math.abs(index - half); // மையத்தில் இருந்து தூரம்
-                
-                // முதல் 2 அதிர்வெண்களை (Rumble/Hum noise) தவிர்த்துவிட்டு எடுக்கிறோம்
+                let dist = Math.abs(index - half); // மையத்தில் இருந்து எவ்வளவு தூரம்
                 let dIdx = 2 + Math.floor(dist * mappingRatio);
                 if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
                 
                 let val = dataArray[dIdx] || 0;
                 
-                // Noise Gate: பக்கவாட்டிலும் கதிர்கள் சீராக இயங்க அளவைக் குறைத்துள்ளோம்
-                val = Math.max(0, val - 45); 
+                // பழையபடி Noise Gate
+                val = Math.max(0, val - 75); 
                 
-                // 🟢 Flame Curve (நெருப்பு ஜூவாலை வளைவு): 
-                // மையத்தில் 100% உயரமும், ஓரத்தில் 50% உயரமும் இருக்கும்படி வளைக்கப்பட்ட ஃபார்முலா
-                let flameCurve = 1 - (dist / half) * 0.5; 
+                // 🟢 Flame Curve: கதிர்கள் உச்சத்தைத் தொட்டாலும் தட்டையாக வெட்டுப்படாமல் வளைவைக் கொடுக்கும்
+                // மையத்தில் (dist=0) இதன் மதிப்பு 1. ஓரங்களில் (dist=25) இதன் மதிப்பு குறையும் (0.3 வரை)
+                let flameCurve = 1 - (dist / half) * 0.7; 
                 
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 16) * flameCurve})`;
+                // val மதிப்புடன் flameCurve-ஐப் பெருக்குவதால் இயற்கையான நெருப்பு வடிவம் கிடைக்கும்
+                let finalScale = 1 + (val / 18) * flameCurve;
+
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${finalScale})`;
                 totalVolume += val; 
             });
             
             const avgVol = totalVolume / vBars.length;
 
-            if (avgVol > 10) { 
+            if (avgVol > 5) { // Visualizer உடனடியாக விழித்துக்கொள்ளும்
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
-                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 70);
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 60);
             } else {
-                if (Date.now() - lastActiveTime > 9000) {
+                if (Date.now() - lastActiveTime > 4000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }

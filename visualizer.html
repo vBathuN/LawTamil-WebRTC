@@ -75,7 +75,7 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 128; 
-                analyser.smoothingTimeConstant = 0.4; // அசல் வேகம்
+                analyser.smoothingTimeConstant = 0.3; 
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -127,40 +127,33 @@
             requestAnimationFrame(renderVisualizer);
             analyser.getByteFrequencyData(dataArray);
             
-            const half = Math.floor(vBars.length / 2); 
-            let totalVolume = 0;
+            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
+            
             const activeVoiceBins = 16; 
             const mappingRatio = activeVoiceBins / half; 
             
             vBars.forEach((bar, index) => {
-                let dist = Math.abs(index - half); // மையத்தில் இருந்து எவ்வளவு தூரம்
-                let dIdx = 2 + Math.floor(dist * mappingRatio);
+                let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
                 if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
                 
                 let val = dataArray[dIdx] || 0;
                 
-                // பழையபடி Noise Gate
-                val = Math.max(0, val - 75); 
+                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
+                val = Math.max(0, val - 82); 
                 
-                // 🟢 Flame Curve: கதிர்கள் உச்சத்தைத் தொட்டாலும் தட்டையாக வெட்டுப்படாமல் வளைவைக் கொடுக்கும்
-                // மையத்தில் (dist=0) இதன் மதிப்பு 1. ஓரங்களில் (dist=25) இதன் மதிப்பு குறையும் (0.3 வரை)
-                let flameCurve = 1 - (dist / half) * 0.7; 
-                
-                // val மதிப்புடன் flameCurve-ஐப் பெருக்குவதால் இயற்கையான நெருப்பு வடிவம் கிடைக்கும்
-                let finalScale = 1 + (val / 18) * flameCurve;
-
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${finalScale})`;
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
                 totalVolume += val; 
             });
             
             const avgVol = totalVolume / vBars.length;
 
-            if (avgVol > 5) { // Visualizer உடனடியாக விழித்துக்கொள்ளும்
+            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
+            if (avgVol > 16) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
-                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 60);
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
             } else {
-                if (Date.now() - lastActiveTime > 4000) {
+                if (Date.now() - lastActiveTime > 9000) {
                     vContainer.style.opacity = "0";
                     if (glowDiv) glowDiv.style.opacity = "0";
                 }

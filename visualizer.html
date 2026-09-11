@@ -75,7 +75,9 @@
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioCtx.createAnalyser();
                 analyser.fftSize = 128; 
-                analyser.smoothingTimeConstant = 0.3; 
+                analyser.smoothingTimeConstant = 0.6; // 🟢 கதிர்கள் வெட்டுப்படாமல் மென்மையாக ஏறி இறங்க
+                analyser.minDecibels = -90; 
+                analyser.maxDecibels = 0; // 🟢 இதுதான் உச்சவரம்பை அதிகரிக்கும்! Flat ஆக வெட்டுப்படுவதைத் தடுக்கும்.
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
             }
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -138,17 +140,16 @@
                 
                 let val = dataArray[dIdx] || 0;
                 
-                // Noise Gate: சிறிய இரைச்சல்களைத் தடுக்கும் தர்க்கம்
-                val = Math.max(0, val - 82); 
+                // 🟢 உச்சவரம்பு உயர்த்தப்பட்டதால், Noise Gate மற்றும் Scale Divisor அளவுகளும் அதற்கேற்ப மாற்றப்பட்டுள்ளன
+                val = Math.max(0, val - 55); 
                 
-                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 22)})`;
                 totalVolume += val; 
             });
             
             const avgVol = totalVolume / vBars.length;
 
-            // விசுவலைசர் ஒளிரத் தொடங்கும் குறைந்தபட்ச சத்தத்தின் அளவு
-            if (avgVol > 16) { 
+            if (avgVol > 12) { 
                 lastActiveTime = Date.now(); 
                 vContainer.style.opacity = "1";
                 if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);

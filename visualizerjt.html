@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>LawTamil Master Visualizer Pro</title>
+    <style>
+        body { 
+            background-color: transparent !important; margin: 0; overflow: hidden; 
+            height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; 
+        }
+        
+        .anim-section { 
+            width: 100%; height: 100%; 
+            position: relative; display: flex; flex-direction: column; justify-content: flex-end; box-sizing: border-box;
+        }
+        
+        #justice-glow {
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; border-radius: 50%; 
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.95) 0%, rgba(255, 215, 0, 0) 50%), radial-gradient(circle, rgba(255, 215, 0, 0.7) 10%, rgba(255, 215, 0, 0) 80%);
+            clip-path: circle(50% at 50% 50%); filter: blur(3px); box-shadow: 0 0 35px rgba(255, 215, 0, 0.9); z-index: 5; opacity: 0; pointer-events: none; 
+            transition: opacity 0.2s ease-out, top 0.5s ease, transform 0.5s ease; 
+        }
+        
+        #visualizer { 
+            position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; z-index: 6; pointer-events: none; 
+            opacity: 0; 
+            transition: opacity 0.4s ease-in-out, top 0.5s ease, transform 0.5s ease; 
+        }
+        
+        .v-bar {
+            position: absolute; bottom: 50%; left: 50%; width: 4.5px; height: 6px; background: #ffac33; 
+            border-radius: 2px 2px 0 0; margin-left: -2px; transform-origin: bottom center; 
+            box-shadow: 0px 0px 12px rgba(255, 202, 112, 1); 
+            will-change: transform;
+        }
+
+        /* 🟢 4-Corner Ad Visualizer Styles 🟢 */
+        #corner-visualizer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 6; pointer-events: none; opacity: 0; transition: opacity 0.4s ease; 
+            display: none; 
+        }
+        .corner-anchor { position: absolute; width: 0; height: 0; }
+        #corner-tl { top: 0; left: 0; }
+        #corner-tr { top: 0; right: 0; }
+        #corner-bl { bottom: 0; left: 0; }
+        #corner-br { bottom: 0; right: 0; }
+        .v-bar-corner { 
+            position: absolute; bottom: 0; left: 0; width: 3px; height: 15px; 
+            border-radius: 1.5px; margin-left: -1.5px; transform-origin: bottom center; 
+            will-change: transform; background: linear-gradient(0deg, #ffe5b4 0%, #ffc16f 100%); 
+            box-shadow: 0 0 10px rgba(255, 193, 111, 0.9); 
+        }
+
+        /* 🟢 Modes Logic (Controlled by SSE) 🟢 */
+        body.l-shape-mode #justice-glow,
+        body.l-shape-mode #visualizer {
+            top: 60% !important;
+            transform: translate(-50%, -50%) scale(0.65) !important;
+        }
+
+        body.ad-active #justice-glow,
+        body.ad-active #visualizer {
+            display: none !important;
+        }
+
+        body.ad-active #corner-visualizer {
+            display: block;
+        }
+
+        #vdo-engine { position: absolute; width: 10px; height: 10px; opacity: 0.01; pointer-events: none; z-index: -1; }
+    </style>
+</head>
+<body>
+
+    <div class="anim-section">
+        <div id="justice-glow"></div> 
+        <div id="visualizer"></div>
+        
+        <!-- 🟢 4-Corner Ad Visualizer 🟢 -->
+        <div id="corner-visualizer">
+            <div id="corner-tl" class="corner-anchor"></div>
+            <div id="corner-tr" class="corner-anchor"></div>
+            <div id="corner-bl" class="corner-anchor"></div>
+            <div id="corner-br" class="corner-anchor"></div>
+        </div>
+    </div>
+    
+    <iframe id="vdo-engine" allow="autoplay; microphone"></iframe>
+
+    <script>
+        // 🟢 Direct SSE Connection to Sync Modes 🟢
+        let evtSource;
+        function connectSSE() {
+            evtSource = new EventSource('http://127.0.0.1:3000/events');
+            evtSource.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                switch (data.cmd) {
+                    case 'toggle_l_shape':
+                        document.body.classList.toggle('l-shape-mode');
+                        break;
+                    case 'toggle_media_height': 
+                    case 'toggle_rtl_mode':
+                        document.body.classList.remove('l-shape-mode');
+                        break;
+                    case 'show_ad':
+                        document.body.classList.add('ad-active');
+                        break;
+                    case 'hide_ad':
+                        document.body.classList.remove('ad-active');
+                        break;
+                }
+            };
+            evtSource.onerror = function() {
+                evtSource.close();
+                setTimeout(connectSSE, 3000);
+            };
+        }
+        connectSSE();
+
+        // 🟢 Original Audio Engine Logic 🟢
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+        
+        document.getElementById('vdo-engine').src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio`;
+
+        const ARC_RADIUS = 30; 
+        let analyser, dataArray, vBars = [], cBars = []; 
+        let audioCtx; 
+        let lastActiveTime = Date.now(); 
+        
+        const vContainer = document.getElementById('visualizer'); 
+        const glowDiv = document.getElementById('justice-glow');
+        const cornerVis = document.getElementById('corner-visualizer');
+        
+        // Arc Setup
+        const numBars = 50; const startAngle = -135; const endAngle = 135; const step = (endAngle - startAngle) / (numBars - 1);
+        for (let i = 0; i < numBars; i++) {
+            const b = document.createElement('div'); b.className = 'v-bar';
+            const angle = startAngle + (i * step); b.dataset.angle = angle;
+            b.style.transform = `rotate(${angle}deg) translateY(-${ARC_RADIUS}px) scaleY(1)`;
+            vContainer.appendChild(b); vBars.push(b);
+        }
+
+        // 4-Corner Setup
+        const corners = [
+            { id: 'corner-tl', startAngle: 90, endAngle: 180 },
+            { id: 'corner-tr', startAngle: 180, endAngle: 270 },
+            { id: 'corner-bl', startAngle: 0, endAngle: 90 },
+            { id: 'corner-br', startAngle: 270, endAngle: 360 }
+        ];
+        const barsPerCorner = 15;
+        corners.forEach(corner => {
+            const container = document.getElementById(corner.id);
+            if (container) {
+                const cStep = (corner.endAngle - corner.startAngle) / (barsPerCorner - 1);
+                for (let i = 0; i < barsPerCorner; i++) {
+                    const b = document.createElement('div'); b.className = 'v-bar-corner';
+                    const angle = corner.startAngle + (i * cStep); b.dataset.angle = angle;
+                    b.dataset.lengthMod = Math.sin((i / (barsPerCorner - 1)) * Math.PI);
+                    b.style.transform = `rotate(${angle}deg) scaleY(1)`;
+                    container.appendChild(b); cBars.push(b);
+                }
+            }
+        });
+
+        const connectedTracks = new Set(); 
+
+        function bootVisualizer() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 128; 
+                analyser.smoothingTimeConstant = 0.3; 
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const iframe = document.getElementById('vdo-engine');
+
+            setInterval(() => {
+                try {
+                    const iframeWin = iframe.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+                            
+                            pc.addEventListener('track', (event) => {
+                                const track = event.track;
+                                if (track.kind === 'audio' && !connectedTracks.has(track.id)) {
+                                    connectedTracks.add(track.id);
+                                    try {
+                                        if (audioCtx.state === 'suspended') audioCtx.resume();
+                                        const cleanStream = new MediaStream([track]);
+                                        const source = audioCtx.createMediaStreamSource(cleanStream);
+                                        source.connect(analyser); 
+                                    } catch(err) {}
+                                }
+                            });
+                            return pc;
+                        };
+                        
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 10);
+
+            setInterval(() => {
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            }, 1000);
+
+            renderVisualizer();
+        }
+
+        const renderVisualizer = () => {
+            if (!analyser) return; 
+            requestAnimationFrame(renderVisualizer);
+            analyser.getByteFrequencyData(dataArray);
+            
+            const half = Math.floor(vBars.length / 2); let totalVolume = 0;
+            
+            const activeVoiceBins = 16; 
+            const mappingRatio = activeVoiceBins / half; 
+            
+            // ARC VISUALIZER RENDER
+            vBars.forEach((bar, index) => {
+                let dIdx = (index < half) ? Math.floor((half - index) * mappingRatio) : Math.floor((index - half) * mappingRatio);
+                if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
+                
+                let val = dataArray[dIdx] || 0;
+                val = Math.max(0, val - 82); // Noise Gate
+                
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) translateY(-${ARC_RADIUS}px) scaleY(${1 + (val / 20)})`;
+                totalVolume += val; 
+            });
+
+            // 4-CORNER VISUALIZER RENDER
+            cBars.forEach((bar, index) => {
+                let cornerPos = index % barsPerCorner; 
+                let mapIdx = Math.abs(cornerPos - Math.floor(barsPerCorner / 2)); 
+                
+                let dIdx = Math.floor(mapIdx * (activeVoiceBins / Math.floor(barsPerCorner / 2)));
+                if(dIdx >= dataArray.length) dIdx = dataArray.length - 1;
+                
+                let val = dataArray[dIdx] || 0; 
+                let cleanVal = Math.max(0, val - 82); // Same noise gate
+                let lengthMod = parseFloat(bar.dataset.lengthMod);
+                let scaleY = 1 + (cleanVal / 30) * (0.5 + lengthMod * 1.2);
+                bar.style.transform = `rotate(${bar.dataset.angle}deg) scaleY(${scaleY})`; 
+            });
+            
+            const avgVol = totalVolume / vBars.length;
+
+            if (avgVol > 16) { 
+                lastActiveTime = Date.now(); 
+                vContainer.style.opacity = "1";
+                cornerVis.style.opacity = "1";
+                if (glowDiv) glowDiv.style.opacity = Math.min(1, avgVol / 80);
+            } else {
+                if (Date.now() - lastActiveTime > 9000) {
+                    vContainer.style.opacity = "0";
+                    cornerVis.style.opacity = "0";
+                    if (glowDiv) glowDiv.style.opacity = "0";
+                }
+            }
+        };
+
+        window.addEventListener('load', bootVisualizer);
+    </script>
+</body>
+</html>

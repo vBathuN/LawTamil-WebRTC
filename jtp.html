@@ -65,7 +65,7 @@
             background: rgba(0, 25, 60, 0.8); backdrop-filter: blur(15px);
         }
 
-        /* 🟢 Custom Font Padding Fixes */
+        /* 🟢 Custom Font Padding Fixes - Maintained from user's code */
         .logo-main { 
             font-family: 'Tamil039', sans-serif; font-size: 2.2vw; 
             background: linear-gradient(135deg, #00193c, #003380); 
@@ -238,7 +238,7 @@
         <div class="vtuber-pod" id="pod-1">
             <div class="glass-pod-frame"></div>
             <div class="photo-container">
-                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo" onerror="this.onerror=null;this.src='https://assets.lawtamil.in/images/placeholder.png';">
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo">
                 <div class="audio-visualizer" id="vis-1">
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
@@ -258,7 +258,7 @@
         <div class="vtuber-pod hidden-pod" id="pod-2">
             <div class="glass-pod-frame"></div>
             <div class="photo-container">
-                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo" onerror="this.onerror=null;this.src='https://assets.lawtamil.in/images/placeholder.png';">
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo">
                 <div class="audio-visualizer" id="vis-2">
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
@@ -278,7 +278,7 @@
         <div class="vtuber-pod hidden-pod" id="pod-3">
             <div class="glass-pod-frame"></div>
             <div class="photo-container">
-                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo" onerror="this.onerror=null;this.src='https://assets.lawtamil.in/images/placeholder.png';">
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate" class="lawyer-photo">
                 <div class="audio-visualizer" id="vis-3">
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
                     <div class="vis-bar"></div><div class="vis-bar"></div><div class="vis-bar"></div>
@@ -320,17 +320,17 @@
             {
                 id: 'Speaker1', pod: document.getElementById('pod-1'), visContainer: document.getElementById('vis-1'),
                 bars: Array.from(document.getElementById('vis-1').querySelectorAll('.vis-bar')),
-                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+                advMatch: null, streamId: null, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             },
             {
                 id: 'Speaker2', pod: document.getElementById('pod-2'), visContainer: document.getElementById('vis-2'),
                 bars: Array.from(document.getElementById('vis-2').querySelectorAll('.vis-bar')),
-                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+                advMatch: null, streamId: null, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             },
             {
                 id: 'Speaker3', pod: document.getElementById('pod-3'), visContainer: document.getElementById('vis-3'),
                 bars: Array.from(document.getElementById('vis-3').querySelectorAll('.vis-bar')),
-                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+                advMatch: null, streamId: null, analyser: null, dataArray: null, trackId: null, track: null, pc: null
             }
         ];
 
@@ -355,6 +355,72 @@
             });
         }
 
+        // 🟢 Continuous Data Sync to catch delayed VDO.Ninja Labels
+        function updateSpeakerIdentity(spk) {
+            if (spk.advMatch) return; // Already identified
+
+            let identifiers = [];
+            if (spk.track) {
+                if (spk.track.id) identifiers.push(spk.track.id);
+                if (spk.track.label) identifiers.push(spk.track.label);
+            }
+            if (spk.streamId) identifiers.push(spk.streamId);
+            if (spk.pc && spk.pc.remoteDescription && spk.pc.remoteDescription.sdp) {
+                identifiers.push(spk.pc.remoteDescription.sdp);
+            }
+            
+            try {
+                const win = vdoTransport.contentWindow;
+                if (win && win.document) {
+                    const mediaEls = win.document.querySelectorAll('video, audio');
+                    for (let el of mediaEls) {
+                        if (el.srcObject) {
+                            const tracks = el.srcObject.getTracks();
+                            if (tracks.some(t => t.id === spk.track.id)) {
+                                identifiers.push(el.id);
+                                if (el.dataset && el.dataset.label) identifiers.push(el.dataset.label);
+                                let container = el.closest('.video-container') || el.parentElement;
+                                if (container) {
+                                    identifiers.push(container.innerText);
+                                    identifiers.push(container.innerHTML);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            let searchString = identifiers.join(" ").toLowerCase();
+            let match = null;
+            
+            for(let engName in knownAdvocates) {
+                if(searchString.includes(engName)) {
+                    match = { eng: engName, tam: knownAdvocates[engName] };
+                    break;
+                }
+            }
+
+            if (match) {
+                spk.advMatch = match;
+                const imgEl = spk.pod.querySelector('.lawyer-photo');
+                const nameEl = spk.pod.querySelector('.badge-name');
+                
+                // Fallback Logic from absolute path JPG -> absolute PNG -> Placeholder
+                imgEl.onerror = function() {
+                    if (this.src.includes('.jpg')) {
+                        this.src = `https://webrtc.lawtamil.in/${match.eng}.png`;
+                    } else {
+                        this.src = 'https://assets.lawtamil.in/images/placeholder.png';
+                        this.onerror = null;
+                    }
+                };
+                
+                // Absolute URL setup
+                imgEl.src = `https://webrtc.lawtamil.in/${match.eng}.jpg`;
+                nameEl.textContent = match.tam;
+            }
+        }
+
         function assignTrackToSpeaker(track, pc, eventObj) {
             let availSpeaker = speakers.find(s => s.trackId === null);
             if (!availSpeaker) return false;
@@ -362,52 +428,11 @@
             availSpeaker.trackId = track.id;
             availSpeaker.track = track;
             availSpeaker.pc = pc;
+            availSpeaker.advMatch = null;
+            availSpeaker.streamId = (eventObj && eventObj.streams && eventObj.streams[0]) ? eventObj.streams[0].id : track.id;
 
-            const imgEl = availSpeaker.pod.querySelector('.lawyer-photo');
-            const nameEl = availSpeaker.pod.querySelector('.badge-name');
-            const titleEl = availSpeaker.pod.querySelector('.badge-title');
-            
-            // 🟢 Extract all possible identifiers to ensure Push Label matches correctly
-            let identifiers = [];
-            if (track.id) identifiers.push(track.id);
-            if (track.label) identifiers.push(track.label);
-            if (eventObj && eventObj.streams) {
-                eventObj.streams.forEach(s => { if(s.id) identifiers.push(s.id); });
-            }
-            if (pc.remoteDescription && pc.remoteDescription.sdp) {
-                identifiers.push(pc.remoteDescription.sdp); // Best hook for VDO.Ninja push labels
-            }
-            
-            let searchString = identifiers.join(" ").toLowerCase();
-
-            let advMatch = null;
-            for(let engName in knownAdvocates) {
-                if(searchString.includes(engName)) {
-                    advMatch = { eng: engName, tam: knownAdvocates[engName] };
-                    break;
-                }
-            }
-
-            if (advMatch) {
-                // 🟢 Primary load JPG first
-                imgEl.src = advMatch.eng + ".jpg";
-                imgEl.onerror = function() {
-                    // Load PNG if JPG fails
-                    if (this.src.match(/\.jpg/i)) {
-                        this.src = advMatch.eng + ".png";
-                    } else {
-                        this.src = 'https://assets.lawtamil.in/images/placeholder.png';
-                        this.onerror = null;
-                    }
-                };
-                nameEl.textContent = advMatch.tam;
-                titleEl.textContent = 'வழக்கறிஞர்';
-            } else {
-                imgEl.src = 'https://assets.lawtamil.in/images/placeholder.png';
-                imgEl.onerror = null;
-                nameEl.textContent = 'Advocate';
-                titleEl.textContent = 'வழக்கறிஞர்';
-            }
+            // Attempt identification immediately
+            updateSpeakerIdentity(availSpeaker);
 
             if (audioCtx.state === 'suspended') audioCtx.resume();
             availSpeaker.analyser = audioCtx.createAnalyser();
@@ -429,6 +454,7 @@
         function handleTrackDisconnect(spk) {
             if (spk.trackId) connectedTracks.delete(spk.trackId);
             spk.trackId = null; spk.track = null; spk.pc = null;
+            spk.streamId = null; spk.advMatch = null;
             spk.analyser = null; spk.dataArray = null;
             
             const imgEl = spk.pod.querySelector('.lawyer-photo');
@@ -450,9 +476,14 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             updateStageLayout();
 
+            // Continuous polling to catch delayed labels/pushes from VDO.Ninja
             setInterval(() => {
                 speakers.forEach(spk => {
-                    if (spk.track && spk.track.readyState === 'ended') { handleTrackDisconnect(spk); }
+                    if (spk.track && spk.track.readyState === 'ended') { 
+                        handleTrackDisconnect(spk); 
+                    } else if (spk.trackId && !spk.advMatch) {
+                        updateSpeakerIdentity(spk);
+                    }
                 });
             }, 1000);
 

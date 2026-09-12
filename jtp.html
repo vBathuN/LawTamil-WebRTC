@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <title>LawTamil Podcast - Pro Broadcast Overlay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        /* --- RESET & ZERO MARGIN POLICY --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        @font-face {
+          font-family: 'Tamil039';
+          src: url('https://cdn.lawtamil.in/font/Tamil039.woff2') format('woff2'),
+               url('https://cdn.lawtamil.in/font/Tamil039.woff') format('woff');
+          font-weight: bold; font-style: normal; font-display: swap; 
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&display=swap');
+
+        body { 
+            background-image: url("https://ul.lawtamil.in/bg.jpg?v=1.1") !important; 
+            background-color: #000510; /* Fallback Dark Theme */
+            background-size: cover; background-position: center;
+            overflow: hidden; 
+            height: 100vh; width: 100vw;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+        }
+
+        /* =========================================================
+           1. LEFT SIDE: TICKER WIDGET
+           ========================================================= */
+        .left-ad-slot {
+            width: 25vw; height: 100vh;
+            background-color: transparent !important;
+            border-right: 2px solid rgba(255, 202, 112, 0.3);
+            z-index: 30; position: relative;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.8);
+        }
+
+        .breaking-container {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; background: rgba(0, 20, 50, 0.6);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            text-align: center; height: 100%; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
+        #adbreakingnews { width: 100%; padding: 15px 10px 0 10px; height: 100%; overflow-y: auto; }
+
+        /* =========================================================
+           2. TOP HEADER: LAW PODCAST BRANDING
+           ========================================================= */
+        .channel-title-corner {
+            position: absolute; top: 4vh; right: 3vw; display: flex; flex-direction: column; align-items: flex-end;
+            z-index: 40; transition: top 0.5s ease;
+        }
+        
+        .title-group {
+            display: flex; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 15px rgba(255, 202, 112, 0.2);
+            border: 1px solid rgba(255, 202, 112, 0.5);
+            background: rgba(0, 25, 60, 0.8); backdrop-filter: blur(15px);
+        }
+
+        .logo-main { 
+            font-family: 'Tamil039', sans-serif; font-size: 2.5vw; 
+            background: linear-gradient(135deg, #00193c, #003380); 
+            color: #ffca70; padding: 1vh 1.5vw; text-shadow: 0px 4px 10px rgba(0,0,0,0.9); 
+            line-height: 1.2; word-spacing: -5px;
+        }
+        .logo-sub { 
+            font-family: 'Tamil039', sans-serif; font-size: 1.5vw; 
+            background: #d93025; color: white; padding: 1vh 1.5vw; 
+            display: flex; align-items: center; justify-content: center;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6); line-height: 1.2;
+        }
+        .podcast-badge {
+            margin-top: 1vh; font-family: 'Montserrat', sans-serif; font-weight: 900;
+            background: #ffca70; color: #00193c; padding: 0.5vh 1.5vw;
+            border-radius: 6px; font-size: 1.2vw; letter-spacing: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: inline-block;
+        }
+
+        /* =========================================================
+           3. RIGHT SIDE: 3-PERSON PODCAST STAGE
+           ========================================================= */
+        .right-jokers-stage {
+            width: 75vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 5vh 2vw; gap: 2vw; position: relative;
+            transition: all 0.6s ease-in-out;
+            flex-wrap: wrap;
+        }
+
+        /* --- Podcast Pod (Glassmorphism & Gold) --- */
+        .vtuber-pod {
+            width: 22vw; height: 60vh; position: relative;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center center;
+        }
+
+        .vtuber-pod.hidden-pod {
+            display: none !important;
+            opacity: 0; pointer-events: none;
+            transform: scale(0.5);
+        }
+
+        /* Dynamic Sizing based on participants */
+        body.single-mode .vtuber-pod:not(.hidden-pod) { width: 35vw; height: 75vh; }
+        body.dual-mode .vtuber-pod:not(.hidden-pod) { width: 28vw; height: 65vh; }
+        body.triple-mode .vtuber-pod:not(.hidden-pod) { width: 22vw; height: 55vh; }
+
+        /* Frame & Photo Container */
+        .glass-pod-frame {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 20px; z-index: 5;
+            background: linear-gradient(135deg, rgba(0, 25, 60, 0.6) 0%, rgba(15, 15, 25, 0.8) 100%);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            overflow: hidden; transition: all 0.3s ease;
+        }
+
+        /* Active Speaker Glow */
+        .vtuber-pod.talking .glass-pod-frame {
+            border: 2px solid #ffca70;
+            box-shadow: 0 0 25px rgba(255, 202, 112, 0.5), inset 0 0 15px rgba(255, 202, 112, 0.2);
+        }
+
+        .photo-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            padding-top: 2vh;
+        }
+
+        .lawyer-photo {
+            width: 85%; height: 75%; object-fit: cover;
+            border-radius: 12px; border: 2px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            background-color: #0f172a;
+        }
+
+        /* =========================================================
+           ✨ DECENT AUDIO VISUALIZER
+           ========================================================= */
+        .audio-visualizer {
+            display: flex; gap: 4px; align-items: flex-end; justify-content: center;
+            height: 40px; margin-top: 15px; opacity: 0; transition: opacity 0.3s ease;
+        }
+        .vtuber-pod.talking .audio-visualizer { opacity: 1; }
+        
+        .vis-bar {
+            width: 8px; background: linear-gradient(to top, #ffac33, #ffca70);
+            border-radius: 4px; transition: height 0.05s ease;
+            box-shadow: 0 0 8px rgba(255, 202, 112, 0.8);
+        }
+
+        /* Name Badge */
+        .speaker-badge {
+            position: absolute; bottom: -3vh; left: 50%; transform: translateX(-50%);
+            width: 85%; background: rgba(0, 25, 60, 0.95); border: 2px solid #ffca70;
+            padding: 1vh 1vw; border-radius: 12px; color: white;
+            font-size: 1.5vw; font-weight: bold; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 20;
+            transition: all 0.5s ease; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+        body.single-mode .speaker-badge { font-size: 2vw; padding: 1.5vh 2vw; bottom: -4vh; }
+        
+        .badge-active-indicator {
+            display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+            background: #555; margin-right: 8px; transition: background 0.3s ease;
+        }
+        .vtuber-pod.talking .badge-active-indicator { background: #00ff66; box-shadow: 0 0 10px #00ff66; }
+
+
+        /* =========================================================
+           4. PORTRAIT (9:16) RESPONSIVE RULES
+           ========================================================= */
+        @media (orientation: portrait) {
+            .left-ad-slot { display: none !important; }
+            .right-jokers-stage { width: 100vw !important; padding: 12vh 2vw 2vh 2vw !important; flex-direction: column; gap: 4vh; }
+            
+            .channel-title-corner { top: 3vh; right: auto; left: 50%; transform: translateX(-50%); align-items: center; }
+            .logo-main { font-size: 5vw; } .logo-sub { font-size: 3vw; } .podcast-badge { font-size: 2.5vw; }
+
+            /* Dynamic Heights for Portrait */
+            body.single-mode .vtuber-pod:not(.hidden-pod) { width: 85vw; height: 60vh; }
+            body.dual-mode .vtuber-pod:not(.hidden-pod) { width: 85vw; height: 35vh; }
+            body.triple-mode .vtuber-pod:not(.hidden-pod) { width: 85vw; height: 25vh; }
+
+            .speaker-badge { font-size: 3.5vw !important; bottom: -2.5vh !important; width: 90%; }
+        }
+    </style>
+</head>
+<body class="single-mode">
+
+    <div class="left-ad-slot">
+        <div class="breaking-container">
+            <div id='adbreakingnews'>
+                <!-- Sidebar content goes here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- LawTamil Branding -->
+    <div class="channel-title-corner">
+        <div class="title-group">
+            <div class="logo-main">சட்டக் களம்</div>
+            <div class="logo-sub">இது நீதியின் தேடல்</div>
+        </div>
+        <div class="podcast-badge">LAW PODCAST</div>
+    </div>
+
+    <!-- 3 Person Stage -->
+    <div class="right-jokers-stage" id="stage-container">
+        
+        <!-- Speaker 1 -->
+        <div class="vtuber-pod" id="pod-1">
+            <div class="glass-pod-frame"></div>
+            <div class="photo-container">
+                <!-- அசல் புகைப்படத்தை இங்கு மாற்றவும் -->
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate 1" class="lawyer-photo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwZjE3MmEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMjBweCIgZm9udC1mYW1pbHk9IkFyaWFsIiBkeT0iLjNlbSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UGhvdG8gMTwvdGV4dD48L3N2Zz4='">
+                <div class="audio-visualizer" id="vis-1">
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                </div>
+            </div>
+            <div class="speaker-badge">
+                <span class="badge-active-indicator"></span> Advocate 1
+            </div>
+        </div>
+
+        <!-- Speaker 2 -->
+        <div class="vtuber-pod hidden-pod" id="pod-2">
+            <div class="glass-pod-frame"></div>
+            <div class="photo-container">
+                <!-- அசல் புகைப்படத்தை இங்கு மாற்றவும் -->
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate 2" class="lawyer-photo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwZjE3MmEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMjBweCIgZm9udC1mYW1pbHk9IkFyaWFsIiBkeT0iLjNlbSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UGhvdG8gMjwvdGV4dD48L3N2Zz4='">
+                <div class="audio-visualizer" id="vis-2">
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                </div>
+            </div>
+            <div class="speaker-badge">
+                <span class="badge-active-indicator"></span> Advocate 2
+            </div>
+        </div>
+
+        <!-- Speaker 3 -->
+        <div class="vtuber-pod hidden-pod" id="pod-3">
+            <div class="glass-pod-frame"></div>
+            <div class="photo-container">
+                <!-- அசல் புகைப்படத்தை இங்கு மாற்றவும் -->
+                <img src="https://assets.lawtamil.in/images/placeholder.png" alt="Advocate 3" class="lawyer-photo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwZjE3MmEiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMjBweCIgZm9udC1mYW1pbHk9IkFyaWFsIiBkeT0iLjNlbSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UGhvdG8gMzwvdGV4dD48L3N2Zz4='">
+                <div class="audio-visualizer" id="vis-3">
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                    <div class="vis-bar" style="height: 10px;"></div><div class="vis-bar" style="height: 10px;"></div>
+                </div>
+            </div>
+            <div class="speaker-badge">
+                <span class="badge-active-indicator"></span> Advocate 3
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomName = urlParams.get('room') || 'JurisprudenceTamil';
+
+        // Hidden iframe for VDO.Ninja audio transport
+        const vdoTransport = document.createElement('iframe');
+        vdoTransport.allow = "autoplay; microphone";
+        vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
+        vdoTransport.src = `./index.html?scene&room=${roomName}&autostart&stereo&proaudio&vol=0&remote`;
+        document.body.appendChild(vdoTransport);
+
+        let audioCtx; 
+
+        // 3 Speaker configuration
+        const speakers = [
+            {
+                id: 'Speaker1', pod: document.getElementById('pod-1'), visContainer: document.getElementById('vis-1'),
+                bars: Array.from(document.getElementById('vis-1').querySelectorAll('.vis-bar')),
+                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+            },
+            {
+                id: 'Speaker2', pod: document.getElementById('pod-2'), visContainer: document.getElementById('vis-2'),
+                bars: Array.from(document.getElementById('vis-2').querySelectorAll('.vis-bar')),
+                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+            },
+            {
+                id: 'Speaker3', pod: document.getElementById('pod-3'), visContainer: document.getElementById('vis-3'),
+                bars: Array.from(document.getElementById('vis-3').querySelectorAll('.vis-bar')),
+                analyser: null, dataArray: null, trackId: null, track: null, pc: null
+            }
+        ];
+
+        const connectedTracks = new Map();
+        const waitingQueue = []; 
+
+        function updateStageLayout() {
+            const activeCount = speakers.filter(s => s.trackId !== null).length || 1; // Default to 1 to show Host
+            
+            document.body.classList.remove('single-mode', 'dual-mode', 'triple-mode');
+            
+            if (activeCount === 1) document.body.classList.add('single-mode');
+            else if (activeCount === 2) document.body.classList.add('dual-mode');
+            else document.body.classList.add('triple-mode');
+
+            // Toggle visibility of pods
+            speakers.forEach((spk, index) => {
+                if (index === 0 || spk.trackId !== null) {
+                    spk.pod.classList.remove('hidden-pod');
+                } else {
+                    spk.pod.classList.add('hidden-pod');
+                }
+            });
+        }
+
+        function assignTrackToSpeaker(track, pc) {
+            let availSpeaker = speakers.find(s => s.trackId === null);
+            if (!availSpeaker) return false;
+
+            availSpeaker.trackId = track.id;
+            availSpeaker.track = track;
+            availSpeaker.pc = pc;
+            connectedTracks.set(track.id, availSpeaker);
+
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            availSpeaker.analyser = audioCtx.createAnalyser();
+            availSpeaker.analyser.fftSize = 64; 
+            availSpeaker.analyser.smoothingTimeConstant = 0.5;
+            availSpeaker.dataArray = new Uint8Array(availSpeaker.analyser.frequencyBinCount);
+
+            const cleanStream = new MediaStream([track]);
+            const rawMic = audioCtx.createMediaStreamSource(cleanStream);
+            rawMic.connect(availSpeaker.analyser); 
+            availSpeaker.analyser.connect(audioCtx.destination);
+
+            updateStageLayout();
+
+            track.onended = () => { handleTrackDisconnect(availSpeaker); };
+            return true;
+        }
+
+        function handleTrackDisconnect(spk) {
+            if (spk.trackId) connectedTracks.delete(spk.trackId);
+            spk.trackId = null; spk.track = null; spk.pc = null;
+            spk.analyser = null; spk.dataArray = null;
+
+            if (waitingQueue.length > 0) {
+                const nextItem = waitingQueue.shift();
+                assignTrackToSpeaker(nextItem.track, nextItem.pc);
+            } else {
+                updateStageLayout();
+            }
+        }
+
+        function bootVisualizer() {
+            if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            updateStageLayout();
+
+            setInterval(() => {
+                speakers.forEach(spk => {
+                    if (spk.track && spk.track.readyState === 'ended') { handleTrackDisconnect(spk); }
+                });
+            }, 1000);
+
+            // VDO.Ninja WebRTC hook
+            setInterval(() => {
+                try {
+                    const iframeWin = vdoTransport.contentWindow;
+                    if (iframeWin && iframeWin.RTCPeerConnection && !iframeWin.__lawtamil_rtc_hooked) {
+                        const OrigPeerConnection = iframeWin.RTCPeerConnection;
+                        iframeWin.RTCPeerConnection = function(...args) {
+                            const pc = new OrigPeerConnection(...args);
+
+                            pc.addEventListener('connectionstatechange', () => {
+                                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                                    speakers.forEach(spk => { if (spk.pc === pc) handleTrackDisconnect(spk); });
+                                    for (let i = waitingQueue.length - 1; i >= 0; i--) {
+                                        if (waitingQueue[i].pc === pc) waitingQueue.splice(i, 1);
+                                    }
+                                }
+                            });
+                            
+                            pc.addEventListener('track', async (event) => {
+                                const track = event.track;
+                                if (track.kind !== 'audio') return;
+                                if (connectedTracks.has(track.id)) return;
+
+                                const assigned = assignTrackToSpeaker(track, pc);
+                                if (!assigned) {
+                                    waitingQueue.push({ track: track, pc: pc });
+                                }
+                            });
+                            return pc;
+                        };
+                        iframeWin.RTCPeerConnection.prototype = OrigPeerConnection.prototype;
+                        Object.assign(iframeWin.RTCPeerConnection, OrigPeerConnection); 
+                        iframeWin.__lawtamil_rtc_hooked = true;
+                    }
+                } catch (e) {} 
+            }, 500);
+
+            setInterval(() => { if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }, 1000);
+            renderAudioBars();
+        }
+
+        // Render clean HTML/CSS visualizer bars based on Audio
+        const renderAudioBars = () => {
+            requestAnimationFrame(renderAudioBars);
+
+            speakers.forEach(spk => {
+                if (spk.analyser && spk.dataArray) {
+                    spk.analyser.getByteFrequencyData(spk.dataArray);
+                    
+                    let totalVolume = 0; 
+                    for(let i=0; i<spk.bars.length; i++) { 
+                        // Clean up noise gate
+                        let val = Math.max(0, (spk.dataArray[i * 2 + 1] || 0) - 75); 
+                        totalVolume += val;
+                        
+                        // Scale bar height (min 5px, max 40px)
+                        let height = 5 + (val * 0.25);
+                        spk.bars[i].style.height = `${Math.min(40, height)}px`;
+                    }
+                    
+                    let avgVol = totalVolume / spk.bars.length;
+                    
+                    // Activate talking glow if volume is high enough
+                    if (avgVol > 5) {
+                        spk.pod.classList.add('talking');
+                    } else {
+                        spk.pod.classList.remove('talking');
+                    }
+                } else {
+                    // Default state if no audio track
+                    spk.pod.classList.remove('talking');
+                    spk.bars.forEach(bar => bar.style.height = '5px');
+                }
+            });
+        };
+        
+        document.addEventListener('DOMContentLoaded', bootVisualizer);
+    </script>
+</body>
+</html>

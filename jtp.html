@@ -65,7 +65,7 @@
             background: rgba(0, 25, 60, 0.8); backdrop-filter: blur(15px);
         }
 
-        /* 🟢 Custom Font Padding Fixes - Maintained from user's code */
+        /* 🟢 Custom Font Padding Fixes */
         .logo-main { 
             font-family: 'Tamil039', sans-serif; font-size: 2.2vw; 
             background: linear-gradient(135deg, #00193c, #003380); 
@@ -355,7 +355,7 @@
             });
         }
 
-        // 🟢 Continuous Data Sync to catch delayed VDO.Ninja Labels
+        // 🟢 Advanced Deep Scan Logic to find Name regardless of Custom CSS URL
         function updateSpeakerIdentity(spk) {
             if (spk.advMatch) return; // Already identified
 
@@ -365,10 +365,12 @@
                 if (spk.track.label) identifiers.push(spk.track.label);
             }
             if (spk.streamId) identifiers.push(spk.streamId);
+            
             if (spk.pc && spk.pc.remoteDescription && spk.pc.remoteDescription.sdp) {
                 identifiers.push(spk.pc.remoteDescription.sdp);
             }
             
+            // Scan VDO.Ninja iframe DOM for dynamic labels
             try {
                 const win = vdoTransport.contentWindow;
                 if (win && win.document) {
@@ -376,13 +378,12 @@
                     for (let el of mediaEls) {
                         if (el.srcObject) {
                             const tracks = el.srcObject.getTracks();
-                            if (tracks.some(t => t.id === spk.track.id)) {
-                                identifiers.push(el.id);
+                            if (tracks.some(t => t === spk.track || t.id === spk.track.id)) {
+                                if (el.id) identifiers.push(el.id);
                                 if (el.dataset && el.dataset.label) identifiers.push(el.dataset.label);
                                 let container = el.closest('.video-container') || el.parentElement;
                                 if (container) {
                                     identifiers.push(container.innerText);
-                                    identifiers.push(container.innerHTML);
                                 }
                             }
                         }
@@ -404,20 +405,29 @@
                 spk.advMatch = match;
                 const imgEl = spk.pod.querySelector('.lawyer-photo');
                 const nameEl = spk.pod.querySelector('.badge-name');
+                const titleEl = spk.pod.querySelector('.badge-title');
                 
-                // Fallback Logic from absolute path JPG -> absolute PNG -> Placeholder
+                // Remove previous onerror hooks
+                imgEl.onerror = null;
+                
+                // 🟢 Fallback Image Load Chain (Local -> Domain -> PNGs -> Placeholder)
+                imgEl.src = `./${match.eng}.jpg`;
                 imgEl.onerror = function() {
-                    if (this.src.includes('.jpg')) {
-                        this.src = `https://webrtc.lawtamil.in/${match.eng}.png`;
-                    } else {
-                        this.src = 'https://assets.lawtamil.in/images/placeholder.png';
-                        this.onerror = null;
-                    }
+                    this.onerror = function() {
+                        this.onerror = function() {
+                            this.onerror = function() {
+                                this.onerror = null;
+                                this.src = 'https://assets.lawtamil.in/images/placeholder.png';
+                            };
+                            this.src = `https://webrtc.lawtamil.in/${match.eng}.png`;
+                        };
+                        this.src = `./${match.eng}.png`;
+                    };
+                    this.src = `https://webrtc.lawtamil.in/${match.eng}.jpg`;
                 };
                 
-                // Absolute URL setup
-                imgEl.src = `https://webrtc.lawtamil.in/${match.eng}.jpg`;
                 nameEl.textContent = match.tam;
+                titleEl.textContent = 'வழக்கறிஞர்';
             }
         }
 
@@ -429,7 +439,9 @@
             availSpeaker.track = track;
             availSpeaker.pc = pc;
             availSpeaker.advMatch = null;
-            availSpeaker.streamId = (eventObj && eventObj.streams && eventObj.streams[0]) ? eventObj.streams[0].id : track.id;
+            
+            // Accurately capture Stream ID from event
+            availSpeaker.streamId = (eventObj && eventObj.streams && eventObj.streams.length > 0) ? eventObj.streams[0].id : (track.id || "");
 
             // Attempt identification immediately
             updateSpeakerIdentity(availSpeaker);
@@ -476,7 +488,7 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             updateStageLayout();
 
-            // Continuous polling to catch delayed labels/pushes from VDO.Ninja
+            // 🟢 Poll continuously for VDO.Ninja label updates
             setInterval(() => {
                 speakers.forEach(spk => {
                     if (spk.track && spk.track.readyState === 'ended') { 

@@ -20,7 +20,7 @@
 
         body { 
             background-image: url("https://ul.lawtamil.in/bg.jpg?v=1.1") !important; 
-            background-color: #000510; /* Fallback Dark Theme */
+            background-color: #000510; 
             background-size: cover; background-position: center;
             overflow: hidden; 
             height: 100vh; width: 100vw;
@@ -65,20 +65,23 @@
             background: rgba(0, 25, 60, 0.8); backdrop-filter: blur(15px);
         }
 
+        /* 🟢 Custom Font Padding Fixes */
         .logo-main { 
             font-family: 'Tamil039', sans-serif; font-size: 2.2vw; 
             background: linear-gradient(135deg, #00193c, #003380); 
-            color: #ffca70; padding: 1.5vh 1.8vw; text-shadow: 0px 4px 10px rgba(0,0,0,0.9); 
-            line-height: 1; word-spacing: -3px;
+            color: #ffca70; text-shadow: 0px 4px 10px rgba(0,0,0,0.9); 
+            line-height: 1; word-spacing: -10px;
+            padding-top: 2.5vh; padding-bottom: 0.8vh; padding-left: 0.8vw; padding-right: 0.8vw;
         }
         .logo-sub { 
             font-family: 'Tamil039', sans-serif; font-size: 1.4vw; 
-            background: #d93025; color: white; padding: 1.5vh 1.8vw; 
+            background: #d93025; color: white; 
             display: flex; align-items: center; justify-content: center;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.6); line-height: 1;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6); line-height: 1; word-spacing: -10px;
+            padding-top: 2.5vh; padding-bottom: 0.8vh; padding-left: 0.8vw; padding-right: 0.8vw;
         }
         .podcast-badge {
-            margin-top: 1.2vh; font-family: 'Montserrat', sans-serif; font-weight: 900;
+            margin-top: 1.5vh; font-family: 'Montserrat', sans-serif; font-weight: 900;
             background: #ffca70; color: #00193c; padding: 0.6vh 1.5vw;
             border-radius: 6px; font-size: 1vw; letter-spacing: 2.5px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.6); display: inline-block;
@@ -90,19 +93,18 @@
         .right-jokers-stage {
             width: 75vw; height: 100vh;
             display: flex; justify-content: center; align-items: center;
-            padding: 12vh 2vw 5vh 2vw; /* Added Top Padding to push pods down */
+            padding: 12vh 2vw 5vh 2vw; 
             gap: 2.5vw; position: relative;
             transition: all 0.6s ease-in-out;
             flex-wrap: wrap;
         }
 
-        /* --- Podcast Pod (Glassmorphism & Gold) --- */
         .vtuber-pod {
             position: relative;
             display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
             transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             transform-origin: center center;
-            margin-top: 5vh; /* Push down slightly more */
+            margin-top: 5vh; 
         }
 
         .vtuber-pod.hidden-pod {
@@ -111,12 +113,10 @@
             transform: scale(0.5);
         }
 
-        /* Dynamic Sizing based on participants (Reduced sizes) */
         body.single-mode .vtuber-pod:not(.hidden-pod) { width: 22vw; height: 50vh; }
         body.dual-mode .vtuber-pod:not(.hidden-pod) { width: 19vw; height: 45vh; }
         body.triple-mode .vtuber-pod:not(.hidden-pod) { width: 17vw; height: 42vh; }
 
-        /* Frame Container */
         .glass-pod-frame {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             border-radius: 16px; z-index: 5;
@@ -127,7 +127,6 @@
             transition: all 0.3s ease;
         }
 
-        /* Active Speaker Glow */
         .vtuber-pod.talking .glass-pod-frame {
             border: 2px solid #ffca70;
             box-shadow: 0 0 25px rgba(255, 202, 112, 0.5), inset 0 0 15px rgba(255, 202, 112, 0.2);
@@ -139,7 +138,6 @@
             padding: 2vh 1vw;
         }
 
-        /* Passport Size Aspect Ratio (3:4) */
         .lawyer-photo {
             width: 75%; 
             aspect-ratio: 3 / 4; 
@@ -150,13 +148,8 @@
             transition: border 0.3s ease;
         }
         
-        .vtuber-pod.talking .lawyer-photo {
-            border: 2px solid rgba(255, 202, 112, 0.6);
-        }
+        .vtuber-pod.talking .lawyer-photo { border: 2px solid rgba(255, 202, 112, 0.6); }
 
-        /* =========================================================
-           ✨ DECENT AUDIO VISUALIZER
-           ========================================================= */
         .audio-visualizer {
             display: flex; gap: 5px; align-items: flex-end; justify-content: center;
             height: 35px; margin-top: 15px; opacity: 0; transition: opacity 0.3s ease;
@@ -170,24 +163,37 @@
             box-shadow: 0 0 8px rgba(255, 202, 112, 0.8);
         }
 
-        /* Name Badge */
+        /* 🟢 Updated Name Badge Styles for Dual Lines */
         .speaker-badge {
-            position: absolute; bottom: -2.5vh; left: 50%; transform: translateX(-50%);
-            width: 80%; background: rgba(0, 25, 60, 0.95); border: 2px solid #ffca70;
-            padding: 0.8vh 0.5vw; border-radius: 8px; color: white;
-            font-size: 1.2vw; font-weight: bold; text-align: center;
+            position: absolute; bottom: -3.5vh; left: 50%; transform: translateX(-50%);
+            width: 85%; background: rgba(0, 25, 60, 0.95); border: 2px solid #ffca70;
+            padding: 0.6vh 0.8vw; border-radius: 8px; color: white;
             box-shadow: 0 10px 30px rgba(0,0,0,0.9); z-index: 20;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.5s ease; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: all 0.5s ease;
         }
-        body.single-mode .speaker-badge { font-size: 1.4vw; bottom: -3vh; }
+        body.single-mode .speaker-badge { bottom: -4vh; padding: 0.8vh 1vw; }
         
         .badge-active-indicator {
-            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-            background: #555; margin-right: 8px; transition: background 0.3s ease;
+            display: flex; flex-shrink: 0; width: 10px; height: 10px; border-radius: 50%;
+            background: #555; transition: background 0.3s ease;
         }
         .vtuber-pod.talking .badge-active-indicator { background: #00ff66; box-shadow: 0 0 10px #00ff66; }
-        .badge-text { text-overflow: ellipsis; overflow: hidden; }
+        
+        .badge-text-group {
+            display: flex; flex-direction: column; align-items: flex-start;
+            justify-content: center; overflow: hidden; line-height: 1.1;
+        }
+        
+        .badge-name { 
+            font-family: 'Tamil039', sans-serif; font-size: 1.6vw; 
+            font-weight: bold; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+            letter-spacing: 0.5px; padding-top: 2px;
+        }
+        .badge-title {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-size: 0.75vw; color: #ffca70; font-weight: bold; letter-spacing: 1px;
+        }
 
         /* =========================================================
            4. PORTRAIT (9:16) RESPONSIVE RULES
@@ -199,12 +205,13 @@
             .channel-title-corner { top: 3vh; right: auto; left: 50%; transform: translateX(-50%); align-items: center; }
             .logo-main { font-size: 4.5vw; } .logo-sub { font-size: 3vw; } .podcast-badge { font-size: 2.5vw; }
 
-            /* Dynamic Heights for Portrait */
             body.single-mode .vtuber-pod:not(.hidden-pod) { width: 60vw; height: 45vh; }
             body.dual-mode .vtuber-pod:not(.hidden-pod) { width: 50vw; height: 35vh; }
             body.triple-mode .vtuber-pod:not(.hidden-pod) { width: 45vw; height: 25vh; }
 
-            .speaker-badge { font-size: 3vw !important; bottom: -2vh !important; width: 85%; }
+            .speaker-badge { width: 90%; bottom: -3vh !important; }
+            .badge-name { font-size: 4vw; }
+            .badge-title { font-size: 2vw; }
         }
     </style>
 </head>
@@ -212,13 +219,10 @@
 
     <div class="left-ad-slot">
         <div class="breaking-container">
-            <div id='adbreakingnews'>
-                <!-- Sidebar content goes here -->
-            </div>
+            <div id='adbreakingnews'></div>
         </div>
     </div>
 
-    <!-- LawTamil Branding -->
     <div class="channel-title-corner">
         <div class="title-group">
             <div class="logo-main">சட்டக் களம்</div>
@@ -242,7 +246,11 @@
                 </div>
             </div>
             <div class="speaker-badge">
-                <span class="badge-active-indicator"></span> <span class="badge-text">Advocate 1</span>
+                <div class="badge-active-indicator"></div>
+                <div class="badge-text-group">
+                    <div class="badge-name">Advocate 1</div>
+                    <div class="badge-title">வழக்கறிஞர்</div>
+                </div>
             </div>
         </div>
 
@@ -258,7 +266,11 @@
                 </div>
             </div>
             <div class="speaker-badge">
-                <span class="badge-active-indicator"></span> <span class="badge-text">Advocate 2</span>
+                <div class="badge-active-indicator"></div>
+                <div class="badge-text-group">
+                    <div class="badge-name">Advocate 2</div>
+                    <div class="badge-title">வழக்கறிஞர்</div>
+                </div>
             </div>
         </div>
 
@@ -274,7 +286,11 @@
                 </div>
             </div>
             <div class="speaker-badge">
-                <span class="badge-active-indicator"></span> <span class="badge-text">Advocate 3</span>
+                <div class="badge-active-indicator"></div>
+                <div class="badge-text-group">
+                    <div class="badge-name">Advocate 3</div>
+                    <div class="badge-title">வழக்கறிஞர்</div>
+                </div>
             </div>
         </div>
 
@@ -284,7 +300,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const roomName = urlParams.get('room') || 'JurisprudenceTamil';
 
-        // Hidden iframe for VDO.Ninja audio transport
         const vdoTransport = document.createElement('iframe');
         vdoTransport.allow = "autoplay; microphone";
         vdoTransport.style.cssText = "position:absolute;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1";
@@ -293,10 +308,13 @@
 
         let audioCtx; 
 
-        // Known Advocate Names for Image mapping
-        const knownAdvocates = ['eakanthan', 'balaguru', 'nandhivarman'];
+        // 🟢 Name Mapping (English Input -> Tamil Output)
+        const knownAdvocates = {
+            'eakanthan': 'ஏகாந்தன்',
+            'balaguru': 'பாலகுரு',
+            'nandhivarman': 'நந்திவர்மன்'
+        };
 
-        // 3 Speaker configuration
         const speakers = [
             {
                 id: 'Speaker1', pod: document.getElementById('pod-1'), visContainer: document.getElementById('vis-1'),
@@ -309,7 +327,7 @@
                 analyser: null, dataArray: null, trackId: null, track: null, pc: null, streamId: null
             },
             {
-                id: 'Speaker3', pod: document.getElementById('pod-3'), visContainer: document.getElementById('vis-3'),
+                id: 'Speaker3', document: document.getElementById('pod-3'), pod: document.getElementById('pod-3'), visContainer: document.getElementById('vis-3'),
                 bars: Array.from(document.getElementById('vis-3').querySelectorAll('.vis-bar')),
                 analyser: null, dataArray: null, trackId: null, track: null, pc: null, streamId: null
             }
@@ -336,12 +354,12 @@
             });
         }
 
-        // Helper to match VDO Ninja stream ID/label to Advocate name
+        // 🟢 Helper to fetch mapped names
         function getAdvocateDetails(identifier) {
             if(!identifier) return null;
             identifier = identifier.toLowerCase();
-            for(let name of knownAdvocates) {
-                if(identifier.includes(name)) return name;
+            for(let engName in knownAdvocates) {
+                if(identifier.includes(engName)) return { eng: engName, tam: knownAdvocates[engName] };
             }
             return null;
         }
@@ -355,25 +373,24 @@
             availSpeaker.pc = pc;
             availSpeaker.streamId = streamId;
 
-            // --- Auto Profile Image & Name Assignment Logic ---
             const imgEl = availSpeaker.pod.querySelector('.lawyer-photo');
-            const nameEl = availSpeaker.pod.querySelector('.badge-text');
+            const nameEl = availSpeaker.pod.querySelector('.badge-name');
+            const titleEl = availSpeaker.pod.querySelector('.badge-title');
             
-            // Check if streamId or track label contains our known names
-            let advName = getAdvocateDetails(streamId) || getAdvocateDetails(track.label) || getAdvocateDetails(track.id);
+            let advMatch = getAdvocateDetails(streamId) || getAdvocateDetails(track.label) || getAdvocateDetails(track.id);
 
-            if (advName) {
-                // Try PNG first, if fails try JPG via onerror
-                imgEl.src = `./${advName}.png`;
+            if (advMatch) {
+                imgEl.src = `./${advMatch.eng}.png`;
                 imgEl.onerror = () => { 
-                    imgEl.src = `./${advName}.jpg`; 
+                    imgEl.src = `./${advMatch.eng}.jpg`; 
                     imgEl.onerror = () => { imgEl.src = 'https://assets.lawtamil.in/images/placeholder.png'; };
                 };
-                // Capitalize first letter
-                nameEl.textContent = advName.charAt(0).toUpperCase() + advName.slice(1);
+                nameEl.textContent = advMatch.tam;
+                titleEl.textContent = 'வழக்கறிஞர்';
             } else {
                 imgEl.src = 'https://assets.lawtamil.in/images/placeholder.png';
                 nameEl.textContent = 'Advocate';
+                titleEl.textContent = 'வழக்கறிஞர்';
             }
 
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -398,9 +415,9 @@
             spk.trackId = null; spk.track = null; spk.pc = null; spk.streamId = null;
             spk.analyser = null; spk.dataArray = null;
             
-            // Reset image and name
             spk.pod.querySelector('.lawyer-photo').src = 'https://assets.lawtamil.in/images/placeholder.png';
-            spk.pod.querySelector('.badge-text').textContent = 'Advocate';
+            spk.pod.querySelector('.badge-name').textContent = 'Advocate';
+            spk.pod.querySelector('.badge-title').textContent = 'வழக்கறிஞர்';
 
             if (waitingQueue.length > 0) {
                 const nextItem = waitingQueue.shift();
@@ -421,7 +438,6 @@
                 });
             }, 1000);
 
-            // VDO.Ninja WebRTC hook
             setInterval(() => {
                 try {
                     const iframeWin = vdoTransport.contentWindow;
@@ -444,7 +460,6 @@
                                 if (track.kind !== 'audio') return;
                                 if (connectedTracks.has(track.id)) return;
 
-                                // VDO.Ninja often passes the label/push ID as the stream ID
                                 const streamId = event.streams && event.streams[0] ? event.streams[0].id : track.id;
 
                                 const assigned = assignTrackToSpeaker(track, pc, streamId);
@@ -465,7 +480,6 @@
             renderAudioBars();
         }
 
-        // Render clean HTML/CSS visualizer bars based on Audio
         const renderAudioBars = () => {
             requestAnimationFrame(renderAudioBars);
 
@@ -475,25 +489,21 @@
                     
                     let totalVolume = 0; 
                     for(let i=0; i<spk.bars.length; i++) { 
-                        // Clean up noise gate
                         let val = Math.max(0, (spk.dataArray[i * 2 + 1] || 0) - 75); 
                         totalVolume += val;
                         
-                        // Scale bar height (min 5px, max 35px)
                         let height = 5 + (val * 0.25);
                         spk.bars[i].style.height = `${Math.min(35, height)}px`;
                     }
                     
                     let avgVol = totalVolume / spk.bars.length;
                     
-                    // Activate talking glow if volume is high enough
                     if (avgVol > 5) {
                         spk.pod.classList.add('talking');
                     } else {
                         spk.pod.classList.remove('talking');
                     }
                 } else {
-                    // Default state if no audio track
                     spk.pod.classList.remove('talking');
                     spk.bars.forEach(bar => bar.style.height = '5px');
                 }

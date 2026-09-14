@@ -6783,20 +6783,3 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 		script.src = "./thirdparty/polyfill.min.js"; // dynamically load this only if its needed. Keeps loading time down.
 	},100);
 }
-
-// 🟢 CANVAS PLAY BUG FIX FOR MICONLY + AVATAR 🟢
-if (urlParams.has('miconly') && urlParams.has('avatar')) {
-    var pWebcam = document.getElementById("previewWebcam");
-    if (pWebcam) {
-        // VDO.Ninja வீடியோவை Pause செய்ய முயன்றால், அதைத் தடுத்து மீண்டும் Play செய்யச் சொல்கிறோம் (Override)
-        pWebcam.pause = function() {
-            pWebcam.play().catch(function(){});
-        };
-        
-        // முதல் முறையாகக் கட்டாய Play
-        pWebcam.muted = true;
-        pWebcam.playsInline = true;
-        pWebcam.autoplay = true;
-        pWebcam.play().catch(function(){});
-    }
-}

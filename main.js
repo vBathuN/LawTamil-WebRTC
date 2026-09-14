@@ -6783,3 +6783,33 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 		script.src = "./thirdparty/polyfill.min.js"; // dynamically load this only if its needed. Keeps loading time down.
 	},100);
 }
+
+// 🟢 CANVAS STREAM AUTOPLAY FIX FOR MICONLY + AS + AVATAR 🟢
+if (urlParams.has('miconly') && urlParams.has('as') && urlParams.has('avatar')) {
+    var tickleInterval = setInterval(function() {
+        // 1. வீடியோ ட்ராக்கை Muted நிலையில் Force Play செய்வது (Autoplay தடையை மீற)
+        document.querySelectorAll("video").forEach(function(vid) {
+            if (vid.paused) {
+                vid.muted = true;
+                vid.playsInline = true;
+                vid.play().catch(function(){});
+            }
+        });
+        
+        // 2. User Touch இல்லாமலேயே Canvas-ல் படத்தைத் தொடர்ந்து வரையச் செய்வது (Redraw)
+        try {
+            var av1 = document.getElementById("defaultAvatar1");
+            var av2 = document.getElementById("defaultAvatar2");
+            if (av1 && av1.classList.contains("selected")) {
+                av1.click();
+            } else if (av2 && av2.classList.contains("selected")) {
+                av2.click();
+            }
+        } catch(e) {}
+    }, 500); // ஒவ்வொரு அரை வினாடியும் Canvas-ஐத் தட்டி எழுப்புகிறது
+
+    // பயனர் திரையை ஒருமுறை தொட்டவுடன் (உண்மையான User Gesture கிடைத்ததும்) இதை நிறுத்திவிடலாம்
+    document.addEventListener('click', function() {
+        clearInterval(tickleInterval);
+    }, { once: true });
+}

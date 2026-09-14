@@ -1625,19 +1625,41 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 			try {
 				avatar = decodeURIComponent(avatar);
 			}catch(e){}
-			
+
 			session.avatar = getById("defaultAvatar2");
 			session.avatar.ready = false;
-			session.avatar.onload = () => {
+			
+			// 🟢 BUG FIX 1: Canvas-ஐ அப்டேட் செய்வதற்கான முழுமையான Function 🟢
+			var applyAvatarSelection = () => {
 				session.avatar.ready = true;
-				getById("noAvatarSelected3").classList.remove("selected");
-				getById("noAvatarSelected").classList.remove("selected");
-				getById("defaultAvatar1").classList.add("selected");
-				getById("defaultAvatar2").classList.add("selected");
+				try {
+					var noAv3 = getById("noAvatarSelected3");
+					var noAv1 = getById("noAvatarSelected");
+					if (noAv3) noAv3.classList.remove("selected");
+					if (noAv1) noAv1.classList.remove("selected");
+
+					var av1 = getById("defaultAvatar1");
+					var av2 = getById("defaultAvatar2");
+					if (av1) {
+						av1.classList.add("selected");
+						av1.click(); // VDO.Ninja-வின் உள்ளமைக்கப்பட்ட Canvas Redraw-ஐ தூண்டுகிறது
+					}
+					if (av2) {
+						av2.classList.add("selected");
+						av2.click(); // VDO.Ninja-வின் உள்ளமைக்கப்பட்ட Canvas Redraw-ஐ தூண்டுகிறது
+					}
+				} catch(e) { console.error("Avatar error:", e); }
 			};
+
+			session.avatar.onload = applyAvatarSelection;
+
+			// 🟢 BUG FIX 2: 28kb WebP போல அதிவேகமாக Cache-ல் இருந்து லோட் ஆனால் 🟢
+			if (session.avatar.complete) {
+				applyAvatarSelection();
+			}
+
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
-			
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");

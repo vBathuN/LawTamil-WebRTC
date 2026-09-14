@@ -2595,15 +2595,5 @@
 		-->
 		<script type="text/javascript" crossorigin="anonymous" id="main-js" src="./main.js?ver=785"></script>
 
-		<script>
-// 🟢 பயனர் திரையைத் தொடும் அந்த முதல் Touch-ஐப் பயன்படுத்தும் உத்தி 🟢
-window.addEventListener('pointerdown', function() {
-    let av1 = document.getElementById("defaultAvatar1");
-    let noAv = document.getElementById("noAvatarSelected");
-    if (av1 && noAv && noAv.classList.contains("selected")) {
-        av1.click();
-    }
-}, { once: true, capture: true }); // capture: true இருப்பதால் START பட்டன் வேலை செய்வதற்கு முன்பே இது நடந்துவிடும்
-</script>
 	</body>
 </html>

@@ -5117,14 +5117,32 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	
 	hideHomeCheck();
 	
-	setTimeout(function(){
+	function executeDelayedStartups() {
+		if (window.startUpExecuted) return;
+		window.startUpExecuted = true;
 		for (var i in delayedStartupFuncs) {
 			var cb = delayedStartupFuncs[i];
 			log(cb.slice(1));
-			cb[0](...cb.slice(1)); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#A_better_apply
+			cb[0](...cb.slice(1)); 
 		}
 		delayedStartupFuncs = [];
-	},50);
+	}
+
+	if (session.avatar && !session.avatar.ready) {
+		let originalOnload = session.avatar.onload; 
+		
+		// படம் முழுமையாக லோடு ஆன பிறகே ஸ்ட்ரீமைத் தொடங்க
+		session.avatar.onload = () => {
+			if (originalOnload) originalOnload();
+			setTimeout(executeDelayedStartups, 50);
+		};
+		
+		// நெட்வொர்க் பிரச்சனையால் படம் வராமல் போனால், அதிகபட்சம் 2 நொடிகள் காத்திருக்க
+		setTimeout(executeDelayedStartups, 2000);
+	} else {
+		// Avatar இல்லை என்றால் வழக்கம்போல 50ms-ல் தொடங்க
+		setTimeout(executeDelayedStartups, 50);
+	}
 
 	if ((session.effect=="3") || (session.effect=="4") || (session.effect=="5")){
 		attemptTFLiteJsFileLoad();

@@ -1613,7 +1613,6 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-				try { getById("defaultAvatar1").click(); } catch(e){}
 			};
 			if (session.avatar.complete){
 				session.avatar.ready = true;
@@ -1635,7 +1634,6 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-				try { getById("defaultAvatar1").click(); } catch(e){}
 			};
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;

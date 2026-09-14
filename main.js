@@ -1604,13 +1604,6 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	
 	if (urlParams.has('avatar')){
 		var avatar = urlParams.get('avatar') || false;
-
-		// 🟢 FIX PART 1: Avatar இருந்தால் Auto-start-ஐத் தற்காலிகமாக நிறுத்தி வைக்கிறோம்
-		var isAutoStart = urlParams.has('autojoin') || urlParams.has('autostart') || urlParams.has('aj') || urlParams.has('as');
-		if (isAutoStart) {
-			session.pendingAutostart = true;
-		}
-
 		if (avatar && (avatar=="default")){
 			session.avatar = document.getElementById("defaultAvatar2");
 			session.avatar.ready=false;
@@ -1620,17 +1613,6 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-
-				// 🟢 FIX PART 2: படம் முழுமையாக லோட் ஆனதும் ஸ்ட்ரீமை மேனுவலாகத் தூண்டுகிறோம்
-				if (session.pendingAutostart) {
-					session.pendingAutostart = false;
-					session.autostart = true;
-					if (typeof publish === 'function') { publish(); }
-					else {
-						let startBtn = document.getElementById("publishButton") || document.querySelector(".pulse");
-						if (startBtn) startBtn.click();
-					}
-				}
 			};
 			if (session.avatar.complete){
 				session.avatar.ready = true;
@@ -1638,17 +1620,12 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-
-				if (session.pendingAutostart) {
-					session.pendingAutostart = false;
-					session.autostart = true;
-				}
 			}
 		} else if (avatar){
 			try {
 				avatar = decodeURIComponent(avatar);
 			}catch(e){}
-
+			
 			session.avatar = getById("defaultAvatar2");
 			session.avatar.ready = false;
 			session.avatar.onload = () => {
@@ -1657,20 +1634,10 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-
-				// 🟢 FIX PART 3: வெளியிலிருந்து வரும் படங்களுக்கும் அதே லாஜிக்
-				if (session.pendingAutostart) {
-					session.pendingAutostart = false;
-					session.autostart = true;
-					if (typeof publish === 'function') { publish(); }
-					else {
-						let startBtn = document.getElementById("publishButton") || document.querySelector(".pulse");
-						if (startBtn) startBtn.click();
-					}
-				}
 			};
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
+			
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");
@@ -2868,10 +2835,7 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	}
 	
 	if (urlParams.has('autojoin') || urlParams.has('autostart') || urlParams.has('aj') || urlParams.has('as')) {
-		// 🟢 FIX PART 4: Avatar லோடிங்கில் இருந்தால், இயல்பான Auto-start-ஐத் தடுத்து விடுகிறோம்
-		if (!session.pendingAutostart) {
-			session.autostart = true;
-		}
+		session.autostart = true;
 	} 
 	
 	if (session.dataMode){
@@ -5153,9 +5117,9 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	
 	hideHomeCheck();
 	
-	function executeDelayedStartups() {
-		if (window.startUpExecuted) return;
-		window.startUpExecuted = true;
+	function startNinjaVDO() {
+		if (window.ninjaStarted) return;
+		window.ninjaStarted = true;
 		for (var i in delayedStartupFuncs) {
 			var cb = delayedStartupFuncs[i];
 			log(cb.slice(1));
@@ -5164,20 +5128,14 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 		delayedStartupFuncs = [];
 	}
 
-	if (session.avatar && !session.avatar.ready) {
-		let originalOnload = session.avatar.onload; 
-		
-		// படம் முழுமையாக லோடு ஆன பிறகே ஸ்ட்ரீமைத் தொடங்க
-		session.avatar.onload = () => {
-			if (originalOnload) originalOnload();
-			setTimeout(executeDelayedStartups, 50);
-		};
-		
-		// நெட்வொர்க் பிரச்சனையால் படம் வராமல் போனால், அதிகபட்சம் 2 நொடிகள் காத்திருக்க
-		setTimeout(executeDelayedStartups, 2000);
+	// Avatar படம் இருந்தால், அது முழுமையாக லோட் ஆகும் வரை காத்திருந்து ஸ்ட்ரீமைத் தொடங்குகிறோம்
+	if (session.avatar && !session.avatar.complete) {
+		session.avatar.addEventListener('load', startNinjaVDO);
+		// நெட்வொர்க் சிக்கலால் படம் வராவிட்டால், அதிகபட்சம் 2 வினாடிகளில் தானாகத் தொடங்க Failsafe
+		setTimeout(startNinjaVDO, 2000); 
 	} else {
-		// Avatar இல்லை என்றால் வழக்கம்போல 50ms-ல் தொடங்க
-		setTimeout(executeDelayedStartups, 50);
+		// Avatar இல்லை என்றாலோ அல்லது ஏற்கனவே Cache-ல் இருந்தாலோ வழக்கம்போல 50ms-ல் தொடங்க
+		setTimeout(startNinjaVDO, 50);
 	}
 
 	if ((session.effect=="3") || (session.effect=="4") || (session.effect=="5")){

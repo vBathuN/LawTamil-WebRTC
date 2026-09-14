@@ -6784,32 +6784,19 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	},100);
 }
 
-// 🟢 CANVAS STREAM AUTOPLAY FIX FOR MICONLY + AS + AVATAR 🟢
-if (urlParams.has('miconly') && urlParams.has('as') && urlParams.has('avatar')) {
-    var tickleInterval = setInterval(function() {
-        // 1. வீடியோ ட்ராக்கை Muted நிலையில் Force Play செய்வது (Autoplay தடையை மீற)
-        document.querySelectorAll("video").forEach(function(vid) {
-            if (vid.paused) {
-                vid.muted = true;
-                vid.playsInline = true;
-                vid.play().catch(function(){});
-            }
-        });
+// 🟢 CANVAS PLAY BUG FIX FOR MICONLY + AVATAR 🟢
+if (urlParams.has('miconly') && urlParams.has('avatar')) {
+    var pWebcam = document.getElementById("previewWebcam");
+    if (pWebcam) {
+        // VDO.Ninja வீடியோவை Pause செய்ய முயன்றால், அதைத் தடுத்து மீண்டும் Play செய்யச் சொல்கிறோம் (Override)
+        pWebcam.pause = function() {
+            pWebcam.play().catch(function(){});
+        };
         
-        // 2. User Touch இல்லாமலேயே Canvas-ல் படத்தைத் தொடர்ந்து வரையச் செய்வது (Redraw)
-        try {
-            var av1 = document.getElementById("defaultAvatar1");
-            var av2 = document.getElementById("defaultAvatar2");
-            if (av1 && av1.classList.contains("selected")) {
-                av1.click();
-            } else if (av2 && av2.classList.contains("selected")) {
-                av2.click();
-            }
-        } catch(e) {}
-    }, 500); // ஒவ்வொரு அரை வினாடியும் Canvas-ஐத் தட்டி எழுப்புகிறது
-
-    // பயனர் திரையை ஒருமுறை தொட்டவுடன் (உண்மையான User Gesture கிடைத்ததும்) இதை நிறுத்திவிடலாம்
-    document.addEventListener('click', function() {
-        clearInterval(tickleInterval);
-    }, { once: true });
+        // முதல் முறையாகக் கட்டாய Play
+        pWebcam.muted = true;
+        pWebcam.playsInline = true;
+        pWebcam.autoplay = true;
+        pWebcam.play().catch(function(){});
+    }
 }

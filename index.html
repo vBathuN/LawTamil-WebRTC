@@ -2596,13 +2596,14 @@
 		<script type="text/javascript" crossorigin="anonymous" id="main-js" src="./main.js?ver=785"></script>
 
 		<script>
-let forceAvatarCheck = setInterval(() => {
-    let av1 = document.getElementById("defaultAvatar1");
-    let noAv = document.getElementById("noAvatarSelected");
+let selectAvatarOnly = setInterval(() => {
+    let avatarImage = document.getElementById("defaultAvatar1");
+    let noImageBtn = document.getElementById("noAvatarSelected");
 
-    if (av1 && noAv && noAv.classList.contains("selected")) {
-        av1.click(); // படத்தை மட்டும் செலக்ட் செய்கிறது
-        clearInterval(forceAvatarCheck); // வேலை முடிந்ததும் அமைதியாகிவிடும்
+    // "No Image" செலக்ட் ஆகியிருந்தால், அவதார் படத்னை மட்டும் கிளிக் செய்யும்
+    if (avatarImage && noImageBtn && noImageBtn.classList.contains("selected")) {
+        avatarImage.click(); 
+        clearInterval(selectAvatarOnly); // கிளிக் செய்ததும் அமைதியாகிவிடும்
     }
 }, 100);
 </script>

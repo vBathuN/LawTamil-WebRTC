@@ -1625,41 +1625,27 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 			try {
 				avatar = decodeURIComponent(avatar);
 			}catch(e){}
-
+			
 			session.avatar = getById("defaultAvatar2");
 			session.avatar.ready = false;
-			
-			// 🟢 BUG FIX 1: Canvas-ஐ அப்டேட் செய்வதற்கான முழுமையான Function 🟢
-			var applyAvatarSelection = () => {
+			session.avatar.onload = () => {
 				session.avatar.ready = true;
-				try {
-					var noAv3 = getById("noAvatarSelected3");
-					var noAv1 = getById("noAvatarSelected");
-					if (noAv3) noAv3.classList.remove("selected");
-					if (noAv1) noAv1.classList.remove("selected");
-
-					var av1 = getById("defaultAvatar1");
-					var av2 = getById("defaultAvatar2");
-					if (av1) {
-						av1.classList.add("selected");
-						av1.click(); // VDO.Ninja-வின் உள்ளமைக்கப்பட்ட Canvas Redraw-ஐ தூண்டுகிறது
-					}
-					if (av2) {
-						av2.classList.add("selected");
-						av2.click(); // VDO.Ninja-வின் உள்ளமைக்கப்பட்ட Canvas Redraw-ஐ தூண்டுகிறது
-					}
-				} catch(e) { console.error("Avatar error:", e); }
+				getById("noAvatarSelected3").classList.remove("selected");
+				getById("noAvatarSelected").classList.remove("selected");
+				getById("defaultAvatar1").classList.add("selected");
+				getById("defaultAvatar2").classList.add("selected");
+				
+				/* 🟢 FIX 1: படம் வந்தவுடன் Canvas-ல் கட்டாயமாக வரையச் செய்கிறோம் 🟢 */
+				try { session.avatar.click(); } catch(e){} 
 			};
-
-			session.avatar.onload = applyAvatarSelection;
-
-			// 🟢 BUG FIX 2: 28kb WebP போல அதிவேகமாக Cache-ல் இருந்து லோட் ஆனால் 🟢
-			if (session.avatar.complete) {
-				applyAvatarSelection();
-			}
-
+			
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
+			
+			/* 🟢 FIX 2: WebP படம் Cache-லிருந்து உடனடியாக லோட் ஆனால் 🟢 */
+			if (session.avatar.complete) {
+				session.avatar.onload();
+			}
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");
@@ -5139,26 +5125,14 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	
 	hideHomeCheck();
 	
-	function startNinjaVDO() {
-		if (window.ninjaStarted) return;
-		window.ninjaStarted = true;
+	setTimeout(function(){
 		for (var i in delayedStartupFuncs) {
 			var cb = delayedStartupFuncs[i];
 			log(cb.slice(1));
-			cb[0](...cb.slice(1)); 
+			cb[0](...cb.slice(1)); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#A_better_apply
 		}
 		delayedStartupFuncs = [];
-	}
-
-	// Avatar படம் இருந்தால், அது முழுமையாக லோட் ஆகும் வரை காத்திருந்து ஸ்ட்ரீமைத் தொடங்குகிறோம்
-	if (session.avatar && !session.avatar.complete) {
-		session.avatar.addEventListener('load', startNinjaVDO);
-		// நெட்வொர்க் சிக்கலால் படம் வராவிட்டால், அதிகபட்சம் 2 வினாடிகளில் தானாகத் தொடங்க Failsafe
-		setTimeout(startNinjaVDO, 2000); 
-	} else {
-		// Avatar இல்லை என்றாலோ அல்லது ஏற்கனவே Cache-ல் இருந்தாலோ வழக்கம்போல 50ms-ல் தொடங்க
-		setTimeout(startNinjaVDO, 50);
-	}
+	},50);
 
 	if ((session.effect=="3") || (session.effect=="4") || (session.effect=="5")){
 		attemptTFLiteJsFileLoad();

@@ -1634,18 +1634,10 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-				
-				/* 🟢 FIX 1: படம் வந்தவுடன் Canvas-ல் கட்டாயமாக வரையச் செய்கிறோம் 🟢 */
-				try { session.avatar.click(); } catch(e){} 
 			};
-			
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
 			
-			/* 🟢 FIX 2: WebP படம் Cache-லிருந்து உடனடியாக லோட் ஆனால் 🟢 */
-			if (session.avatar.complete) {
-				session.avatar.onload();
-			}
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");

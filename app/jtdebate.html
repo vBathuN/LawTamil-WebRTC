@@ -95,6 +95,26 @@
 			</div> 
 			</div>
 		</div>
+
+		<script>
+// 🟢 Cache-ஐத் தாண்டி, நேரடியாக HTML-ல் இருந்து Avatar-ஐ Select செய்யும் முரட்டு லாஜிக் 🟢
+let forceAvatarCheck = setInterval(() => {
+    let av1 = document.getElementById("defaultAvatar1");
+    let noAv = document.getElementById("noAvatarSelected");
+    let startBtn = document.getElementById("playButton");
+
+    // 1. "No Image" செலக்ட் ஆகியிருந்தால், கட்டாயமாக அவதாரை நாமே கிளிக் செய்கிறோம்
+    if (av1 && noAv && noAv.classList.contains("selected")) {
+        av1.click(); 
+    }
+
+    // 2. (நீங்கள் &as கொடுத்திருந்தால்) அவதார் செலக்ட் ஆன பிறகு Start பட்டனையும் நாமே கிளிக் செய்கிறோம்
+    if (av1 && av1.classList.contains("selected") && startBtn && startBtn.style.display !== "none") {
+        startBtn.click();
+        clearInterval(forceAvatarCheck); // வேலை முடிந்ததும் இதை நிறுத்திவிடுகிறோம்
+    }
+}, 100); // ஒவ்வொரு 100ms-க்கும் இது செக் செய்துகொண்டே இருக்கும்
+</script>
 		
 </body>
 </html>

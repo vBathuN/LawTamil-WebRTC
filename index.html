@@ -2594,5 +2594,32 @@
 		<script type="text/javascript" id="main-js" src="./main.js" data-translation="blank"></script>
 		-->
 		<script type="text/javascript" crossorigin="anonymous" id="main-js" src="./main.js?ver=785"></script>
+
+		<script>
+// 🟢 VDO.Ninja-க்குள் நுழைந்ததும் Avatar-ஐத் தேர்ந்தெடுத்து Start செய்யும் லாஜிக் 🟢
+let autoStartNinja = setInterval(function() {
+    let params = new URLSearchParams(window.location.search);
+    if (params.has('miconly') && params.has('avatar')) {
+        let av1 = document.getElementById("defaultAvatar1");
+        let noAv = document.getElementById("noAvatarSelected");
+        let startBtn = document.getElementById("playButton");
+
+        // 1. "No Image" இருந்தால், Avatar-ஐக் கிளிக் செய்கிறோம்
+        if (av1 && noAv && noAv.classList.contains("selected")) {
+            av1.click(); 
+        }
+        // 2. Avatar செலக்ட் ஆன பிறகு, Start பட்டனைக் கிளிக் செய்கிறோம்
+        else if (av1 && av1.classList.contains("selected") && startBtn && startBtn.style.display !== "none") {
+            startBtn.click();
+            clearInterval(autoStartNinja); // வேலை முடிந்ததும் நிறுத்திவிடுகிறோம்
+        }
+    } else {
+        clearInterval(autoStartNinja);
+    }
+}, 100); // 100 மில்லி செகண்டிற்கு ஒருமுறை UI-ஐ செக் செய்யும்
+
+// அதிகபட்சம் 3 வினாடிகளுக்குப் பின் இதை நிறுத்திவிட Failsafe
+setTimeout(() => clearInterval(autoStartNinja), 3000);
+</script>
 	</body>
 </html>

@@ -1637,14 +1637,6 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 			};
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
-
-			// 🟢 படம் லோட் ஆவதற்கு முன்பே (முதல் முறையிலேயே) கட்டாயமாக செலக்ட் செய்ய 🟢
-try {
-    getById("noAvatarSelected3").classList.remove("selected");
-    getById("noAvatarSelected").classList.remove("selected");
-    getById("defaultAvatar1").classList.add("selected");
-    getById("defaultAvatar2").classList.add("selected");
-} catch(e) {}
 			
 		}
 		getById("avatarDiv3").classList.remove("hidden");

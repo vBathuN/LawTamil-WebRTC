@@ -2596,17 +2596,26 @@
 		<script type="text/javascript" crossorigin="anonymous" id="main-js" src="./main.js?ver=785"></script>
 
 		<script>
-// 🟢 பயனர் திரையைத் தொடும் அந்த முதல் Touch-ஐப் பயன்படுத்தும் உத்தி 🟢
-window.addEventListener('pointerdown', function() {
+// 🟢 Stealth Avatar Selection (Works perfectly WITH &as) 🟢
+let stealthCount = 0;
+let stealthAvatar = setInterval(() => {
     let av1 = document.getElementById("defaultAvatar1");
     let noAv = document.getElementById("noAvatarSelected");
 
-    // நீங்கள் START பட்டனைத் தொட விரல் வைக்கும் அதே மில்லி செகண்டில், 
-    // இது அவதாரை 'உண்மையான Touch' அனுமதியுடன் கிளிக் செய்துவிடும்.
-    if (av1 && noAv && noAv.classList.contains("selected")) {
-        av1.click();
+    if (av1 && noAv) {
+        // "No Image"-ல் உள்ள selected கிளாஸை நீக்குகிறோம்
+        noAv.classList.remove("selected");
+        
+        // Avatar படத்திற்கு selected கிளாஸை சேர்க்கிறோம் (Click செய்யாமல்!)
+        av1.classList.add("selected");
     }
-}, { once: true, capture: true }); // capture: true இருப்பதால் START பட்டன் வேலை செய்வதற்கு முன்பே இது நடந்துவிடும்
+    
+    // 5 வினாடிகளுக்குப் பிறகு இந்த செக்கிங்கை நிறுத்திவிடுகிறோம் (பிரவுசர் லோட் ஆகும் வரை மட்டுமே)
+    stealthCount++;
+    if (stealthCount > 50) {
+        clearInterval(stealthAvatar);
+    }
+}, 100);
 </script>
 	</body>
 </html>

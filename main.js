@@ -1625,7 +1625,7 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 			try {
 				avatar = decodeURIComponent(avatar);
 			}catch(e){}
-
+			
 			session.avatar = getById("defaultAvatar2");
 			session.avatar.ready = false;
 			session.avatar.onload = () => {
@@ -1634,26 +1634,10 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
-
-				/* 🟢 VIDEO AUTOPLAY FIX 🟢 */
-				setTimeout(() => {
-					// 1. வீடியோ ட்ராக் Pause-ல் இருந்தால் கட்டாயமாக Play செய்ய வைக்கிறோம்
-					var vid = document.getElementById("previewWebcam");
-					if (vid && vid.paused) {
-						vid.play().catch(e => { console.error("Autoplay failed:", e); });
-					}
-					// 2. முடங்கிய Canvas-ஐ விழிப்படையச் செய்ய அவதாரை Click செய்கிறோம்
-					try { session.avatar.click(); } catch(e){} 
-				}, 500);
 			};
-			
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
-
-			/* 🟢 Cached Image ஆக இருந்தால் Onload-ஐத் தூண்டுகிறோம் 🟢 */
-			if (session.avatar.complete) {
-				setTimeout(() => { session.avatar.onload(); }, 100);
-			}
+			
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");

@@ -5120,40 +5120,12 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 	setTimeout(function(){
 		for (var i in delayedStartupFuncs) {
 			var cb = delayedStartupFuncs[i];
-			if(cb && cb.length > 0) {
-				cb[0](...cb.slice(1)); 
-			}
+			log(cb.slice(1));
+			cb[0](...cb.slice(1)); // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#A_better_apply
 		}
 		delayedStartupFuncs = [];
+	},50);
 
-		/* 🟢 CANVAS AUTOPLAY & WEBRTC FREEZE FIX 🟢 */
-		if (session.miconly || session.webcamonly) {
-			setInterval(function() {
-				// 1. தடையின்றி வீடியோ ட்ராக்கை இயங்க வைப்பது
-				var vids = document.querySelectorAll("video");
-				vids.forEach(vid => {
-					if (vid.paused) {
-						vid.muted = true; 
-						vid.playsInline = true;
-						vid.autoplay = true;
-						vid.play().catch(e => {}); // Autoplay தடையை மீறி Force Play
-					}
-				});
-
-				// 2. முடங்கிய Canvas-ஐ தொடர்ந்து விழிப்படையச் செய்வது (Redraw)
-				try {
-					var av1 = document.getElementById("defaultAvatar1");
-					var av2 = document.getElementById("defaultAvatar2");
-					if (av1 && av1.classList.contains("selected")) {
-						av1.click();
-					} else if (av2 && av2.classList.contains("selected")) {
-						av2.click();
-					}
-				} catch(e){}
-			}, 1000); // ஒவ்வொரு 1 வினாடிக்கும் Canvas-க்கு உயிர் கொடுக்கிறோம்
-		}
-	}, 50);
-	
 	if ((session.effect=="3") || (session.effect=="4") || (session.effect=="5")){
 		attemptTFLiteJsFileLoad();
 	} else if (session.effect=="6"){

@@ -1634,13 +1634,34 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 				getById("noAvatarSelected").classList.remove("selected");
 				getById("defaultAvatar1").classList.add("selected");
 				getById("defaultAvatar2").classList.add("selected");
+
+				// 🟢 படம் முழுமையாக லோட் ஆன மறுகணமே கறுப்புத் திரையில் அதை வரைந்துவிடுகிறோம் 🟢
+				setTimeout(() => {
+					try {
+						document.querySelectorAll("canvas").forEach(canvas => {
+							if (canvas.width > 0 && canvas.height > 0) {
+								let ctx = canvas.getContext("2d");
+								ctx.drawImage(session.avatar, 0, 0, canvas.width, canvas.height);
+							}
+						});
+					} catch(e) {}
+				}, 100); 
 			};
+			
 			getById("defaultAvatar1").src = avatar;
 			getById("defaultAvatar2").src = avatar;
 			
 		}
 		getById("avatarDiv3").classList.remove("hidden");
 		getById("avatarDiv").classList.remove("hidden");
+
+		// 🟢 படம் லோட் ஆவதற்கு முன்பே (முதல் முறையிலேயே) கட்டாயமாக செலக்ட் செய்ய 🟢
+try {
+    getById("noAvatarSelected3").classList.remove("selected");
+    getById("noAvatarSelected").classList.remove("selected");
+    getById("defaultAvatar1").classList.add("selected");
+    getById("defaultAvatar2").classList.add("selected");
+} catch(e) {}
 	}
 	
 	if (urlParams.has('prompt') || urlParams.has('validate') || urlParams.has('approve')){

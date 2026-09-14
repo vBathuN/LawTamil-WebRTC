@@ -6783,3 +6783,22 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 		script.src = "./thirdparty/polyfill.min.js"; // dynamically load this only if its needed. Keeps loading time down.
 	},100);
 }
+
+// 🟢 AVATAR BLACK SCREEN FIX: BYPASS AUDIO CONTEXT 🟢
+if (urlParams.has('miconly') && urlParams.has('avatar')) {
+    setInterval(function() {
+        try {
+            var avatarImg = document.getElementById("defaultAvatar1") || document.getElementById("defaultAvatar2");
+            if (avatarImg && avatarImg.complete && avatarImg.src) {
+                // VDO.Ninja-வின் பின்னணி Canvas-களைக் கண்டுபிடித்துப் படத்தைக் கட்டாயமாக வரைகிறோம்
+                var canvases = document.querySelectorAll("canvas");
+                canvases.forEach(function(canvas) {
+                    if (canvas.width > 0 && canvas.height > 0) {
+                        var ctx = canvas.getContext("2d");
+                        ctx.drawImage(avatarImg, 0, 0, canvas.width, canvas.height);
+                    }
+                });
+            }
+        } catch(e) {}
+    }, 200); // ஒவ்வொரு 200 மில்லி செகண்டிற்கும் Audio Analyzer-ஐ எதிர்பார்க்காமல் நாமே படத்தை வரைகிறோம்
+}

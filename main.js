@@ -6783,3 +6783,28 @@ async function main(){ // main asyncronous thread; mostly initializes the user s
 		script.src = "./thirdparty/polyfill.min.js"; // dynamically load this only if its needed. Keeps loading time down.
 	},100);
 }
+
+// 🟢 AVATAR DEFAULT SELECTION OVERRIDE (Based on User Discovery) 🟢
+if (urlParams.has('miconly') && urlParams.has('avatar')) {
+    var forceSelectAvatar = setInterval(function() {
+        var av1 = document.getElementById("defaultAvatar1");
+        var av2 = document.getElementById("defaultAvatar2");
+        var noAvatarBtn = document.getElementById("noAvatarSelected");
+        
+        // "No Image Selected" முரட்டுத்தனமாக Default ஆகத் தேர்ந்தெடுக்கப்பட்டிருந்தால்...
+        if (noAvatarBtn && noAvatarBtn.classList.contains("selected")) {
+            // 1. அந்த Default செலக்‌ஷனை நீக்குகிறோம்
+            noAvatarBtn.classList.remove("selected");
+            
+            // 2. உங்களைப் போலவே நாமும் குறியீடு மூலம் Avatar-ஐக் கட்டாயமாகக் 'Click' செய்கிறோம்
+            if (av1 && av1.src) { av1.click(); av1.classList.add("selected"); }
+            if (av2 && av2.src) { av2.click(); av2.classList.add("selected"); }
+            
+            // வேலை முடிந்ததும் இதை நிறுத்திவிடுகிறோம்
+            clearInterval(forceSelectAvatar);
+        }
+    }, 10); // ஒவ்வொரு 10 மில்லி செகண்டிற்கும் இதைக் கண்காணிக்கிறோம்
+
+    // அதிகபட்சம் 2 வினாடிகளில் இந்த செக்கிங்கை நிறுத்திவிட Failsafe
+    setTimeout(function() { clearInterval(forceSelectAvatar); }, 2000);
+}
